@@ -4,6 +4,12 @@ All notable progress on Iso Golf. The format follows [Keep a Changelog](https://
 
 ## [Unreleased]
 
+### 2026-11-04: Slopes and putting planned (`feature/plan-slopes-and-putting`)
+
+#### Changed
+
+- Slopes join the plan: the ball reacts to them from M2, and M3 generates elevation by seed and par, starting gently. Cliffs, plateaus and elevated tees wait for a later version.
+- On the green, every shot is a putt along the ground, with no aerial arc.
 ### 2026-11-04: Unity diagnostics off (`fix/disable-unity-diagnostics`)
 
 #### Changed
