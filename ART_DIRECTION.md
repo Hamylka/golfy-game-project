@@ -63,7 +63,7 @@ No photo textures, no fine normal maps.
 ## 6. Diorama shape
 
 - Each scene is an **island resting on white void**, with a short uneven band of earth visible under its edge.
-- Portrait and the camera angle favor a **long, narrow island**: about 34 × 10 m in the look test.
+- Portrait and the camera angle favor a **long, narrow island**: about 34 × 10 m for the par 3 in the look test, and longer for higher pars.
 - The outline is irregular, and its grass edge is a **border of small prismatic tufts**: never a clean geometric edge.
 - Vegetation: trees with **cauliflower foliage** (clusters of low-detail faceted blobs), short trunk. Cypresses as 6- to 8-sided cones. Round bushes.
 - Simple, readable volumes: boxes, cylinders, arches, gabled or conical roofs.
@@ -100,7 +100,7 @@ No photo textures, no fine normal maps.
 - Progression through **procedurally generated levels**, each one an island diorama.
 - Constant play axis: start in the **south-west**, finish in the **north-east**. On screen: the course runs **up the screen with a slight lean to the right**, from bottom-left to top-right.
 - The start is always in the lower part of the island, the green in the upper part: the eye reads the level in the direction of the shot.
-- The camera frames the **whole island** by default, so the course can be read in one view. Between levels, the next island appears to the north-east (camera slide or fade to white).
+- **Par 3 courses** fit the whole island in one view. **Longer courses (par 4, par 5, possibly more)** are only partly visible at once, which leaves room for more detail on the course: the camera moves along the course during play, always at the same rotation. **Open:** exactly how it moves, to settle in the M2 shot prototype. Between levels, the next island appears to the north-east (camera slide or fade to white).
 
 ### Procedural kit
 

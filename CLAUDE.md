@@ -53,7 +53,7 @@ The server is launched through `uvx`. On this machine uv's default Python is pin
 - **Compass:** map **north-east = world +X**, which the camera shows as up the screen with a slight lean to the right; map north-west = world +Z, shown toward the left of the screen.
 - **Play axis:** the tee is placed toward world −X, the hole toward world +X. A shot travels up the screen, from bottom-left to top-right.
 - **Camera:** perspective, 45° vertical field of view, rotation about (40, 80, 0). It never rotates during gameplay. These conventions take precedence over any looser camera wording in `ART_DIRECTION.md`.
-- **Screen:** forced portrait. The camera frames the whole island by default, so islands are long and narrow to fill the screen.
+- **Screen:** forced portrait, with long, narrow islands. Par 3 courses fit entirely in one view. Longer courses (par 4, par 5, possibly more) are only partly visible, and the camera moves along the course during play without rotating.
 
 ### Code
 
@@ -86,7 +86,7 @@ Do not create assets outside `Assets/_Project/` (third-party packages excepted).
 
 ## Key systems
 
-- **Camera (`Rendering`):** fixed-rotation perspective camera that frames the island to fit any portrait screen, rendering at native resolution with MSAA.
+- **Camera (`Rendering`):** fixed-rotation perspective camera, rendering at native resolution with MSAA. It frames a par 3 island whole on any portrait screen, and moves along longer courses.
 - **Ball (`Gameplay`):** the flight follows a predictable bell-shaped arc computed from aim direction and power (ballistic solution), then hands over to physics for bounce and roll. The aim preview must match the real flight exactly.
 - **Ball shadow:** a separate ground-projected blob that always sits on the surface under the ball. It is essential for reading height; never remove it.
 - **Shot input (`Gameplay`):** behind an `IShotInput` interface. The gesture is **not decided yet**: implement a simple placeholder (drag-and-release, touch first) and keep it swappable.

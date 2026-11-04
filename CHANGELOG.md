@@ -11,7 +11,7 @@ All notable progress on Iso Golf. The format follows [Keep a Changelog](https://
 - The art direction moves from the pixel diorama to a low poly diorama, chosen on the phone from a look test: perspective camera at a 45° field of view, course running up the screen with a slight lean to the right, native resolution with 4× MSAA, flat-shaded facets and clean surface borders.
 - The fairway uses long mowing stripes, with no tile or checkerboard pattern.
 - The Mediterranean palette and white background stay.
-- The camera frames the whole island by default, replacing the level-opening pan and ball-following decided for the pixel look.
+- Camera framing depends on course length: par 3 courses fit entirely in one view, and longer ones are partly visible with the camera moving along them. This replaces the level-opening pan decided for the pixel look.
 
 #### Removed
 
