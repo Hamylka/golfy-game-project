@@ -4,6 +4,21 @@ All notable progress on Iso Golf. The format follows [Keep a Changelog](https://
 
 ## [Unreleased]
 
+### 2026-11-04: M1.1 pixel render path (`feature/pixel-render-path`)
+
+#### Added
+
+- `IsoGolf_RPAsset` with a game renderer and a present renderer in `Assets/_Project/Rendering/`: HDR off, depth texture on, soft shadows on, render scale 1, no volume profile.
+- `PixelCamera`, `PixelPresenter` and `PixelPresentFeature`: the world renders into a low-res texture, then a second camera upscales it to the screen with nearest-neighbour sampling.
+- `PixelGrid`, which works out the integer scale, view size, render size and orthographic size for any screen, with tests. It picks the scale closest to 270 px wide, with no black bars, at 24 game pixels per unit.
+- `PixelCameraSettings` and its asset.
+- `Sandbox_PixelPipeline.unity`, with a grey-box test island and sandbox materials.
+
+#### Changed
+
+- The `Mobile` quality level now uses `IsoGolf_RPAsset`.
+- Camera decision: each level opens with a slow pan from the hole back to the tee, replacing the brief wide view, because an animated zoom would make the image shimmer.
+
 ### 2026-11-04: Unity AI packages removed (`feature/remove-unity-ai-packages`)
 
 #### Removed
