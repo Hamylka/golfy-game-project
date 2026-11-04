@@ -44,9 +44,9 @@ Rules:
 ## 4. Lighting and shadows
 
 - A single sun, **top-left of the screen**, warm (`#FFF1D6`), fairly high in the sky: early afternoon.
-- Cast shadows are slightly transparent and cool-tinted (violet / blue-grey). **Open:** how crisp they should be, to settle in the M1 pipeline.
+- Cast shadows are slightly transparent and cool-tinted (violet / blue-grey), with crisp edges that keep the shape of what casts them. Chosen on the phone in M1.3 over soft blurred shadows and hard jagged ones.
 - Trees cast large shadows on the ground: an important compositional element.
-- Each facet takes a single tone from the light. **Open:** whether to add a stepped toon ramp, or keep plain lighting as in the look test.
+- Each facet takes a single tone from the light, with plain lighting. A stepped toon ramp was tried on the phone in M1.3 and rejected: it flattens the facets that make slopes readable, and bleaches sand and green.
 - Ambience: warm, generous ambient light, no truly dark areas.
 
 ## 5. Texture and material
@@ -62,7 +62,7 @@ No photo textures, no fine normal maps.
 
 ## 6. Diorama shape
 
-- Each scene is an **island resting on white void**, with a short uneven band of earth visible under its edge.
+- Each scene is an **island resting on white void**, with a short uneven band of earth visible under its edge. **Open:** whether islands should float a little above clouds instead, to add a feeling of lightness, to test on the phone against the white gradient.
 - Portrait and the camera angle favor a **long, narrow island**: about 34 × 10 m for the par 3 in the look test, and longer for higher pars.
 - The outline is irregular, and its grass edge is a **border of small prismatic tufts**: never a clean geometric edge.
 - Vegetation: trees with **cauliflower foliage** (clusters of low-detail faceted blobs), short trunk. Cypresses as 6- to 8-sided cones. Round bushes.
@@ -120,7 +120,7 @@ To keep generation faithful to the art direction, levels are assembled from a **
 
 - **Fairway**: long mowing stripes alternating two greens (`#8FA85A` / `#7E9A48`), aligned with the SW → NE axis. **No tile or checkerboard pattern.**
 - **Green**: lighter and smoother green, gently sloped, flat around the hole, red or yellow flag.
-- **Rough**: darker grass with more broken facets, blending into the edge.
+- **Rough**: darker grass (`#6A8541`) with more broken facets, blending into the edge.
 - **Bunkers**: sand palette, rolled edge, a few rake marks.
 - **Water hazards**: water palette, round white rocks, small stone bridge.
 - **Scenery**: olive trees, cypresses, dry-stone walls, tile-roofed shed, a small chapel or lighthouse standing alone at the island's edge. No spectators.
