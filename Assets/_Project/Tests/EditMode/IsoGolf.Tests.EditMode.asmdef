@@ -4,7 +4,8 @@
     "references": [
         "UnityEngine.TestRunner",
         "UnityEditor.TestRunner",
-        "IsoGolf.Rendering"
+        "IsoGolf.Rendering",
+        "IsoGolf.Generation"
     ],
     "includePlatforms": [
         "Editor"
