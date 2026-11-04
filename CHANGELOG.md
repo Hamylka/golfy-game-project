@@ -4,6 +4,18 @@ All notable progress on Iso Golf. The format follows [Keep a Changelog](https://
 
 ## [Unreleased]
 
+### 2026-11-04: Pixel pipeline removed (`feature/remove-pixel-pipeline`)
+
+#### Changed
+
+- `Main.unity` now uses the perspective camera: 45° field of view at rotation (40, 80, 0), with the sun moved to stay at screen top-left.
+- `IsoCameraConvention` and its tests follow the new camera.
+- `IsoGolf_RPAsset` has one renderer, renamed `IsoGolf_Renderer`, with 4× MSAA, a 150 m shadow distance and a 2048 shadow map, as in the look test.
+
+#### Removed
+
+- The M1.1 pixel pipeline: `PixelCamera`, `PixelPresenter`, `PixelPresentFeature`, `PixelGrid`, `PixelCameraSettings`, their tests, the present renderer and `Sandbox_PixelPipeline.unity` with its materials.
+
 ### 2026-11-04: Art direction changed to low poly (`feature/art-direction-low-poly`)
 
 #### Changed
