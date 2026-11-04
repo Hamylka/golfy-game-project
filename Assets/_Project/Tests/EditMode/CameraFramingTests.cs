@@ -16,6 +16,25 @@ namespace IsoGolf.Tests
             return new CameraView(IsoCameraConvention.Rotation, IsoCameraConvention.VerticalFieldOfView, aspect);
         }
 
+        [Test]
+        public void GroundFootprint_ContainsWhatEveryScreenCornerSees()
+        {
+            CameraView view = View(1280f / 2800f);
+            var position = new Vector3(-30f, 20f, -5f);
+            const float height = -20f;
+
+            Rect footprint = CameraFraming.GroundFootprint(position, view, height);
+
+            // The screen's middle lands inside it, and the top reaches further along the course than the bottom.
+            Vector3 middle = view.OnPlane(position, Vector2.zero, height);
+            Assert.That(footprint.Contains(new Vector2(middle.x, middle.z)), Is.True);
+            Vector3 top = view.OnPlane(position, Vector2.up, height);
+            Vector3 bottom = view.OnPlane(position, Vector2.down, height);
+            Assert.That(top.x, Is.GreaterThan(bottom.x));
+            Assert.That(footprint.xMax, Is.GreaterThanOrEqualTo(top.x - Tolerance));
+            Assert.That(footprint.xMin, Is.LessThanOrEqualTo(bottom.x + Tolerance));
+        }
+
         [TestCase(1280f / 2800f)]
         [TestCase(1080f / 2400f)]
         [TestCase(9f / 16f)]

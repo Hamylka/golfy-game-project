@@ -25,6 +25,8 @@ namespace IsoGolf.Rendering
         private CameraGestureRouter _router;
         private Vector2Int _screenSize;
         private IReadOnlyList<Vector3> _framePoints;
+        private Vector3 _home;
+        private CameraView _view;
 
         /// <summary>Turned off while aiming (from M2), so gestures can't disturb a shot.</summary>
         public bool GesturesEnabled { get; set; } = true;
@@ -64,14 +66,14 @@ namespace IsoGolf.Rendering
         private void Rebuild()
         {
             _screenSize = new Vector2Int(Screen.width, Screen.height);
-            var view = new CameraView(IsoCameraConvention.Rotation, IsoCameraConvention.VerticalFieldOfView, _screenSize.x / (float)_screenSize.y);
+            _view = new CameraView(IsoCameraConvention.Rotation, IsoCameraConvention.VerticalFieldOfView, _screenSize.x / (float)_screenSize.y);
             IReadOnlyList<Vector3> points = _framePoints ?? CameraFraming.Corners(island);
-            Vector3 home = CameraFraming.Fit(points, view, settings.ScreenFill);
+            _home = CameraFraming.Fit(points, _view, settings.ScreenFill);
             Rect limits = GroundLimits(points);
 
-            _navigator = new CameraNavigator(home, view, limits, groundHeight, settings.ClosestZoom);
+            _navigator = new CameraNavigator(_home, _view, limits, groundHeight, settings.ClosestZoom);
             _router = new CameraGestureRouter(_navigator);
-            transform.position = home;
+            transform.position = _home;
         }
 
         /// <summary>Frames these points instead of the box, for a tighter fit around a real island shape.</summary>
@@ -79,6 +81,12 @@ namespace IsoGolf.Rendering
         {
             _framePoints = points;
             Rebuild();
+        }
+
+        /// <summary>The rectangle a horizontal plane shows in the framed view, the widest the player can see.</summary>
+        public Rect VisibleGround(float height)
+        {
+            return CameraFraming.GroundFootprint(_home, _view, height);
         }
 
         private static Rect GroundLimits(IReadOnlyList<Vector3> points)

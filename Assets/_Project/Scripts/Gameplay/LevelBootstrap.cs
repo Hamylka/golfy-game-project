@@ -12,11 +12,17 @@ namespace IsoGolf.Gameplay
     {
         [SerializeField] private TerrainView terrain;
         [SerializeField] private IslandCamera islandCamera;
+        [Tooltip("Optional. Scenes without clouds keep their plain background.")]
+        [SerializeField] private CloudView clouds;
 
         private void Start()
         {
             terrain.Build();
             islandCamera.SetIsland(terrain.Outline);
+            if (clouds != null)
+            {
+                clouds.Build(islandCamera.VisibleGround);
+            }
         }
     }
 }
