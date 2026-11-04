@@ -5,7 +5,9 @@
         "UnityEngine.TestRunner",
         "UnityEditor.TestRunner",
         "IsoGolf.Rendering",
-        "IsoGolf.Generation"
+        "IsoGolf.Generation",
+        "IsoGolf.Gameplay",
+        "Unity.RenderPipelines.Universal.Runtime"
     ],
     "includePlatforms": [
         "Editor"
