@@ -131,7 +131,7 @@ namespace IsoGolf.Generation
                     Vector3 d = Corner(ix + 1, iz);
 
                     // Alternating diagonals, so the ground reads as facets rather than rows.
-                    if ((ix + iz) % 2 == 0)
+                    if (CourseHeightField.UsesRisingDiagonal(ix, iz))
                     {
                         AddGround(a, b, c);
                         AddGround(a, c, d);
