@@ -26,7 +26,7 @@ RenderSettings:
   m_AmbientIntensity: 1
   m_AmbientMode: 3
   m_SubtractiveShadowColor: {r: 0.42, g: 0.478, b: 0.627, a: 1}
-  m_SkyboxMaterial: {fileID: 0}
+  m_SkyboxMaterial: {fileID: 2100000, guid: 0ef171373d6917944adff71012595eda, type: 2}
   m_HaloStrength: 0.5
   m_FlareStrength: 1
   m_FlareFadeSpeed: 3
@@ -217,7 +217,7 @@ Camera:
   m_GameObject: {fileID: 431362523}
   m_Enabled: 1
   serializedVersion: 2
-  m_ClearFlags: 2
+  m_ClearFlags: 1
   m_BackGroundColor: {r: 1, g: 1, b: 1, a: 1}
   m_projectionMatrixMode: 1
   m_GateFitMode: 2
@@ -307,6 +307,7 @@ MonoBehaviour:
   palette: {fileID: 11400000, guid: f0bc7674256819e4d920b9b8f6a2df40, type: 2}
   landMaterial: {fileID: 2100000, guid: ad4e2044caef9814f9c30aa2c03bd228, type: 2}
   waterMaterial: {fileID: 2100000, guid: ad4e2044caef9814f9c30aa2c03bd228, type: 2}
+  trees: {fileID: 11400000, guid: a0a2d4f9453a1334faaf8fc2530f678e, type: 2}
 --- !u!4 &501904562
 Transform:
   m_ObjectHideFlags: 0
@@ -332,6 +333,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1678882215}
   - component: {fileID: 1678882214}
+  - component: {fileID: 1678882216}
   m_Layer: 0
   m_Name: Sun
   m_TagString: Untagged
@@ -419,6 +421,35 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1678882216
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1678882213}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 474bcb49853aa07438625e644c072ee6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.RenderPipelines.Universal.Runtime::UnityEngine.Rendering.Universal.UniversalAdditionalLightData
+  m_UsePipelineSettings: 1
+  m_AdditionalLightsShadowResolutionTier: 2
+  m_CustomShadowLayers: 0
+  m_LightCookieSize: {x: 1, y: 1}
+  m_LightCookieOffset: {x: 0, y: 0}
+  m_SoftShadowQuality: 0
+  m_RenderingLayersMask:
+    serializedVersion: 0
+    m_Bits: 1
+  m_ShadowRenderingLayersMask:
+    serializedVersion: 0
+    m_Bits: 1
+  m_Version: 4
+  m_LightLayerMask: 1
+  m_ShadowLayerMask: 1
+  m_RenderingLayers: 1
+  m_ShadowRenderingLayers: 1
 --- !u!1 &2062916156
 GameObject:
   m_ObjectHideFlags: 0

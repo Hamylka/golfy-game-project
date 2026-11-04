@@ -12,10 +12,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 102ba1eaa877c8c4eb0cd63cb6b4db92, type: 3}
   m_Name: Palette
   m_EditorClassIdentifier: IsoGolf.Generation::IsoGolf.Generation.PaletteSettings
-  rough: {r: 0.3372549, g: 0.44313726, b: 0.22745098, a: 1}
+  rough: {r: 0.41568628, g: 0.52156866, b: 0.25490198, a: 1}
   fairwayLight: {r: 0.56078434, g: 0.65882355, b: 0.3529412, a: 1}
   fairwayDark: {r: 0.49411765, g: 0.6039216, b: 0.28235295, a: 1}
   green: {r: 0.654902, g: 0.72156864, b: 0.41568628, a: 1}
   sand: {r: 0.9098039, g: 0.8509804, b: 0.70980394, a: 1}
   water: {r: 0.30980393, g: 0.6901961, b: 0.72156864, a: 1}
   earth: {r: 0.7490196, g: 0.42352942, b: 0.2627451, a: 1}
+  foliageLight: {r: 0.49411765, g: 0.6039216, b: 0.28235295, a: 1}
+  foliageMid: {r: 0.3372549, g: 0.44313726, b: 0.22745098, a: 1}
+  foliageDark: {r: 0.20392157, g: 0.28235295, b: 0.16470589, a: 1}
+  trunk: {r: 0.41568628, g: 0.25490198, b: 0.15686275, a: 1}

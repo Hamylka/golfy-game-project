@@ -4,12 +4,28 @@ All notable progress on Iso Golf. The format follows [Keep a Changelog](https://
 
 ## [Unreleased]
 
+### 2026-11-04: M1.3 materials and lighting (`feature/materials-lighting`)
+
+#### Added
+
+- `TreeBuilder` and `TreeSettings`: seeded low poly cauliflower trees and cypresses, built into one mesh with the terrain material. `SandboxTrees` places ten of them on `Sandbox_Island`, so shadows can be judged.
+- `ShadowTint`, a custom function in `LowPolyVertexColor` that tints cast shadows cool through Emission, while facets that merely face away from the sun keep the warm ambient.
+- `BackgroundGradient`, an Unlit Shader Graph used as the skybox: white fading to `#E4E4E4` at the bottom of the screen.
+- `LookSettingsTests`.
+
+#### Changed
+
+- The look was chosen on the phone from side-by-side options: crisp shadows, plain lighting (no toon ramp), the gradient background, cool shadows, today's ambient and a lighter rough (`#6A8541`).
+- `IsoGolf_RPAsset`: shadow distance from 150 m to 70 m and soft shadow quality from Medium to Low, which is what makes shadows crisper.
+- `ART_DIRECTION.md`: settles shadow crispness and the toon ramp, and adds islands floating above clouds as an open idea.
+
 ### 2026-11-04: Slopes and putting planned (`feature/plan-slopes-and-putting`)
 
 #### Changed
 
 - Slopes join the plan: the ball reacts to them from M2, and M3 generates elevation by seed and par, starting gently. Cliffs, plateaus and elevated tees wait for a later version.
 - On the green, every shot is a putt along the ground, with no aerial arc.
+
 ### 2026-11-04: Unity diagnostics off (`fix/disable-unity-diagnostics`)
 
 #### Changed
