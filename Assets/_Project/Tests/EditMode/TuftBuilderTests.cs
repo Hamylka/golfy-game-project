@@ -48,13 +48,6 @@ namespace IsoGolf.Tests
             serialized.ApplyModifiedPropertiesWithoutUndo();
         }
 
-        private void SetRange(string property, Vector2 range)
-        {
-            using var serialized = new SerializedObject(_tufts);
-            serialized.FindProperty(property).vector2Value = range;
-            serialized.ApplyModifiedPropertiesWithoutUndo();
-        }
-
         private List<TuftSpot> Spots(int seed = 1)
         {
             return TuftBuilder.Place(_terrain.Edge, _tufts.MinSpacing, new System.Random(seed));
@@ -188,58 +181,54 @@ namespace IsoGolf.Tests
         }
 
         [Test]
-        public void EveryTuft_IsAClosedSolid_WithFacetsFacingOut()
+        public void TopFacetsFaceUp_AndHangingFacetsTiltUpAndOutward()
         {
             // An edge shorter than the spacing holds one tuft, so each seed gives one shape to check.
             var edge = new List<EdgeSegment> { new EdgeSegment(Vector3.zero, Vector3.right * 0.1f, Vector3.forward) };
 
-            for (int seed = 0; seed < 50; seed++)
+            for (int seed = 0; seed < 100; seed++)
             {
+                // Half the seeds use a sharp tip and half the widest blunt one, which adds a facet.
+                bool blunt = seed % 2 == 1;
+                using (var serialized = new SerializedObject(_tufts))
+                {
+                    serialized.FindProperty("tipWidth").floatValue = blunt ? 0.6f : 0f;
+                    serialized.ApplyModifiedPropertiesWithoutUndo();
+                }
+
                 SetSeed(seed);
                 TerrainMeshData mesh = TuftBuilder.Build(_tufts, _palette, edge);
-                Assert.That(mesh.TriangleCount, Is.EqualTo(6).Or.EqualTo(8));
+                Assert.That(mesh.TriangleCount, Is.EqualTo(blunt ? 5 : 4));
 
-                Vector3 middle = Vector3.zero;
-                foreach (Vector3 position in mesh.Positions)
+                for (int facet = 0; facet < mesh.TriangleCount; facet++)
                 {
-                    middle += position / mesh.Positions.Count;
-                }
+                    Vector3 a = mesh.Positions[facet * 3];
+                    Vector3 normal = Vector3.Cross(mesh.Positions[(facet * 3) + 1] - a, mesh.Positions[(facet * 3) + 2] - a);
 
-                for (int i = 0; i < mesh.Positions.Count; i += 3)
-                {
-                    Vector3 a = mesh.Positions[i];
-                    Vector3 normal = Vector3.Cross(mesh.Positions[i + 1] - a, mesh.Positions[i + 2] - a);
-                    Vector3 center = (a + mesh.Positions[i + 1] + mesh.Positions[i + 2]) / 3f;
-                    Assert.That(Vector3.Dot(normal, center - middle), Is.GreaterThan(0f), $"seed {seed}, facet {i / 3}");
+                    // A hanging facet that tilted down would fall in shade, and read as a dark shard.
+                    Assert.That(normal.y, Is.GreaterThan(0f), $"seed {seed}, facet {facet}");
+                    if (facet >= 2)
+                    {
+                        Assert.That(normal.z, Is.GreaterThan(0f), $"seed {seed}, facet {facet}");
+                    }
                 }
             }
         }
 
         [Test]
-        public void NoDrop_LeavesOnlyTheUpperHalf()
+        public void SavedSpacing_LetsNeighbouringTuftsOverlap()
         {
-            int both = TuftBuilder.Build(_tufts, _palette, _terrain.Edge).TriangleCount;
-            SetRange("drop", Vector2.zero);
+            // Neighbours can be up to twice the spacing apart, and each reaches at least its smallest
+            // half width toward the other, so this is what keeps the fringe free of gaps.
+            var saved = AssetDatabase.LoadAssetAtPath<TuftSettings>(TuftsAssetPath);
 
-            int upper = TuftBuilder.Build(_tufts, _palette, _terrain.Edge).TriangleCount;
-
-            Assert.That(upper, Is.EqualTo(both / 2));
+            Assert.That(saved.HalfWidth.x, Is.GreaterThanOrEqualTo(saved.MinSpacing));
         }
 
         [Test]
-        public void NoRise_StillFacesUp()
+        public void TuftsDontCastShadows_ByDefault()
         {
-            SetRange("rise", Vector2.zero);
-            SetRange("drop", Vector2.zero);
-
-            TerrainMeshData mesh = TuftBuilder.Build(_tufts, _palette, _terrain.Edge);
-
-            Assert.That(mesh.TriangleCount, Is.GreaterThan(0));
-            for (int i = 0; i < mesh.Positions.Count; i += 3)
-            {
-                Vector3 normal = Vector3.Cross(mesh.Positions[i + 1] - mesh.Positions[i], mesh.Positions[i + 2] - mesh.Positions[i]);
-                Assert.That(normal.y, Is.GreaterThan(0f));
-            }
+            Assert.That(_tufts.CastShadows, Is.False);
         }
 
         [Test]

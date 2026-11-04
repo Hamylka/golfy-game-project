@@ -4,8 +4,10 @@ using UnityEngine;
 namespace IsoGolf.Generation
 {
     /// <summary>
-    /// Builds the grass border that hides the island's clean edge: small faceted prisms straddling the
-    /// edge line, with one point above the grass and one hanging over the earth band.
+    /// Builds the grass fringe that hides the island's clean edge. Each tuft is a small tent of four
+    /// facets: two lie on the grass and rise to a crease on the edge, and two fold over it and hang down
+    /// the earth band like thatch. Tufts overlap, so the fringe reads as one piece of ground folding
+    /// over the edge rather than as separate objects sitting on it.
     /// </summary>
     public sealed class TuftBuilder
     {
@@ -15,18 +17,9 @@ namespace IsoGolf.Generation
         // Below this, an edge piece is too short to give a direction.
         private const float MinSegmentLength = 0.0001f;
 
-        // Keeps a tuft's flat side from fighting with the ground for the same pixels.
-        private const float RingLift = 0.03f;
-
-        // Tufts are narrower across the edge than along it, so they hug the outline instead of
-        // spreading onto the grass.
-        private const float AcrossSquash = 0.65f;
-
-        // Each corner moves by up to this fraction of the radius, so no two tufts share a shape.
-        private const float CornerJitter = 0.25f;
-
-        // How far a point leans sideways, as a fraction of the radius, so tufts don't look machined.
-        private const float PointLean = 0.3f;
+        // How far the crease and tip lean along the edge, as a fraction of the half width, so tufts
+        // don't look machined. Lean plus tip width has to stay under 1, or a facet would fold over its neighbour.
+        private const float Lean = 0.3f;
 
         private readonly TuftSettings _settings;
         private readonly TerrainMeshData _mesh = new TerrainMeshData();
@@ -130,51 +123,41 @@ namespace IsoGolf.Generation
         private void AddTuft(TuftSpot spot, System.Random random)
         {
             Vector3 along = Vector3.Cross(Vector3.up, spot.Outward);
-            float radius = Between(random, _settings.Radius);
-            float rise = Between(random, _settings.Rise);
-            float drop = Between(random, _settings.Drop);
-            Vector3 middle = spot.Position + (spot.Outward * Between(random, _settings.Overhang)) + (Vector3.up * RingLift);
+            float halfWidth = Between(random, _settings.HalfWidth);
+
+            Vector3 left = spot.Position - (along * halfWidth);
+            Vector3 right = spot.Position + (along * halfWidth);
+            Vector3 back = spot.Position - (spot.Outward * Between(random, _settings.Inset));
+            Vector3 crease = spot.Position
+                + (Vector3.up * Between(random, _settings.Rise))
+                + (along * (Jitter(random, Lean) * halfWidth));
+
+            // The tip sits further out than the crease, so the hanging facets tilt up like a roof and
+            // catch the light. Tilting them down, under the crease, is what made earlier tufts read as
+            // dark shards.
+            Vector3 tip = spot.Position
+                + (Vector3.down * Between(random, _settings.Drop))
+                + (spot.Outward * Between(random, _settings.Flare))
+                + (along * (Jitter(random, Lean) * halfWidth));
+
             Color32 color = PickColor(random);
+            _mesh.Add(back, left, crease, Vector3.up, color);
+            _mesh.Add(back, crease, right, Vector3.up, color);
 
-            int sides = random.NextDouble() < _settings.FourSidedChance ? 4 : 3;
-            var ring = new Vector3[sides];
-            float startAngle = (float)(random.NextDouble() * Mathf.PI * 2f);
-            for (int i = 0; i < sides; i++)
+            if (_settings.TipWidth <= 0f)
             {
-                float angle = startAngle + (i * Mathf.PI * 2f / sides);
-                float reach = radius * (1f + Jitter(random, CornerJitter));
-                ring[i] = middle
-                    + (along * (Mathf.Cos(angle) * reach))
-                    + (spot.Outward * (Mathf.Sin(angle) * reach * AcrossSquash));
+                _mesh.Add(left, crease, tip, spot.Outward, color);
+                _mesh.Add(crease, right, tip, spot.Outward, color);
+                return;
             }
 
-            Vector3 lean = along * (Jitter(random, PointLean) * radius);
-            Vector3 top = middle + (Vector3.up * rise) + lean;
-
-            // The lower point leans outward, so it sits on the earth band's face rather than inside it.
-            Vector3 bottom = middle + (Vector3.down * drop) + (spot.Outward * (radius * PointLean)) - lean;
-
-            for (int i = 0; i < sides; i++)
-            {
-                Vector3 a = ring[i];
-                Vector3 b = ring[(i + 1) % sides];
-                AddFacet(a, b, top, middle, color);
-
-                // A tuft with no drop rests on the edge, where facing down would never be seen.
-                if (drop > 0f)
-                {
-                    AddFacet(a, b, bottom, middle, color);
-                }
-            }
-        }
-
-        private void AddFacet(Vector3 a, Vector3 b, Vector3 point, Vector3 middle, Color32 color)
-        {
-            Vector3 center = (a + b + point) / 3f;
-
-            // With no rise the upper facets lie flat, where pointing away from the middle says nothing.
-            Vector3 facing = point.y >= middle.y ? (center - middle) + (Vector3.up * 0.01f) : center - middle;
-            _mesh.Add(a, b, point, facing, color);
+            // A blunt tip has two low points instead of one, which takes the spike out of the outline.
+            Vector3 tipOffset = along * (halfWidth * _settings.TipWidth);
+            Vector3 tipLeft = tip - tipOffset;
+            Vector3 tipRight = tip + tipOffset;
+            _mesh.Add(left, crease, tipLeft, spot.Outward, color);
+            _mesh.Add(crease, tipRight, tipLeft, spot.Outward, color);
+            _mesh.Add(crease, right, tipRight, spot.Outward, color);
         }
 
         private Color32 PickColor(System.Random random)

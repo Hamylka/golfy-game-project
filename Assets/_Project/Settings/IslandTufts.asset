@@ -13,12 +13,13 @@ MonoBehaviour:
   m_Name: IslandTufts
   m_EditorClassIdentifier: IsoGolf.Generation::IsoGolf.Generation.TuftSettings
   seed: 1
-  minSpacing: 0.32
-  radius: {x: 0.2, y: 0.34}
-  rise: {x: 0.08, y: 0.28}
-  drop: {x: 0.12, y: 0.45}
-  overhang: {x: 0, y: 0.1}
-  fourSidedChance: 0.5
-  lightChance: 0.25
-  darkChance: 0.25
-  castShadows: 1
+  minSpacing: 0.13
+  halfWidth: {x: 0.13, y: 0.2}
+  inset: {x: 0.08, y: 0.16}
+  rise: {x: 0.015, y: 0.05}
+  drop: {x: 0.06, y: 0.15}
+  flare: {x: 0.03, y: 0.07}
+  tipWidth: 0.5
+  lightChance: 0.2
+  darkChance: 0.2
+  castShadows: 0
