@@ -9,6 +9,7 @@ All notable progress on Iso Golf. The format follows [Keep a Changelog](https://
 #### Changed
 
 - Engine diagnostics and analytics submission are off, by decision. Both had been on from the project template.
+
 ### 2026-11-04: M1.2 terrain mesh (`feature/terrain-mesh`)
 
 #### Added
