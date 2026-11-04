@@ -68,10 +68,11 @@ No photo textures, no fine normal maps.
 - The whole course **floats very gently up and down**, about 0.15 m each way over 7 seconds, against clouds that stay at their own height. All its islands move together. The motion is only visual and never affects the ball.
 - A course may have **gaps**: separate islands that still belong to one course. **Open:** how often, and what happens to a ball that lands in a gap, to settle in the M3 plan.
 - Portrait and the camera angle favor a **long, narrow island**: about 34 × 10 m for the par 3 in the look test, and longer for higher pars.
-- The outline is irregular, and its grass edge is a **border of small prismatic tufts**: never a clean geometric edge.
+- The outline is irregular, and its grass edge is a **continuous fringe of small, short, blunt tufts**: never a clean geometric edge. The tufts overlap and fold over the edge like thatch, so they read as the ground itself rather than objects on it. Chosen on the phone in M1.4 over separate prisms, which read as rough shards, and over longer or sharper teeth, which looked too spiky.
+- Where water reaches the island's edge, there is no fringe. Water falling from that edge is an idea for later.
 - Vegetation: trees with **cauliflower foliage** (clusters of low-detail faceted blobs), short trunk. Cypresses as 6- to 8-sided cones. Round bushes.
 - Simple, readable volumes: boxes, cylinders, arches, gabled or conical roofs.
-- Outlines: no black lines. **Open:** whether silhouettes need an outline at all, to judge once real props are in.
+- Outlines: none for now. Tested on the phone in M1.4 at about 2 px and about 1 px: tone already separates the shapes, and an outline pushes the look toward a cartoon, drawing lines inside tree crowns. Recheck in M4, once real props are in. Never black lines.
 
 ## 7. Scale, solitude and life
 
@@ -114,7 +115,7 @@ No photo textures, no fine normal maps.
 
 To keep generation faithful to the art direction, levels are assembled from a **modular kit** that follows the palette and the rules above:
 
-- Island outline: shape generated with noise, tufted grass edge applied automatically along the whole edge.
+- Island outline: shape generated with noise, tufted grass edge applied automatically along the whole dry edge.
 - Surfaces: fairway, green, rough, bunker, water, gravel, each with its own material.
 - Props: trees, bushes, rocks, low walls, sheds, benches, bridges. Placed by rules: low density, grouped in clusters rather than scattered, never on the main shot line.
 - Per-seed variation: island shape and length, elevation, obstacles, mood (see variants).

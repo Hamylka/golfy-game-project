@@ -45,6 +45,24 @@ namespace IsoGolf.Generation
 
         /// <summary>Points along the island edge, top and bottom. Enough to frame the island tightly.</summary>
         public List<Vector3> Outline { get; } = new List<Vector3>();
+
+        /// <summary>Each piece of the island edge on dry ground, in no particular order. Grass tufts grow along these.</summary>
+        public List<EdgeSegment> Edge { get; } = new List<EdgeSegment>();
+    }
+
+    /// <summary>A straight piece of the island edge, on the ground.</summary>
+    public readonly struct EdgeSegment
+    {
+        public EdgeSegment(Vector3 a, Vector3 b, Vector3 outward)
+        {
+            A = a;
+            B = b;
+            Outward = outward;
+        }
+
+        public Vector3 A { get; }
+        public Vector3 B { get; }
+        public Vector3 Outward { get; }
     }
 
     /// <summary>
@@ -163,6 +181,7 @@ namespace IsoGolf.Generation
                 foreach (Segment segment in edge)
                 {
                     AddSkirt(segment, segment);
+                    _result.Edge.Add(new EdgeSegment(segment.A, segment.B, Across(segment, _fields.Island, true)));
                 }
 
                 foreach (Triangle land in inside)
