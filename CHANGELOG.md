@@ -4,6 +4,14 @@ All notable progress on Iso Golf. The format follows [Keep a Changelog](https://
 
 ## [Unreleased]
 
+### 2026-11-04: Portrait and camera framing (`feature/portrait-orientation`)
+
+#### Changed
+
+- The game is now forced portrait, with a 270×480 starting render resolution (previously 480×270).
+- Company name set to Hamylka.
+- Camera decision: the play axis stays bottom-left to top-right. Each level opens on a brief wide view of the island, then the camera pans to follow the ball.
+
 ### 2026-11-04: M0 project bootstrap (`feature/project-bootstrap`)
 
 #### Added
