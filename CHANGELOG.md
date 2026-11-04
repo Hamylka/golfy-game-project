@@ -4,6 +4,12 @@ All notable progress on Iso Golf. The format follows [Keep a Changelog](https://
 
 ## [Unreleased]
 
+### 2026-11-04: Unity diagnostics off (`fix/disable-unity-diagnostics`)
+
+#### Changed
+
+- Engine diagnostics and analytics submission are off, by decision. Both had been on from the project template.
+
 ### 2026-11-04: M1.1 camera framing and gestures (`feature/camera-framing`)
 
 #### Added
