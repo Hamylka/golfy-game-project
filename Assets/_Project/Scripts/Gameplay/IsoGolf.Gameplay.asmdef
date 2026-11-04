@@ -1,4 +1,8 @@
 {
     "name": "IsoGolf.Gameplay",
-    "rootNamespace": "IsoGolf.Gameplay"
+    "rootNamespace": "IsoGolf.Gameplay",
+    "references": [
+        "IsoGolf.Generation",
+        "IsoGolf.Rendering"
+    ]
 }
