@@ -4,6 +4,18 @@ All notable progress on Iso Golf. The format follows [Keep a Changelog](https://
 
 ## [Unreleased]
 
+### 2026-11-04: M1.2 camera snapping (`feature/pixel-snapping`)
+
+#### Added
+
+- `PixelGrid.Snap` and `PixelCamera.Position`: the camera renders only from whole game pixels, and the upscale shifts the image by the rest, in whole screen pixels, so panning stays smooth.
+- `PixelShimmerTests`: renders the sandbox before and after moving the camera by whole game pixels, and counts the pixels that differ.
+- `SandboxPanDriver`: automatic pan, tap to pause, drag to pan, for judging shimmer by eye.
+
+#### Measured
+
+- Whole-pixel moves, at 270×600 plus margin: 3 to 9 pixels differ by more than 2 color levels, with or without shadows. The ones I inspected lie along one edge of the test island. An uncompensated half-pixel move differs on 2,335 pixels.
+
 ### 2026-11-04: M1.1 pixel render path (`feature/pixel-render-path`)
 
 #### Added
