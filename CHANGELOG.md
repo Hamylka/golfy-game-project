@@ -4,6 +4,20 @@ All notable progress on Iso Golf. The format follows [Keep a Changelog](https://
 
 ## [Unreleased]
 
+### 2026-11-04: M1.5 performance and the look in `Main.unity` (`feature/m1-5-performance-main-scene`)
+
+#### Added
+
+- `FrameRateCap` and `PerformanceSettings`: the game now asks for 60 fps. The 30 fps seen in the sandbox was Android's default cap, not a real cost.
+- `Docs/Measurements/m1-5/`: phone measurements, and the design for the automatic render scale, which waits for a test on a low-end phone.
+- `MainSceneTests` and `ShadowDistanceTests`, and a `LookSettingsTests` check that the depth texture stays off.
+
+#### Changed
+
+- `Main.unity` now holds the current look, copied from `Sandbox_Island`: `Course`, terrain, trees, tufts, clouds, sky, light and camera. The ten test trees stay until M4.
+- `IsoGolf_RPAsset`: the depth texture is off, by the human's decision. It was left over from the pixel pipeline, nothing reads it, and removing it took the GPU from about 9.7 ms to 5.9 ms per frame on the phone, with only sub-pixel changes along edges.
+- The 70 m shadow distance and the 15,440 triangle clouds stay, after measuring them.
+
 ### 2026-11-04: M1.4 tufted island edge and outline decision (`feature/island-tufts`)
 
 #### Added
