@@ -10,6 +10,8 @@ namespace IsoGolf.Generation
         [SerializeField] private PaletteSettings palette;
         [SerializeField] private Material landMaterial;
         [SerializeField] private Material waterMaterial;
+        [Tooltip("Optional. Trees share the land material, so they add one draw call in all.")]
+        [SerializeField] private TreeSettings trees;
 
         private readonly List<Mesh> _meshes = new List<Mesh>();
 
@@ -22,6 +24,11 @@ namespace IsoGolf.Generation
             TerrainResult result = TerrainBuilder.Build(shape, palette);
             AddMesh("Land", result.Land, landMaterial);
             AddMesh("Water", result.Water, waterMaterial);
+            if (trees != null)
+            {
+                AddMesh("Trees", TreeBuilder.Build(trees, palette, shape), landMaterial);
+            }
+
             Outline = result.Outline;
         }
 

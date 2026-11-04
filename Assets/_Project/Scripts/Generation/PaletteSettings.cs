@@ -14,6 +14,12 @@ namespace IsoGolf.Generation
         [SerializeField] private Color water = new Color32(0x4F, 0xB0, 0xB8, 0xFF);
         [SerializeField] private Color earth = new Color32(0xBF, 0x6C, 0x43, 0xFF);
 
+        [Header("Trees")]
+        [SerializeField] private Color foliageLight = new Color32(0x7E, 0x9A, 0x48, 0xFF);
+        [SerializeField] private Color foliageMid = new Color32(0x56, 0x71, 0x3A, 0xFF);
+        [SerializeField] private Color foliageDark = new Color32(0x34, 0x48, 0x2A, 0xFF);
+        [SerializeField] private Color trunk = new Color32(0x6A, 0x41, 0x28, 0xFF);
+
         public Color Rough => rough;
         public Color FairwayLight => fairwayLight;
         public Color FairwayDark => fairwayDark;
@@ -21,5 +27,9 @@ namespace IsoGolf.Generation
         public Color Sand => sand;
         public Color Water => water;
         public Color Earth => earth;
+        public Color FoliageLight => foliageLight;
+        public Color FoliageMid => foliageMid;
+        public Color FoliageDark => foliageDark;
+        public Color Trunk => trunk;
     }
 }
