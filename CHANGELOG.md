@@ -4,6 +4,12 @@ All notable progress on Iso Golf. The format follows [Keep a Changelog](https://
 
 ## [Unreleased]
 
+### 2026-11-04: Unity AI packages removed (`feature/remove-unity-ai-packages`)
+
+#### Removed
+
+- `com.unity.ai.assistant` and `com.unity.ai.inference`, with the packages they pulled in, their scripting defines (`SENTIS_ANALYTICS_ENABLED`, `APP_UI_EDITOR_ONLY`), the `com.unity.dt.app-ui` build config entry and the assistant's settings file. CoplayDev is the only Unity MCP on this project.
+
 ### 2026-11-04: Portrait and camera framing (`feature/portrait-orientation`)
 
 #### Changed
