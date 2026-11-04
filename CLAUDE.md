@@ -86,7 +86,7 @@ Do not create assets outside `Assets/_Project/` (third-party packages excepted).
 
 ## Key systems
 
-- **Camera (`Rendering`):** fixed-rotation perspective camera, rendering at native resolution with MSAA. It frames a par 3 island whole on any portrait screen, and moves along longer courses.
+- **Camera (`Rendering`):** fixed-rotation perspective camera, rendering at native resolution with MSAA. It frames a par 3 island whole on any portrait screen, and moves along longer courses. The player zooms with a pinch and pans with a two-finger drag, within the island. One finger stays reserved for the shot. Camera gestures are blocked while aiming and allowed during flight.
 - **Ball (`Gameplay`):** the flight follows a predictable bell-shaped arc computed from aim direction and power (ballistic solution), then hands over to physics for bounce and roll. The aim preview must match the real flight exactly.
 - **Ball shadow:** a separate ground-projected blob that always sits on the surface under the ball. It is essential for reading height; never remove it.
 - **Shot input (`Gameplay`):** behind an `IShotInput` interface. The gesture is **not decided yet**: implement a simple placeholder (drag-and-release, touch first) and keep it swappable.

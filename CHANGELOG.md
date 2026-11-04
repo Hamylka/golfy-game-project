@@ -4,6 +4,19 @@ All notable progress on Iso Golf. The format follows [Keep a Changelog](https://
 
 ## [Unreleased]
 
+### 2026-11-04: M1.1 camera framing and gestures (`feature/camera-framing`)
+
+#### Added
+
+- `CameraFraming`: fits an island box on any portrait screen shape with the fixed perspective camera.
+- `CameraNavigator` and `IslandCamera`: pinch to zoom around the point between the fingers and two-finger drag to pan, kept within the island. Fully zoomed out always returns to the framed view. Mouse wheel and right-drag do the same in the Editor and for WebGL later.
+- `CameraRigSettings` and its asset, for the screen fill, closest zoom and wheel step.
+- `Sandbox_Camera.unity`, with a stand-in island.
+
+#### Changed
+
+- Camera gestures are blocked while aiming and allowed during flight. M2 connects that rule to the shot; for now, gestures are always on.
+
 ### 2026-11-04: Pixel pipeline removed (`feature/remove-pixel-pipeline`)
 
 #### Changed

@@ -84,6 +84,7 @@ No photo textures, no fine normal maps.
 - Power bar: a small yellow gauge (`#E6B53A`) with a dark border, floating above the ball.
 - Aiming: a dotted white arc following the bell-shaped shot curve, with the landing point marked by a small cross or circle on the ground.
 - Shot gesture: to be defined (drag-and-release, hold-and-release…). Whatever gesture is chosen, its visual feedback is limited to the gauge and the arc.
+- Camera gestures: pinch to zoom and two-finger drag to pan, both within the island. Blocked while aiming, allowed during flight.
 - Typography: a small, readable font in a warm dark color (`#3A2E25`) on the white background.
 - Transitions: fade to white between levels, or the next island "dropping" into place.
 
