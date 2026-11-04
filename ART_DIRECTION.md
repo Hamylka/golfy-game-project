@@ -5,7 +5,7 @@
 
 ## 1. Intent
 
-Each level is a **floating miniature island** set on a white background, like a scale model seen from above. Mood: **Mediterranean summer, calm, serene solitude, gentle nostalgia**. The player should feel almost alone on a peaceful island: a place inhabited by nature and by a few traces of human presence, but never by a crowd. Not a competitive arena.
+Each level is a **floating miniature island** in a light blue sky, a little above the clouds, like a scale model seen from above. Mood: **Mediterranean summer, calm, serene solitude, gentle nostalgia**. The player should feel almost alone on a peaceful island: a place inhabited by nature and by a few traces of human presence, but never by a crowd. Not a competitive arena.
 
 Keywords: *low poly, faceted, diorama, scale model, peaceful island, solitude, summer afternoon, warm natural tones*.
 
@@ -25,7 +25,8 @@ Clean, full-resolution real-time 3D, chosen on the phone from a look test (`feat
 
 | Role | Shades (light → dark) |
 |---|---|
-| Background | `#FFFFFF` → gradient to `#E4E4E4` at the bottom of the screen |
+| Sky (background) | `#8FC7EA` at the top of the screen → `#CFE8F7` at the bottom |
+| Clouds | `#FFFFFF` on sunward facets → `#D6DEED` on shaded facets |
 | Grass / vegetation | `#A7B86A` `#7E9A48` `#56713A` `#34482A` |
 | Clay (warm ground) | `#D98A5C` `#BF6C43` `#9C5236` |
 | Sand / gravel | `#E8D9B5` `#D6C196` `#B39E74` |
@@ -62,7 +63,8 @@ No photo textures, no fine normal maps.
 
 ## 6. Diorama shape
 
-- Each scene is an **island resting on white void**, with a short uneven band of earth visible under its edge. **Open:** whether islands should float a little above clouds instead, to add a feeling of lightness, to test on the phone against the white gradient.
+- Each scene is an **island floating a little above the clouds**, with a short uneven band of earth visible under its edge. Chosen on the phone and in Play Mode over a white gradient, a continuous cloud sea (which read as ice) and a soft bank fixed to the camera, for the feeling of lightness and the depth clouds give when the camera moves.
+- Clouds: scattered clusters of faceted blobs, well below the island, with the sky showing between them. Each facet takes one pale, baked tone, never lit shading, which turns them into grey boulders. They drift very slowly across the screen.
 - Portrait and the camera angle favor a **long, narrow island**: about 34 × 10 m for the par 3 in the look test, and longer for higher pars.
 - The outline is irregular, and its grass edge is a **border of small prismatic tufts**: never a clean geometric edge.
 - Vegetation: trees with **cauliflower foliage** (clusters of low-detail faceted blobs), short trunk. Cypresses as 6- to 8-sided cones. Round bushes.
@@ -86,7 +88,7 @@ No photo textures, no fine normal maps.
 - Putting: on the green there is no arc and no landing marker. The preview stays on the ground. **Open:** its exact form, to settle in the M2 shot prototype.
 - Shot gesture: a hold and drag that starts on the ball. Its visual feedback is limited to the gauge and the arc.
 - Camera gestures: one-finger drag to move around and pinch to zoom, both within the island. Blocked while aiming, allowed during flight.
-- Typography: a small, readable font in a warm dark color (`#3A2E25`) on the white background.
+- Typography: a small, readable font in a warm dark color (`#3A2E25`) over the sky.
 - Transitions: fade to white between levels, or the next island "dropping" into place.
 
 ## 9. Golf adaptation
@@ -146,7 +148,7 @@ Same visual grammar, different moods. Useful for varying courses or testing a mo
 
 **B. Scottish links**: cool, desaturated palette (grey-greens, pale sand, misty white sky), dunes, visible wind (animated grass, taut flag), dark stone walls, light rain.
 
-**C. Night golf**: midnight-blue background instead of white, glowing balls and holes, street lamps casting circles of warm light, fireflies.
+**C. Night golf**: midnight-blue background instead of the blue sky, glowing balls and holes, street lamps casting circles of warm light, fireflies.
 
 **D. Seasons**: the same course in several versions (blooming spring, Mediterranean summer, russet autumn, snowy winter) by swapping only the palette: very cheap to produce.
 

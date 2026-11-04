@@ -4,6 +4,22 @@ All notable progress on Iso Golf. The format follows [Keep a Changelog](https://
 
 ## [Unreleased]
 
+### 2026-11-04: Blue sky and clouds (`feature/floating-clouds`)
+
+#### Added
+
+- `CloudBuilder`, `CloudSettings` and `CloudView`: seeded faceted clouds below the island, in one mesh with one draw call, drifting very slowly. `Sandbox_Island` uses them.
+- `CloudUnlit`, an Unlit Shader Graph using vertex colors, and the `Clouds` material.
+- `CameraFraming.GroundFootprint` and `IslandCamera.VisibleGround`, so clouds cover exactly what the framed view can see.
+- `CloudBuilderTests`.
+
+#### Changed
+
+- The island now floats in a light blue sky above clouds instead of on a white gradient, chosen from side-by-side options on the phone and in Play Mode. This closes the open question in `ART_DIRECTION.md`.
+- `BackgroundGradient` has a Top Color property, which was fixed to white inside the graph.
+- `PaletteSettings` has cloud colors, and `LookSettingsTests` checks the sky and clouds instead of the grey gradient.
+- `TreeBuilder` shares a new `Icosahedron` class with the clouds.
+
 ### 2026-11-04: M1.3 materials and lighting (`feature/materials-lighting`)
 
 #### Added
