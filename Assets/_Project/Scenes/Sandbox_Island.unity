@@ -308,6 +308,7 @@ MonoBehaviour:
   landMaterial: {fileID: 2100000, guid: ad4e2044caef9814f9c30aa2c03bd228, type: 2}
   waterMaterial: {fileID: 2100000, guid: ad4e2044caef9814f9c30aa2c03bd228, type: 2}
   trees: {fileID: 11400000, guid: a0a2d4f9453a1334faaf8fc2530f678e, type: 2}
+  tufts: {fileID: 11400000, guid: 43a8689f55261d446ba14ec013294c8d, type: 2}
 --- !u!4 &501904562
 Transform:
   m_ObjectHideFlags: 0

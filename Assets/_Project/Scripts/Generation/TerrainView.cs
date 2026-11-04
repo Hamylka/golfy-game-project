@@ -13,6 +13,9 @@ namespace IsoGolf.Generation
         [Tooltip("Optional. Trees share the land material, so they add one draw call in all.")]
         [SerializeField] private TreeSettings trees;
 
+        [Tooltip("Optional. The grass border along the island edge. Shares the land material too.")]
+        [SerializeField] private TuftSettings tufts;
+
         private readonly List<Mesh> _meshes = new List<Mesh>();
 
         /// <summary>Points along the island edge, for framing it.</summary>
@@ -29,6 +32,15 @@ namespace IsoGolf.Generation
                 AddMesh("Trees", TreeBuilder.Build(trees, palette, shape), landMaterial);
             }
 
+            if (tufts != null)
+            {
+                MeshRenderer renderer = AddMesh("Tufts", TuftBuilder.Build(tufts, palette, result.Edge), landMaterial);
+                if (renderer != null && !tufts.CastShadows)
+                {
+                    renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+                }
+            }
+
             Outline = result.Outline;
         }
 
@@ -37,11 +49,11 @@ namespace IsoGolf.Generation
             Clear();
         }
 
-        private void AddMesh(string meshName, TerrainMeshData data, Material material)
+        private MeshRenderer AddMesh(string meshName, TerrainMeshData data, Material material)
         {
             if (data.TriangleCount == 0)
             {
-                return;
+                return null;
             }
 
             var indices = new int[data.Positions.Count];
@@ -66,7 +78,9 @@ namespace IsoGolf.Generation
             var child = new GameObject(meshName);
             child.transform.SetParent(transform, false);
             child.AddComponent<MeshFilter>().sharedMesh = mesh;
-            child.AddComponent<MeshRenderer>().sharedMaterial = material;
+            var renderer = child.AddComponent<MeshRenderer>();
+            renderer.sharedMaterial = material;
+            return renderer;
         }
 
         private void Clear()
