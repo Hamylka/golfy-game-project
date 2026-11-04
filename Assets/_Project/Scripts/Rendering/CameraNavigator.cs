@@ -56,12 +56,23 @@ namespace IsoGolf.Rendering
             }
         }
 
-        /// <summary>Moves the view so the ground under one viewport point ends up under another.</summary>
-        public void Pan(Vector2 fromViewport, Vector2 toViewport)
+        /// <summary>
+        /// Moves the view so the ground under one viewport point ends up under another. Returns how far the
+        /// camera really moved once limits are applied.
+        /// </summary>
+        public Vector3 Pan(Vector2 fromViewport, Vector2 toViewport)
         {
             Vector3 grabbed = _view.OnPlane(Position, fromViewport, _groundHeight);
             Vector3 under = _view.OnPlane(Position, toViewport, _groundHeight);
-            Position = Clamp(Position + (grabbed - under));
+            return Move(grabbed - under);
+        }
+
+        /// <summary>Moves the camera along the ground, within limits. Returns how far it really moved.</summary>
+        public Vector3 Move(Vector3 displacement)
+        {
+            Vector3 before = Position;
+            Position = Clamp(Position + displacement);
+            return Position - before;
         }
 
         /// <summary>
