@@ -101,7 +101,7 @@ No photo textures, no fine normal maps: material comes from noise and shading.
 - Progression through **procedurally generated levels**, each one an island diorama.
 - Constant play axis: start in the **south-west**, finish in the **north-east**. On screen: from **bottom-left to top-right**, along a diagonal of the isometric grid.
 - The start is always in the lower-left part of the island, the green in the upper-right part: the eye reads the level in the direction of the shot.
-- The screen is forced portrait, so the diagonal play axis does not fit in one view: each level opens on a brief wide view of the island, then the camera pans to follow the ball.
+- The screen is forced portrait, so the diagonal play axis does not fit in one view: each level opens with a slow pan along the course from the hole back to the tee, then the camera follows the ball. No animated zoom, because changing the pixel density would make the image shimmer.
 - Between levels, the next island appears to the north-east (camera slide or fade to white).
 
 ### Procedural kit

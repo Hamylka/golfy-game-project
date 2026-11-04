@@ -53,7 +53,7 @@ The server is launched through `uvx`. On this machine uv's default Python is pin
 - **Iso compass:** map **north-east = screen top-right = world +X**; map north-west = screen top-left = world +Z.
 - **Play axis:** the tee is placed toward world −X, the hole toward world +X. A shot travels from screen bottom-left to top-right.
 - **Camera:** orthographic, rotation (30, 45, 0). It never rotates during gameplay. These conventions take precedence over any looser camera wording in `ART_DIRECTION.md`.
-- **Screen:** forced portrait. The play axis runs at a 2:1 slope, so it is mostly horizontal on a narrow screen and the whole course does not fit in one view. Each level opens on a brief wide view of the island, then the camera pans to follow the ball, always keeping the same rotation.
+- **Screen:** forced portrait. The play axis runs at a 2:1 slope, so it is mostly horizontal on a narrow screen and the whole course does not fit in one view. Each level opens with a slow pan along the course from the hole back to the tee, then the camera follows the ball. It never rotates or zooms during play, because changing the pixel density would make the image shimmer.
 
 ### Code
 
