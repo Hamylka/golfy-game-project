@@ -17,7 +17,7 @@ You **plan, implement, test and report honestly**:
 
 ## Project overview
 
-A simplified **isometric 3D golf game** in Unity. Each level is a procedurally generated floating island-diorama with a pixel-art look. The ball is the player: there are no clubs, no avatar and almost no characters. The mood is peaceful solitude on a Mediterranean island.
+A simplified **3D golf game** in Unity. Each level is a procedurally generated floating island-diorama with a low poly look. The ball is the player: there are no clubs, no avatar and almost no characters. The mood is peaceful solitude on a Mediterranean island.
 
 - **Art direction:** `ART_DIRECTION.md` is the single source of truth for visuals (palette, lighting, rendering pipeline, UI, variants). Never contradict it; if a task seems to require it, stop and ask.
 - **Core loop:** aim → set power → shoot the ball in a bell-shaped arc → land, bounce, roll → reach the hole → next island.
@@ -29,7 +29,7 @@ A simplified **isometric 3D golf game** in Unity. Each level is a procedurally g
 - **Target platform: Android first, forced portrait.** Touch is the primary input and rendering must fit a mobile budget. **WebGL** comes later, once the core game works, so avoid choices that would block it (threads, compute shaders) unless agreed first.
 - **Unity MCP** (CoplayDev, https://github.com/CoplayDev/unity-mcp), installed through Package Manager from the git URL. It bridges Claude Code and the running Unity Editor. This is the only Unity MCP to use on this project.
 - **New Input System** (no legacy `Input` class).
-- **Shader Graph** for materials, a URP **Renderer Feature** for the pixelation pass.
+- **Shader Graph** for materials.
 
 ## Working with Unity MCP
 
@@ -50,10 +50,10 @@ The server is launched through `uvx`. On this machine uv's default Python is pin
 ### World and camera
 
 - **Units:** 1 unit = 1 metre. Y is up.
-- **Iso compass:** map **north-east = screen top-right = world +X**; map north-west = screen top-left = world +Z.
-- **Play axis:** the tee is placed toward world −X, the hole toward world +X. A shot travels from screen bottom-left to top-right.
-- **Camera:** orthographic, rotation (30, 45, 0). It never rotates during gameplay. These conventions take precedence over any looser camera wording in `ART_DIRECTION.md`.
-- **Screen:** forced portrait. The play axis runs at a 2:1 slope, so it is mostly horizontal on a narrow screen and the whole course does not fit in one view. Each level opens with a slow pan along the course from the hole back to the tee, then the camera follows the ball. It never rotates or zooms during play, because changing the pixel density would make the image shimmer.
+- **Compass:** map **north-east = world +X**, which the camera shows as up the screen with a slight lean to the right; map north-west = world +Z, shown toward the left of the screen.
+- **Play axis:** the tee is placed toward world −X, the hole toward world +X. A shot travels up the screen, from bottom-left to top-right.
+- **Camera:** perspective, 45° vertical field of view, rotation about (40, 80, 0). It never rotates during gameplay. These conventions take precedence over any looser camera wording in `ART_DIRECTION.md`.
+- **Screen:** forced portrait, with long, narrow islands. Par 3 courses fit entirely in one view. Longer courses (par 4, par 5, possibly more) are only partly visible, and the camera moves along the course during play without rotating.
 
 ### Code
 
@@ -71,12 +71,12 @@ The server is launched through `uvx`. On this machine uv's default Python is pin
 Assets/_Project/
   Art/          Materials, Shaders (Shader Graph), Textures, LUTs
   Prefabs/      Props, island pieces, ball, UI
-  Rendering/    Renderer Feature, pixel camera, render textures
+  Rendering/    URP asset and renderers
   Scenes/       Main.unity, Sandbox_*.unity
   Scripts/
     Gameplay/   Ball, shot, hole, level flow
     Generation/ Island shape, surfaces, prop placement
-    Rendering/  Pixel-perfect camera, post-process
+    Rendering/  Camera, rendering helpers
     UI/         Power gauge, aim arc, transitions
   Settings/     ScriptableObject instances
   Tests/        EditMode and PlayMode tests
@@ -86,11 +86,11 @@ Do not create assets outside `Assets/_Project/` (third-party packages excepted).
 
 ## Key systems
 
-- **Pixel camera (`Rendering`):** low-res RenderTexture (start at 270×480, portrait), Point filtering, integer upscale, camera position snapped to the world-space texel grid with sub-pixel offset compensation for smooth panning.
+- **Camera (`Rendering`):** fixed-rotation perspective camera, rendering at native resolution with MSAA. It frames a par 3 island whole on any portrait screen, and moves along longer courses.
 - **Ball (`Gameplay`):** the flight follows a predictable bell-shaped arc computed from aim direction and power (ballistic solution), then hands over to physics for bounce and roll. The aim preview must match the real flight exactly.
 - **Ball shadow:** a separate ground-projected blob that always sits on the surface under the ball. It is essential for reading height; never remove it.
 - **Shot input (`Gameplay`):** behind an `IShotInput` interface. The gesture is **not decided yet**: implement a simple placeholder (drag-and-release, touch first) and keep it swappable.
-- **Aim arc and power gauge (`UI`):** dotted pixel arc following the shot curve, landing marker on the ground, small yellow gauge above the ball. Nothing else on screen during a shot.
+- **Aim arc and power gauge (`UI`):** dotted arc following the shot curve, landing marker on the ground, small yellow gauge above the ball. Nothing else on screen during a shot.
 - **Level generator (`Generation`):** seed → island outline (noise) → surfaces (fairway, green, rough, bunkers, water) → props placed by rules (clusters, low density, never on the main shot line) → tee at −X, hole at +X. Follow the *Procedural kit* section of `ART_DIRECTION.md`.
 - **Level flow (`Gameplay`):** hole reached → transition → next seed. The next island appears toward +X.
 
@@ -105,16 +105,16 @@ Do not create assets outside `Assets/_Project/` (third-party packages excepted).
 
 ## Milestones
 
-1. **Pixel pipeline sandbox:** pixel camera, snapping, toon ramp, outlines, dithering, on a hand-built test island. Validate there is no shimmer while panning.
+1. **Low poly pipeline sandbox:** camera framing, faceted terrain with clean surface borders, lighting and shadows, on a test island. Validate the look and performance on the phone.
 2. **Shot prototype:** ball, arc flight, shadow, aim preview, power gauge, placeholder input.
-3. **Island generator:** seeded outline, grass fringe, surfaces, tee and hole placement.
+3. **Island generator:** seeded outline, tufted grass edge, surfaces, tee and hole placement.
 4. **Props and art pass:** modular kit, placement rules, ambient life (foliage, flag, water, birds).
 5. **Progression:** level flow, transitions, seed sequence.
 
 ## Don'ts
 
 - No clubs, golfer avatar, crowds or spectators.
-- No perspective camera, no camera rotation, no bloom, no depth of field.
+- No pixelation, no camera rotation, no bloom, no depth of field.
 - No pure black, no neon colors (see palette in `ART_DIRECTION.md`).
 - No hand-editing of serialized Unity YAML.
 - No new packages or third-party assets without asking.
@@ -132,10 +132,11 @@ through a pull request that they review.
 - One PR = one small, focused task, with a diff readable in one sitting
 - Each PR description includes: what changed and why; the files touched and
   the role of each; key design decisions and rejected alternatives; how it
-  was tested; what the human should check; anything uncertain
+  was tested; what the human should check; anything uncertain. A PR that changes
+  rendering also includes a few screenshots, from the phone when possible
 - Explain non-obvious code: short comments on the why, not the what. For a
   new system, add a short "how it works" paragraph to the PR.
-- Teaching mode: for critical code (pixel camera snapping, ballistic solution,
+- Teaching mode: for critical code (camera framing, ballistic solution,
   seeded generation), point out in the PR the 2 or 3 passages the human should read first. Answer
   the human's "why this choice rather than another?" questions before the
   merge, with the alternatives and their trade-offs.
