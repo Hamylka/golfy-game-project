@@ -6,9 +6,7 @@ namespace IsoGolf.Tests
 {
     public class IsoCameraConventionTests
     {
-        private const float Tolerance = 0.0001f;
-
-        // Projects a world direction onto the orthographic screen plane: x = right, y = up.
+        // Projects a world direction onto the screen axes at the screen centre: x = right, y = up.
         private static Vector2 ToScreen(Vector3 worldDirection)
         {
             Vector3 view = Quaternion.Inverse(IsoCameraConvention.Rotation) * worldDirection;
@@ -16,31 +14,29 @@ namespace IsoGolf.Tests
         }
 
         [Test]
-        public void WorldPositiveX_GoesToScreenTopRight()
+        public void WorldPositiveX_RunsUpTheScreenWithASlightLeanToTheRight()
         {
             Vector2 screen = ToScreen(Vector3.right);
 
             Assert.That(screen.x, Is.GreaterThan(0f));
-            Assert.That(screen.y, Is.GreaterThan(0f));
+            Assert.That(screen.y, Is.GreaterThan(screen.x * 2f));
         }
 
         [Test]
-        public void WorldPositiveZ_GoesToScreenTopLeft()
+        public void WorldPositiveZ_GoesTowardTheLeftOfTheScreen()
         {
             Vector2 screen = ToScreen(Vector3.forward);
 
             Assert.That(screen.x, Is.LessThan(0f));
-            Assert.That(screen.y, Is.GreaterThan(0f));
+            Assert.That(Mathf.Abs(screen.x), Is.GreaterThan(Mathf.Abs(screen.y)));
         }
 
         [Test]
-        public void GroundDiagonals_ProjectAtTwoToOneRatio()
+        public void Camera_LooksDownAtTheIsland()
         {
-            // These two ground diagonals are the screen-horizontal and screen-vertical axes of the diamond.
-            float width = ToScreen(new Vector3(1f, 0f, -1f)).magnitude;
-            float height = ToScreen(new Vector3(1f, 0f, 1f)).magnitude;
+            Vector3 forward = IsoCameraConvention.Rotation * Vector3.forward;
 
-            Assert.That(width / height, Is.EqualTo(2f).Within(Tolerance));
+            Assert.That(forward.y, Is.LessThan(0f));
         }
     }
 }

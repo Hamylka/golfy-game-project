@@ -1,8 +1,4 @@
 {
     "name": "IsoGolf.Rendering",
-    "rootNamespace": "IsoGolf.Rendering",
-    "references": [
-        "Unity.RenderPipelines.Core.Runtime",
-        "Unity.RenderPipelines.Universal.Runtime"
-    ]
+    "rootNamespace": "IsoGolf.Rendering"
 }
