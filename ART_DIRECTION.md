@@ -14,7 +14,7 @@ Keywords: *isometric pixel art, diorama, scale model, peaceful island, solitude,
 The reference style is pixel art. We achieve it in real-time 3D:
 
 - **Orthographic camera**, 2:1 isometric angle (X rotation ≈ 30°, Y = 45°), fixed view facing south-east. No perspective.
-- **Low-resolution rendering** into a RenderTexture (e.g. 480×270 or 640×360), **Point** filtering, integer upscale (×3, ×4) to the screen.
+- **Low-resolution rendering** into a RenderTexture in portrait (start at 270×480), **Point** filtering, integer upscale (×3, ×4) to the screen.
 - **Pixel-perfect snapping**: the camera position is rounded to the size of one world-space texel to prevent shimmering during movement. Compensate the residual offset during upscale to keep panning smooth.
 - **No anti-aliasing**. Edges stay crisp and jagged.
 - Pipeline: **URP**, a Renderer Feature for the pixelation pass, Shader Graph for materials.
@@ -101,6 +101,7 @@ No photo textures, no fine normal maps: material comes from noise and shading.
 - Progression through **procedurally generated levels**, each one an island diorama.
 - Constant play axis: start in the **south-west**, finish in the **north-east**. On screen: from **bottom-left to top-right**, along a diagonal of the isometric grid.
 - The start is always in the lower-left part of the island, the green in the upper-right part: the eye reads the level in the direction of the shot.
+- The screen is forced portrait, so the diagonal play axis does not fit in one view: each level opens on a brief wide view of the island, then the camera pans to follow the ball.
 - Between levels, the next island appears to the north-east (camera slide or fade to white).
 
 ### Procedural kit
@@ -151,7 +152,7 @@ Same visual grammar, different moods. Useful for varying courses or testing a mo
 
 **G. Pixel low-poly**: a hybrid between the pixel feel of the references and low-poly. Palette, lighting, white background and colored outlines stay unchanged: only the material evolves.
 - Assumed low-poly geometry: visible facets, **flat normals** (per-face flat shading), terrain with gentle triangulated undulations.
-- Pixelation kept but less aggressive (e.g. 960×540 render instead of 480×270), so each facet stays readable.
+- Pixelation kept but less aggressive (e.g. 540×960 render instead of 270×480), so each facet stays readable.
 - Shading: each facet takes one step of the toon ramp; dithering is limited to the edges of cast shadows.
 - Lighter surface noise: facets replace part of the grain. A few dots remain on sand and gravel.
 - Trees: clusters of low-detail icospheres, cypresses as 6–8-sided cones.

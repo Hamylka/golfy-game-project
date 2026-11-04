@@ -26,7 +26,7 @@ A simplified **isometric 3D golf game** in Unity. Each level is a procedurally g
 ## Tech stack
 
 - **Unity 6** (exact version: see `ProjectSettings/ProjectVersion.txt`), **URP**.
-- **Target platform: Android first.** Touch is the primary input and rendering must fit a mobile budget. **WebGL** comes later, once the core game works, so avoid choices that would block it (threads, compute shaders) unless agreed first.
+- **Target platform: Android first, forced portrait.** Touch is the primary input and rendering must fit a mobile budget. **WebGL** comes later, once the core game works, so avoid choices that would block it (threads, compute shaders) unless agreed first.
 - **Unity MCP** (CoplayDev, https://github.com/CoplayDev/unity-mcp), installed through Package Manager from the git URL. It bridges Claude Code and the running Unity Editor. This is the only Unity MCP to use on this project.
 - **New Input System** (no legacy `Input` class).
 - **Shader Graph** for materials, a URP **Renderer Feature** for the pixelation pass.
@@ -53,6 +53,7 @@ The server is launched through `uvx`. On this machine uv's default Python is pin
 - **Iso compass:** map **north-east = screen top-right = world +X**; map north-west = screen top-left = world +Z.
 - **Play axis:** the tee is placed toward world −X, the hole toward world +X. A shot travels from screen bottom-left to top-right.
 - **Camera:** orthographic, rotation (30, 45, 0). It never rotates during gameplay. These conventions take precedence over any looser camera wording in `ART_DIRECTION.md`.
+- **Screen:** forced portrait. The play axis runs at a 2:1 slope, so it is mostly horizontal on a narrow screen and the whole course does not fit in one view. Each level opens on a brief wide view of the island, then the camera pans to follow the ball, always keeping the same rotation.
 
 ### Code
 
@@ -85,7 +86,7 @@ Do not create assets outside `Assets/_Project/` (third-party packages excepted).
 
 ## Key systems
 
-- **Pixel camera (`Rendering`):** low-res RenderTexture (start at 480×270), Point filtering, integer upscale, camera position snapped to the world-space texel grid with sub-pixel offset compensation for smooth panning.
+- **Pixel camera (`Rendering`):** low-res RenderTexture (start at 270×480, portrait), Point filtering, integer upscale, camera position snapped to the world-space texel grid with sub-pixel offset compensation for smooth panning.
 - **Ball (`Gameplay`):** the flight follows a predictable bell-shaped arc computed from aim direction and power (ballistic solution), then hands over to physics for bounce and roll. The aim preview must match the real flight exactly.
 - **Ball shadow:** a separate ground-projected blob that always sits on the surface under the ball. It is essential for reading height; never remove it.
 - **Shot input (`Gameplay`):** behind an `IShotInput` interface. The gesture is **not decided yet**: implement a simple placeholder (drag-and-release, touch first) and keep it swappable.
