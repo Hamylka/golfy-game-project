@@ -86,10 +86,10 @@ Do not create assets outside `Assets/_Project/` (third-party packages excepted).
 
 ## Key systems
 
-- **Camera (`Rendering`):** fixed-rotation perspective camera, rendering at native resolution with MSAA. It frames a par 3 island whole on any portrait screen, and moves along longer courses. The player zooms with a pinch and pans with a two-finger drag, within the island. One finger stays reserved for the shot. Camera gestures are blocked while aiming and allowed during flight.
+- **Camera (`Rendering`):** fixed-rotation perspective camera, rendering at native resolution with MSAA. It frames a par 3 island whole on any portrait screen, and moves along longer courses. The player moves around with a one-finger drag and zooms with a pinch, within the island. A hold and drag that starts on the ball begins the shot instead. Camera gestures are blocked while aiming and allowed during flight.
 - **Ball (`Gameplay`):** the flight follows a predictable bell-shaped arc computed from aim direction and power (ballistic solution), then hands over to physics for bounce and roll. The aim preview must match the real flight exactly.
 - **Ball shadow:** a separate ground-projected blob that always sits on the surface under the ball. It is essential for reading height; never remove it.
-- **Shot input (`Gameplay`):** behind an `IShotInput` interface. The gesture is **not decided yet**: implement a simple placeholder (drag-and-release, touch first) and keep it swappable.
+- **Shot input (`Gameplay`):** behind an `IShotInput` interface. The gesture starts with a **hold and drag on the ball**; touches elsewhere move the camera. Keep it swappable.
 - **Aim arc and power gauge (`UI`):** dotted arc following the shot curve, landing marker on the ground, small yellow gauge above the ball. Nothing else on screen during a shot.
 - **Level generator (`Generation`):** seed → island outline (noise) → surfaces (fairway, green, rough, bunkers, water) → props placed by rules (clusters, low density, never on the main shot line) → tee at −X, hole at +X. Follow the *Procedural kit* section of `ART_DIRECTION.md`.
 - **Level flow (`Gameplay`):** hole reached → transition → next seed. The next island appears toward +X.
