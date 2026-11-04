@@ -1,0 +1,11 @@
+{
+    "name": "IsoGolf.LookTest.Editor",
+    "rootNamespace": "IsoGolf.LookTest.Editor",
+    "references": [
+        "IsoGolf.LookTest",
+        "Unity.RenderPipelines.Universal.Runtime"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ]
+}

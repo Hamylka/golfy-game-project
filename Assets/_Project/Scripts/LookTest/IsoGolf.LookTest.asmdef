@@ -1,0 +1,7 @@
+{
+    "name": "IsoGolf.LookTest",
+    "rootNamespace": "IsoGolf.LookTest",
+    "references": [
+        "Unity.InputSystem"
+    ]
+}
