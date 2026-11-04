@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.InputSystem.Controls;
@@ -5,7 +6,7 @@ using UnityEngine.InputSystem.Controls;
 namespace IsoGolf.Rendering
 {
     /// <summary>
-    /// Frames the island and applies the player's camera gestures. One finger is left alone for the shot.
+    /// Frames the island and applies the player's camera gestures: drag to move around, pinch to zoom.
     /// </summary>
     [DisallowMultipleComponent]
     [RequireComponent(typeof(Camera))]
@@ -13,21 +14,24 @@ namespace IsoGolf.Rendering
     {
         [SerializeField] private CameraRigSettings settings;
 
-        [Tooltip("The box to frame, usually the island. Its bottom is treated as the ground for gestures unless set below.")]
+        [Tooltip("The box to frame, usually the island.")]
         [SerializeField] private Bounds island = new Bounds(Vector3.zero, new Vector3(34f, 4f, 10f));
 
         [SerializeField] private float groundHeight;
 
         private Camera _camera;
         private CameraNavigator _navigator;
+        private CameraGestureRouter _router;
         private Vector2Int _screenSize;
-        private Vector2 _previousA;
-        private Vector2 _previousB;
-        private bool _gestureActive;
-        private Vector2 _previousMouse;
 
         /// <summary>Turned off while aiming (from M2), so gestures can't disturb a shot.</summary>
         public bool GesturesEnabled { get; set; } = true;
+
+        /// <summary>
+        /// Asked when a first finger lands, in viewport coordinates from -1 to 1. Returning true keeps
+        /// the camera out of that touch. The ball uses this, so dragging on it starts a shot instead.
+        /// </summary>
+        public Func<Vector2, bool> TouchClaim { get; set; }
 
         public CameraNavigator Navigator => _navigator;
 
@@ -47,8 +51,11 @@ namespace IsoGolf.Rendering
                 Rebuild();
             }
 
-            ReadTouches();
-            ReadMouse();
+            if (!ReadTouches())
+            {
+                ReadMouse();
+            }
+
             transform.position = _navigator.Position;
         }
 
@@ -60,16 +67,17 @@ namespace IsoGolf.Rendering
             var limits = new Rect(island.min.x, island.min.z, island.size.x, island.size.z);
 
             _navigator = new CameraNavigator(home, view, limits, groundHeight, settings.ClosestZoom);
-            _gestureActive = false;
+            _router = new CameraGestureRouter(_navigator);
             transform.position = home;
         }
 
-        private void ReadTouches()
+        /// <summary>Returns true if the screen is being touched, so the mouse is ignored this frame.</summary>
+        private bool ReadTouches()
         {
             Touchscreen touchscreen = Touchscreen.current;
             if (touchscreen == null)
             {
-                return;
+                return false;
             }
 
             TouchControl first = null;
@@ -93,47 +101,34 @@ namespace IsoGolf.Rendering
                 }
             }
 
-            // Exactly two fingers. A third finger or a lifted one ends the gesture instead of making the view jump.
-            if (pressed != 2 || !GesturesEnabled)
+            if (pressed == 0)
             {
-                _gestureActive = false;
-                return;
+                _router.Update(0, default, default, GesturesEnabled, TouchClaim);
+                return false;
             }
 
             Vector2 a = ToViewport(first.position.ReadValue());
-            Vector2 b = ToViewport(second.position.ReadValue());
-
-            if (_gestureActive)
-            {
-                _navigator.ApplyGesture(_previousA, _previousB, a, b);
-            }
-
-            _previousA = a;
-            _previousB = b;
-            _gestureActive = true;
+            Vector2 b = second != null ? ToViewport(second.position.ReadValue()) : default;
+            _router.Update(pressed, a, b, GesturesEnabled, TouchClaim);
+            return true;
         }
 
         private void ReadMouse()
         {
             Mouse mouse = Mouse.current;
-            if (mouse == null || !GesturesEnabled)
+            if (mouse == null)
             {
                 return;
             }
 
             Vector2 position = ToViewport(mouse.position.ReadValue());
+            _router.Update(mouse.leftButton.isPressed ? 1 : 0, position, default, GesturesEnabled, TouchClaim);
+
             float scroll = mouse.scroll.ReadValue().y;
-            if (!Mathf.Approximately(scroll, 0f))
+            if (GesturesEnabled && !Mathf.Approximately(scroll, 0f))
             {
                 _navigator.ZoomAround(position, scroll > 0f ? 1f - settings.WheelZoomStep : 1f + settings.WheelZoomStep);
             }
-
-            if (mouse.rightButton.isPressed)
-            {
-                _navigator.Pan(_previousMouse, position);
-            }
-
-            _previousMouse = position;
         }
 
         private Vector2 ToViewport(Vector2 screenPosition)
