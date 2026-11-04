@@ -2,6 +2,7 @@
     "name": "IsoGolf.Rendering",
     "rootNamespace": "IsoGolf.Rendering",
     "references": [
+        "Unity.InputSystem",
         "Unity.RenderPipelines.Core.Runtime",
         "Unity.RenderPipelines.Universal.Runtime"
     ]
