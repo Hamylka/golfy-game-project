@@ -65,6 +65,8 @@ No photo textures, no fine normal maps.
 
 - Each scene is an **island floating a little above the clouds**, with a short uneven band of earth visible under its edge. Chosen on the phone and in Play Mode over a white gradient, a continuous cloud sea (which read as ice) and a soft bank fixed to the camera, for the feeling of lightness and the depth clouds give when the camera moves.
 - Clouds: scattered clusters of faceted blobs, well below the island, with the sky showing between them. Each facet takes one pale, baked tone, never lit shading, which turns them into grey boulders. They drift very slowly across the screen.
+- The whole course **floats very gently up and down**, about 0.15 m each way over 7 seconds, against clouds that stay at their own height. All its islands move together. The motion is only visual and never affects the ball.
+- A course may have **gaps**: separate islands that still belong to one course. **Open:** how often, and what happens to a ball that lands in a gap, to settle in the M3 plan.
 - Portrait and the camera angle favor a **long, narrow island**: about 34 × 10 m for the par 3 in the look test, and longer for higher pars.
 - The outline is irregular, and its grass edge is a **border of small prismatic tufts**: never a clean geometric edge.
 - Vegetation: trees with **cauliflower foliage** (clusters of low-detail faceted blobs), short trunk. Cypresses as 6- to 8-sided cones. Round bushes.
