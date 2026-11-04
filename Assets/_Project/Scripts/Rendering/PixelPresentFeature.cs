@@ -50,7 +50,7 @@ namespace IsoGolf.Rendering
                 var resources = frameData.Get<UniversalResourceData>();
 
                 Vector2 scale = _source.Frame.UvScale;
-                Vector2 offset = _source.Frame.UvOffset;
+                Vector2 offset = _source.PresentUvOffset;
 
                 // Render textures and the back buffer use opposite vertical conventions on
                 // Direct3D, Metal and Vulkan, but the same one on OpenGL ES.

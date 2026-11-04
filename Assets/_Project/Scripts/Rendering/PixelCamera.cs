@@ -17,8 +17,24 @@ namespace IsoGolf.Rendering
         private RenderTexture _target;
         private RTHandle _targetHandle;
         private Vector2Int _screenSize;
+        private Vector3 _requestedPosition;
 
         public PixelFrame Frame { get; private set; }
+
+        public int PixelsPerUnit => settings.PixelsPerUnit;
+
+        /// <summary>Texture offset for the upscale this frame, including the sub-pixel shift.</summary>
+        public Vector2 PresentUvOffset { get; private set; }
+
+        /// <summary>
+        /// Where the camera should appear to be. The transform itself only ever holds the snapped
+        /// position, so anything moving the camera must go through here.
+        /// </summary>
+        public Vector3 Position
+        {
+            get => _requestedPosition;
+            set => _requestedPosition = value;
+        }
 
         /// <summary>The Blitter draws textures through an RTHandle.</summary>
         public RTHandle TargetHandle => _targetHandle;
@@ -29,7 +45,9 @@ namespace IsoGolf.Rendering
         {
             _camera = GetComponent<Camera>();
             transform.rotation = IsoCameraConvention.Rotation;
+            _requestedPosition = transform.position;
             Rebuild();
+            ApplySnap();
         }
 
         private void OnDisable()
@@ -44,6 +62,19 @@ namespace IsoGolf.Rendering
             {
                 Rebuild();
             }
+        }
+
+        private void LateUpdate()
+        {
+            // Late, so a camera moved in Update is snapped once, right before rendering.
+            ApplySnap();
+        }
+
+        private void ApplySnap()
+        {
+            PixelSnap snap = PixelGrid.Snap(_requestedPosition, transform.rotation, settings.PixelsPerUnit);
+            transform.position = snap.Position;
+            PresentUvOffset = PixelGrid.PresentOffset(Frame, snap.ResidualTexels, settings.MarginTexels);
         }
 
         private void Rebuild()
