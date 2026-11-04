@@ -4,6 +4,21 @@ All notable progress on Iso Golf. The format follows [Keep a Changelog](https://
 
 ## [Unreleased]
 
+### 2026-11-04: M1.4 tufted island edge and outline decision (`feature/island-tufts`)
+
+#### Added
+
+- `TuftBuilder` and `TuftSettings`: a seeded, continuous grass fringe along the island's dry edge, in its own mesh under `Course`, so it floats with the island. `Sandbox_Island` uses it.
+- `TerrainResult.Edge`, the pieces of the island edge on dry ground.
+- Tuft colors in `PaletteSettings`.
+- `TuftBuilderTests`.
+
+#### Changed
+
+- `ART_DIRECTION.md`: the grass edge is a fringe of small, short, blunt tufts folding over the edge, chosen on the phone over separate prisms and over longer or sharper teeth.
+- `ART_DIRECTION.md`: no outline for now, after phone tests at about 2 px and about 1 px, with a recheck in M4 once real props are in.
+- `ART_DIRECTION.md`: there is no fringe where water reaches the island's edge. Water falling from there is an idea for later.
+
 ### 2026-11-04: Island floating (`feature/island-float`)
 
 #### Added
