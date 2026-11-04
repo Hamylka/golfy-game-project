@@ -10,6 +10,19 @@ All notable progress on Iso Golf. The format follows [Keep a Changelog](https://
 
 - Slopes join the plan: the ball reacts to them from M2, and M3 generates elevation by seed and par, starting gently. Cliffs, plateaus and elevated tees wait for a later version.
 - On the green, every shot is a putt along the ground, with no aerial arc.
+### 2026-11-04: M1.2 terrain mesh (`feature/terrain-mesh`)
+
+#### Added
+
+- `TerrainBuilder` and `CourseFields`: build a faceted island from a course shape, cutting every triangle along each surface's exact border, with mowing stripes, an earth band under the edge and pond banks. The land mesh is checked to be watertight, so no pinholes show the background.
+- `CourseShapeSettings` with the par 3 shape, and `PaletteSettings`, with their assets.
+- `LowPolyVertexColor`, a URP Lit Shader Graph using vertex colors, and the `Terrain` material.
+- `TerrainView`, and `LevelBootstrap`, which builds the terrain and points the camera at it.
+- `Sandbox_Island.unity`.
+
+#### Changed
+
+- `IslandCamera` can frame the real island outline instead of a box.
 
 ### 2026-11-04: M1.1 camera framing and gestures (`feature/camera-framing`)
 

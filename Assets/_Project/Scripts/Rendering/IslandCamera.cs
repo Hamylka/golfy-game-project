@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.InputSystem.Controls;
@@ -23,6 +24,7 @@ namespace IsoGolf.Rendering
         private CameraNavigator _navigator;
         private CameraGestureRouter _router;
         private Vector2Int _screenSize;
+        private IReadOnlyList<Vector3> _framePoints;
 
         /// <summary>Turned off while aiming (from M2), so gestures can't disturb a shot.</summary>
         public bool GesturesEnabled { get; set; } = true;
@@ -63,12 +65,34 @@ namespace IsoGolf.Rendering
         {
             _screenSize = new Vector2Int(Screen.width, Screen.height);
             var view = new CameraView(IsoCameraConvention.Rotation, IsoCameraConvention.VerticalFieldOfView, _screenSize.x / (float)_screenSize.y);
-            Vector3 home = CameraFraming.Fit(CameraFraming.Corners(island), view, settings.ScreenFill);
-            var limits = new Rect(island.min.x, island.min.z, island.size.x, island.size.z);
+            IReadOnlyList<Vector3> points = _framePoints ?? CameraFraming.Corners(island);
+            Vector3 home = CameraFraming.Fit(points, view, settings.ScreenFill);
+            Rect limits = GroundLimits(points);
 
             _navigator = new CameraNavigator(home, view, limits, groundHeight, settings.ClosestZoom);
             _router = new CameraGestureRouter(_navigator);
             transform.position = home;
+        }
+
+        /// <summary>Frames these points instead of the box, for a tighter fit around a real island shape.</summary>
+        public void SetIsland(IReadOnlyList<Vector3> points)
+        {
+            _framePoints = points;
+            Rebuild();
+        }
+
+        private static Rect GroundLimits(IReadOnlyList<Vector3> points)
+        {
+            float minX = float.MaxValue, maxX = float.MinValue, minZ = float.MaxValue, maxZ = float.MinValue;
+            foreach (Vector3 point in points)
+            {
+                minX = Mathf.Min(minX, point.x);
+                maxX = Mathf.Max(maxX, point.x);
+                minZ = Mathf.Min(minZ, point.z);
+                maxZ = Mathf.Max(maxZ, point.z);
+            }
+
+            return Rect.MinMaxRect(minX, minZ, maxX, maxZ);
         }
 
         /// <summary>Returns true if the screen is being touched, so the mouse is ignored this frame.</summary>
