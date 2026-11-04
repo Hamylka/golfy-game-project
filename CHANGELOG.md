@@ -4,6 +4,18 @@ All notable progress on Iso Golf. The format follows [Keep a Changelog](https://
 
 ## [Unreleased]
 
+### 2026-11-04: Island floating (`feature/island-float`)
+
+#### Added
+
+- `CourseFloat` and `CourseFloatSettings`: the whole course rises and falls very gently, about 0.15 m each way over 7 seconds, judged on the phone. `Sandbox_Island` has a new `Course` container holding the terrain.
+- `CourseFloatTests`.
+
+#### Changed
+
+- `CLAUDE.md`: the ball's simulation runs in the course container's local space and never reads the float offset, so floating can't change a shot. All islands of a course float together.
+- `CLAUDE.md` and `ART_DIRECTION.md`: a course may have gaps, as separate islands that belong to it, with the details left to the M3 plan.
+
 ### 2026-11-04: Blue sky and clouds (`feature/floating-clouds`)
 
 #### Added

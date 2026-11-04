@@ -92,6 +92,7 @@ Do not create assets outside `Assets/_Project/` (third-party packages excepted).
 - **Shot input (`Gameplay`):** behind an `IShotInput` interface. The gesture starts with a **hold and drag on the ball**; touches elsewhere move the camera. Keep it swappable.
 - **Aim arc and power gauge (`UI`):** dotted arc following the shot curve, landing marker on the ground, small yellow gauge above the ball. On the green, the arc and landing marker are replaced by a putt preview along the ground. Nothing else on screen during a shot.
 - **Level generator (`Generation`):** seed → island outline (noise) → elevation (gentle slopes, with limits so the ball can stop near the hole, and flat areas around the tee and hole) → surfaces (fairway, green, rough, bunkers, water) → props placed by rules (clusters, low density, never on the main shot line) → tee at −X, hole at +X. Follow the *Procedural kit* section of `ART_DIRECTION.md`.
+- **Course container (`Rendering`):** everything on the course lives under one `Course` object, including the ball from M2, and `CourseFloat` moves it gently up and down. The motion is visual only: the ball's simulation runs in the container's local space and never reads the offset, so a shot lands the same wherever the course is in its motion. The ball therefore uses no Unity physics on world-space colliders. The camera and clouds stay outside the container. All islands of a course float together.
 - **Level flow (`Gameplay`):** hole reached → transition → next seed. The next island appears toward +X.
 
 ## Workflow
@@ -107,7 +108,7 @@ Do not create assets outside `Assets/_Project/` (third-party packages excepted).
 
 1. **Low poly pipeline sandbox:** camera framing, faceted terrain with clean surface borders, lighting and shadows, on a test island. Validate the look and performance on the phone.
 2. **Shot prototype:** ball, arc flight, putting on the green, rolling on slopes, shadow, aim preview, power gauge, placeholder input.
-3. **Island generator:** seeded outline, elevation by seed and par (fairway rises and dips, sloped greens), tufted grass edge, surfaces, tee and hole placement.
+3. **Island generator:** seeded outline, elevation by seed and par (fairway rises and dips, sloped greens), tufted grass edge, surfaces, tee and hole placement. A course may have gaps, as separate islands that belong to it, which the M3 plan settles.
 4. **Props and art pass:** modular kit, placement rules, ambient life (foliage, flag, water, birds).
 5. **Progression:** level flow, transitions, seed sequence.
 
