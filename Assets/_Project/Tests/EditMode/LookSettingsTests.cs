@@ -2,6 +2,7 @@ using IsoGolf.Generation;
 using NUnit.Framework;
 using UnityEditor;
 using UnityEngine;
+using UnityEngine.Rendering.Universal;
 
 namespace IsoGolf.Tests
 {
@@ -11,6 +12,7 @@ namespace IsoGolf.Tests
         private const string PalettePath = "Assets/_Project/Settings/Palette.asset";
         private const string TerrainMaterialPath = "Assets/_Project/Art/Materials/Terrain.mat";
         private const string BackgroundMaterialPath = "Assets/_Project/Art/Materials/Background.mat";
+        private const string PipelinePath = "Assets/_Project/Rendering/IsoGolf_RPAsset.asset";
 
         [Test]
         public void RoughStaysDarkerThanTheFairway()
@@ -43,6 +45,16 @@ namespace IsoGolf.Tests
             Assert.That(top.g, Is.GreaterThan(top.r));
             Assert.That(bottom.grayscale, Is.GreaterThan(top.grayscale));
             Assert.That(material.GetFloat("_FadeHeight"), Is.InRange(0.05f, 1f));
+        }
+
+        [Test]
+        public void DepthTextureStaysOff()
+        {
+            var pipeline = AssetDatabase.LoadAssetAtPath<UniversalRenderPipelineAsset>(PipelinePath);
+
+            // Measured on the phone in M1.5: it costs about 39% of the GPU frame. Turn it back on only for
+            // an effect that reads depth, and measure that effect with its cost.
+            Assert.That(pipeline.supportsCameraDepthTexture, Is.False);
         }
 
         [Test]
