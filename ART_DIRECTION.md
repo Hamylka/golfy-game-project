@@ -83,6 +83,7 @@ No photo textures, no fine normal maps.
 - **Minimal and diegetic**. No cluttered HUD.
 - Power bar: a small yellow gauge (`#E6B53A`) with a dark border, floating above the ball.
 - Aiming: a dotted white arc following the bell-shaped shot curve, with the landing point marked by a small cross or circle on the ground.
+- Putting: on the green there is no arc and no landing marker. The preview stays on the ground. **Open:** its exact form, to settle in the M2 shot prototype.
 - Shot gesture: a hold and drag that starts on the ball. Its visual feedback is limited to the gauge and the arc.
 - Camera gestures: one-finger drag to move around and pinch to zoom, both within the island. Blocked while aiming, allowed during flight.
 - Typography: a small, readable font in a warm dark color (`#3A2E25`) on the white background.
@@ -93,7 +94,9 @@ No photo textures, no fine normal maps.
 ### Player and shot
 
 - **The ball is the player.** Off-white and small, but always readable on the phone, with a round shadow on the ground, essential for reading height.
-- **Bell-shaped arc** shots: rise, apex, descent. The shadow stays on the ground and meets the ball on landing: it is what makes the arc readable.
+- **Bell-shaped arc** shots away from the green: rise, apex, descent. The shadow stays on the ground and meets the ball on landing: it is what makes the arc readable.
+- **Putts on the green**: the ball only rolls along the ground, with no flight.
+- **Slopes affect the ball**: it rolls downhill, curves on a side slope, travels further going down and stops sooner going up. Start with gentle slopes, which suit the calm mood. Slopes must be readable on the phone through facet shading; judge that before adding any guide marks.
 - Light trail in flight, a small puff of grass or sand on impact, short bounces.
 
 ### Progression and orientation
@@ -110,12 +113,13 @@ To keep generation faithful to the art direction, levels are assembled from a **
 - Island outline: shape generated with noise, tufted grass edge applied automatically along the whole edge.
 - Surfaces: fairway, green, rough, bunker, water, gravel, each with its own material.
 - Props: trees, bushes, rocks, low walls, sheds, benches, bridges. Placed by rules: low density, grouped in clusters rather than scattered, never on the main shot line.
-- Per-seed variation: island shape and length, obstacles, mood (see variants).
+- Per-seed variation: island shape and length, elevation, obstacles, mood (see variants).
+- Bigger terrain features (cliffs, plateaus, elevated tees) and aids for reading the green are for a later version.
 
 ### Course elements
 
 - **Fairway**: long mowing stripes alternating two greens (`#8FA85A` / `#7E9A48`), aligned with the SW → NE axis. **No tile or checkerboard pattern.**
-- **Green**: lighter and smoother green, almost flat, red or yellow flag.
+- **Green**: lighter and smoother green, gently sloped, flat around the hole, red or yellow flag.
 - **Rough**: darker grass with more broken facets, blending into the edge.
 - **Bunkers**: sand palette, rolled edge, a few rake marks.
 - **Water hazards**: water palette, round white rocks, small stone bridge.

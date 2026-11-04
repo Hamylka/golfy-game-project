@@ -87,11 +87,11 @@ Do not create assets outside `Assets/_Project/` (third-party packages excepted).
 ## Key systems
 
 - **Camera (`Rendering`):** fixed-rotation perspective camera, rendering at native resolution with MSAA. It frames a par 3 island whole on any portrait screen, and moves along longer courses. The player moves around with a one-finger drag and zooms with a pinch, within the island. A hold and drag that starts on the ball begins the shot instead. Camera gestures are blocked while aiming and allowed during flight.
-- **Ball (`Gameplay`):** the flight follows a predictable bell-shaped arc computed from aim direction and power (ballistic solution), then hands over to physics for bounce and roll. The aim preview must match the real flight exactly.
+- **Ball (`Gameplay`):** away from the green, the flight follows a predictable bell-shaped arc computed from aim direction and power (ballistic solution), then hands over to bounce and roll. The aim preview must match the real flight exactly. **On the green, every shot is a putt:** the ball rolls along the ground, with no flight and no aerial arc. The ball reacts to slopes everywhere: it rolls downhill, curves on a side slope, travels further going down and stops sooner going up. Rolling must not bump on terrain facets, so it follows a smooth version of the terrain height, not the visible triangles; the M2 plan settles how.
 - **Ball shadow:** a separate ground-projected blob that always sits on the surface under the ball. It is essential for reading height; never remove it.
 - **Shot input (`Gameplay`):** behind an `IShotInput` interface. The gesture starts with a **hold and drag on the ball**; touches elsewhere move the camera. Keep it swappable.
-- **Aim arc and power gauge (`UI`):** dotted arc following the shot curve, landing marker on the ground, small yellow gauge above the ball. Nothing else on screen during a shot.
-- **Level generator (`Generation`):** seed → island outline (noise) → surfaces (fairway, green, rough, bunkers, water) → props placed by rules (clusters, low density, never on the main shot line) → tee at −X, hole at +X. Follow the *Procedural kit* section of `ART_DIRECTION.md`.
+- **Aim arc and power gauge (`UI`):** dotted arc following the shot curve, landing marker on the ground, small yellow gauge above the ball. On the green, the arc and landing marker are replaced by a putt preview along the ground. Nothing else on screen during a shot.
+- **Level generator (`Generation`):** seed → island outline (noise) → elevation (gentle slopes, with limits so the ball can stop near the hole, and flat areas around the tee and hole) → surfaces (fairway, green, rough, bunkers, water) → props placed by rules (clusters, low density, never on the main shot line) → tee at −X, hole at +X. Follow the *Procedural kit* section of `ART_DIRECTION.md`.
 - **Level flow (`Gameplay`):** hole reached → transition → next seed. The next island appears toward +X.
 
 ## Workflow
@@ -106,8 +106,8 @@ Do not create assets outside `Assets/_Project/` (third-party packages excepted).
 ## Milestones
 
 1. **Low poly pipeline sandbox:** camera framing, faceted terrain with clean surface borders, lighting and shadows, on a test island. Validate the look and performance on the phone.
-2. **Shot prototype:** ball, arc flight, shadow, aim preview, power gauge, placeholder input.
-3. **Island generator:** seeded outline, tufted grass edge, surfaces, tee and hole placement.
+2. **Shot prototype:** ball, arc flight, putting on the green, rolling on slopes, shadow, aim preview, power gauge, placeholder input.
+3. **Island generator:** seeded outline, elevation by seed and par (fairway rises and dips, sloped greens), tufted grass edge, surfaces, tee and hole placement.
 4. **Props and art pass:** modular kit, placement rules, ambient life (foliage, flag, water, birds).
 5. **Progression:** level flow, transitions, seed sequence.
 
