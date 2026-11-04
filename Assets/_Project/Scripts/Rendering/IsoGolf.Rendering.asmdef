@@ -1,4 +1,7 @@
 {
     "name": "IsoGolf.Rendering",
-    "rootNamespace": "IsoGolf.Rendering"
+    "rootNamespace": "IsoGolf.Rendering",
+    "references": [
+        "Unity.InputSystem"
+    ]
 }
