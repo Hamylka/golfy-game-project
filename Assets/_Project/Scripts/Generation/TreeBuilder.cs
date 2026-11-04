@@ -32,23 +32,6 @@ namespace IsoGolf.Generation
         private const float OuterBlobMinSize = 0.8f;
         private const float OuterBlobSizeRange = 0.25f;
 
-        private static readonly float IcosaT = (1f + Mathf.Sqrt(5f)) * 0.5f;
-
-        private static readonly Vector3[] IcosaCorners =
-        {
-            new Vector3(-1f, IcosaT, 0f), new Vector3(1f, IcosaT, 0f), new Vector3(-1f, -IcosaT, 0f), new Vector3(1f, -IcosaT, 0f),
-            new Vector3(0f, -1f, IcosaT), new Vector3(0f, 1f, IcosaT), new Vector3(0f, -1f, -IcosaT), new Vector3(0f, 1f, -IcosaT),
-            new Vector3(IcosaT, 0f, -1f), new Vector3(IcosaT, 0f, 1f), new Vector3(-IcosaT, 0f, -1f), new Vector3(-IcosaT, 0f, 1f),
-        };
-
-        private static readonly int[] IcosaFaces =
-        {
-            0, 11, 5, 0, 5, 1, 0, 1, 7, 0, 7, 10, 0, 10, 11,
-            1, 5, 9, 5, 11, 4, 11, 10, 2, 10, 7, 6, 7, 1, 8,
-            3, 9, 4, 3, 4, 2, 3, 2, 6, 3, 6, 8, 3, 8, 9,
-            4, 9, 5, 2, 4, 11, 6, 2, 10, 8, 6, 7, 9, 8, 1,
-        };
-
         private readonly TreeSettings _settings;
         private readonly TerrainMeshData _mesh = new TerrainMeshData();
         private readonly Color32 _light;
@@ -155,20 +138,20 @@ namespace IsoGolf.Generation
 
         private void AddBlob(Vector3 center, float radius, Color32 shade, System.Random random)
         {
-            var corners = new List<Vector3>(IcosaCorners.Length);
-            foreach (Vector3 corner in IcosaCorners)
+            var corners = new List<Vector3>(Icosahedron.Corners.Length);
+            foreach (Vector3 corner in Icosahedron.Corners)
             {
                 corners.Add(corner.normalized);
             }
 
             var midpoints = new Dictionary<long, int>();
-            var faces = new List<int>(IcosaFaces.Length * 4);
+            var faces = new List<int>(Icosahedron.Faces.Length * 4);
 
-            for (int i = 0; i < IcosaFaces.Length; i += 3)
+            for (int i = 0; i < Icosahedron.Faces.Length; i += 3)
             {
-                int a = IcosaFaces[i];
-                int b = IcosaFaces[i + 1];
-                int c = IcosaFaces[i + 2];
+                int a = Icosahedron.Faces[i];
+                int b = Icosahedron.Faces[i + 1];
+                int c = Icosahedron.Faces[i + 2];
                 int ab = Midpoint(a, b, corners, midpoints);
                 int bc = Midpoint(b, c, corners, midpoints);
                 int ca = Midpoint(c, a, corners, midpoints);

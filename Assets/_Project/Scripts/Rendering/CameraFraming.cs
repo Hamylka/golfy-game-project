@@ -45,6 +45,25 @@ namespace IsoGolf.Rendering
     {
         private const int Iterations = 60;
 
+        /// <summary>The rectangle of a horizontal plane that a camera at this position sees.</summary>
+        public static Rect GroundFootprint(Vector3 position, in CameraView view, float height)
+        {
+            float minX = float.MaxValue, maxX = float.MinValue, minZ = float.MaxValue, maxZ = float.MinValue;
+            for (int x = -1; x <= 1; x += 2)
+            {
+                for (int y = -1; y <= 1; y += 2)
+                {
+                    Vector3 point = view.OnPlane(position, new Vector2(x, y), height);
+                    minX = Mathf.Min(minX, point.x);
+                    maxX = Mathf.Max(maxX, point.x);
+                    minZ = Mathf.Min(minZ, point.z);
+                    maxZ = Mathf.Max(maxZ, point.z);
+                }
+            }
+
+            return Rect.MinMaxRect(minX, minZ, maxX, maxZ);
+        }
+
         /// <summary>
         /// Finds the camera position that shows every point, centred, filling the screen up to
         /// <paramref name="screenFill"/> (1 touches the screen edge) along the tighter axis.

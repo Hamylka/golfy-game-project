@@ -33,16 +33,27 @@ namespace IsoGolf.Tests
         }
 
         [Test]
-        public void BackgroundFadesFromLightGreyAndStaysOnScreen()
+        public void SkyIsLightBlueAndPalerAtTheBottomOfTheScreen()
         {
             var material = AssetDatabase.LoadAssetAtPath<Material>(BackgroundMaterialPath);
+            Color top = material.GetColor("_TopColor");
             Color bottom = material.GetColor("_BottomColor");
 
-            // ART_DIRECTION.md asks for #E4E4E4 at the bottom of the screen, fading to white above.
-            Assert.That(bottom.r, Is.EqualTo(0xE4 / 255f).Within(0.01f));
-            Assert.That(bottom.g, Is.EqualTo(bottom.r).Within(0.001f));
-            Assert.That(bottom.b, Is.EqualTo(bottom.r).Within(0.001f));
+            Assert.That(top.b, Is.GreaterThan(top.g));
+            Assert.That(top.g, Is.GreaterThan(top.r));
+            Assert.That(bottom.grayscale, Is.GreaterThan(top.grayscale));
             Assert.That(material.GetFloat("_FadeHeight"), Is.InRange(0.05f, 1f));
+        }
+
+        [Test]
+        public void CloudsStayLighterThanTheSky()
+        {
+            var palette = AssetDatabase.LoadAssetAtPath<PaletteSettings>(PalettePath);
+            var material = AssetDatabase.LoadAssetAtPath<Material>(BackgroundMaterialPath);
+
+            // Even the shaded side of a cloud must stand out against the blue at the top of the screen.
+            Assert.That(palette.CloudShade.grayscale, Is.GreaterThan(material.GetColor("_TopColor").grayscale));
+            Assert.That(palette.CloudLight.grayscale, Is.GreaterThan(palette.CloudShade.grayscale));
         }
     }
 }
