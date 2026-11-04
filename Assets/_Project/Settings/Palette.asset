@@ -1,0 +1,21 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 102ba1eaa877c8c4eb0cd63cb6b4db92, type: 3}
+  m_Name: Palette
+  m_EditorClassIdentifier: IsoGolf.Generation::IsoGolf.Generation.PaletteSettings
+  rough: {r: 0.3372549, g: 0.44313726, b: 0.22745098, a: 1}
+  fairwayLight: {r: 0.56078434, g: 0.65882355, b: 0.3529412, a: 1}
+  fairwayDark: {r: 0.49411765, g: 0.6039216, b: 0.28235295, a: 1}
+  green: {r: 0.654902, g: 0.72156864, b: 0.41568628, a: 1}
+  sand: {r: 0.9098039, g: 0.8509804, b: 0.70980394, a: 1}
+  water: {r: 0.30980393, g: 0.6901961, b: 0.72156864, a: 1}
+  earth: {r: 0.7490196, g: 0.42352942, b: 0.2627451, a: 1}
