@@ -4,6 +4,17 @@ All notable progress on Iso Golf. The format follows [Keep a Changelog](https://
 
 ## [Unreleased]
 
+### 2026-11-04: Camera glide (`feature/camera-momentum`)
+
+#### Added
+
+- `PanMomentum`: a camera drag keeps gliding and slows down after release, like vertical scrolling on a phone. Any finger landing stops it, a finger that pauses before lifting doesn't glide, and it stops at the limits with no bounce.
+- Glide settings in `CameraRigSettings`.
+- `PanMomentumTests`, and glide tests in `CameraGestureRouterTests`.
+
+#### Fixed
+
+- `IslandCamera` ran the gesture router twice in a frame when no finger was down and a mouse was present, which would have doubled the glide.
 ### 2026-11-04: M2 shot decisions (`feature/m2-plan`)
 
 #### Changed

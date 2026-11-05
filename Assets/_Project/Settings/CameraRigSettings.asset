@@ -15,3 +15,7 @@ MonoBehaviour:
   screenFill: 0.94
   closestZoom: 0.3
   wheelZoomStep: 0.1
+  glideTimeConstant: 0.5
+  glideVelocityWindow: 0.1
+  glideMinReleaseSpeed: 0.2
+  glideStopSpeed: 0.03

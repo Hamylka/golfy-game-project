@@ -7,6 +7,7 @@ namespace IsoGolf.Tests
     public class CameraGestureRouterTests
     {
         private const float Tolerance = 0.001f;
+        private const float Frame = 1f / 60f;
 
         private static readonly Bounds Island = new Bounds(Vector3.zero, new Vector3(34f, 4f, 10f));
         private static readonly Rect Limits = new Rect(-17f, -5f, 34f, 10f);
@@ -27,7 +28,7 @@ namespace IsoGolf.Tests
 
             // Zoomed in, so the view has room to pan.
             _navigator.ZoomAround(Vector2.zero, 0.01f);
-            _router = new CameraGestureRouter(_navigator);
+            _router = new CameraGestureRouter(_navigator, new PanMomentum(0.5f, 0.1f, 0.2f, 0.03f));
             _before = _navigator.Position;
         }
 
@@ -35,17 +36,17 @@ namespace IsoGolf.Tests
 
         private void OneFinger(Vector2 position, bool enabled = true, bool claimed = false)
         {
-            _router.Update(1, position, default, enabled, _ => claimed);
+            _router.Update(1, position, default, enabled, _ => claimed, Frame);
         }
 
         private void TwoFingers(Vector2 a, Vector2 b)
         {
-            _router.Update(2, a, b, true, _ => false);
+            _router.Update(2, a, b, true, _ => false, Frame);
         }
 
         private void NoFingers()
         {
-            _router.Update(0, default, default, true, null);
+            _router.Update(0, default, default, true, null, Frame);
         }
 
         [Test]
@@ -78,8 +79,8 @@ namespace IsoGolf.Tests
         public void ClaimedTouch_IsOnlyAskedOnce_WhenTheFingerLands()
         {
             int asked = 0;
-            _router.Update(1, Start, default, true, _ => { asked++; return false; });
-            _router.Update(1, Moved, default, true, _ => { asked++; return true; });
+            _router.Update(1, Start, default, true, _ => { asked++; return false; }, Frame);
+            _router.Update(1, Moved, default, true, _ => { asked++; return true; }, Frame);
 
             Assert.That(asked, Is.EqualTo(1));
             Assert.That(MovedBy, Is.GreaterThan(0.1f));
@@ -159,9 +160,101 @@ namespace IsoGolf.Tests
         public void ThirdFinger_StopsTheGesture()
         {
             TwoFingers(new Vector2(-0.1f, 0f), new Vector2(0.1f, 0f));
-            _router.Update(3, new Vector2(-0.5f, 0f), new Vector2(0.5f, 0f), true, null);
+            _router.Update(3, new Vector2(-0.5f, 0f), new Vector2(0.5f, 0f), true, null, Frame);
 
             Assert.That(MovedBy, Is.EqualTo(0f).Within(Tolerance));
+        }
+
+        private void Flick()
+        {
+            OneFinger(Start);
+            OneFinger(Moved);
+            OneFinger(Moved * 2f);
+            OneFinger(Moved * 3f);
+        }
+
+        private float GlideDistance(int frames, bool enabled = true)
+        {
+            Vector3 from = _navigator.Position;
+            for (int i = 0; i < frames; i++)
+            {
+                _router.Update(0, default, default, enabled, null, Frame);
+            }
+
+            return (_navigator.Position - from).magnitude;
+        }
+
+        [Test]
+        public void Glide_KeepsMovingAfterAQuickDragIsReleased()
+        {
+            Flick();
+
+            Assert.That(GlideDistance(10), Is.GreaterThan(0.05f));
+        }
+
+        [Test]
+        public void Glide_NoneAfterAFingerPausesBeforeLifting()
+        {
+            Flick();
+            for (int i = 0; i < 12; i++)
+            {
+                OneFinger(Moved * 3f);
+            }
+
+            Assert.That(GlideDistance(10), Is.EqualTo(0f).Within(Tolerance));
+        }
+
+        [Test]
+        public void Glide_StopsWhenAFingerLands()
+        {
+            Flick();
+            GlideDistance(2);
+            OneFinger(Start);
+            NoFingers();
+
+            Assert.That(GlideDistance(10), Is.EqualTo(0f).Within(Tolerance));
+        }
+
+        [Test]
+        public void Glide_StopsWhenAClaimedTouchLands()
+        {
+            Flick();
+            GlideDistance(2);
+            OneFinger(Start, claimed: true);
+            NoFingers();
+
+            Assert.That(GlideDistance(10), Is.EqualTo(0f).Within(Tolerance));
+        }
+
+        [Test]
+        public void Glide_StopsWhenGesturesAreTurnedOff()
+        {
+            Flick();
+            GlideDistance(2);
+
+            Assert.That(GlideDistance(10, enabled: false), Is.EqualTo(0f).Within(Tolerance));
+            Assert.That(GlideDistance(10), Is.EqualTo(0f).Within(Tolerance));
+        }
+
+        [Test]
+        public void Glide_NoneAfterAPinch()
+        {
+            TwoFingers(new Vector2(-0.2f, 0f), new Vector2(0.2f, 0f));
+            TwoFingers(new Vector2(-0.1f, 0.2f), new Vector2(0.3f, 0.2f));
+            NoFingers();
+
+            Assert.That(GlideDistance(10), Is.EqualTo(0f).Within(Tolerance));
+        }
+
+        [Test]
+        public void Glide_NoneWhenPanningIsLockedFullyZoomedOut()
+        {
+            _navigator.ZoomAround(Vector2.zero, 100f);
+            Vector3 home = _navigator.Position;
+            Flick();
+            GlideDistance(30);
+
+            Assert.That((_navigator.Position - home).magnitude, Is.EqualTo(0f).Within(Tolerance));
         }
     }
 }
