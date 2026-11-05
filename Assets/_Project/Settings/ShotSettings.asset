@@ -53,3 +53,6 @@ MonoBehaviour:
   lostSeconds: 1
   sinkSpeed: 0.6
   waterDrag: 5
+  touchRadius: 0.08
+  fullPowerPull: 0.3
+  holdSeconds: 0
