@@ -12,8 +12,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 35f48a3cf3f9ab94a93cc83ce6206cbe, type: 3}
   m_Name: PlayPieces
   m_EditorClassIdentifier: IsoGolf.Generation::IsoGolf.Generation.PlayPieceSettings
-  ballRadius: 0.15
-  shadowRadius: 0.14
+  ballRadius: 0.12
+  shadowRadius: 0.11
   shadowLift: 0.02
   holeRadius: 0.25
   holeLift: 0.01

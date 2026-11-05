@@ -8,10 +8,10 @@ namespace IsoGolf.Generation
     {
         [Header("Ball")]
         [Tooltip("In metres. Larger than a real ball, so it stays readable on the phone.")]
-        [SerializeField, Min(0.01f)] private float ballRadius = 0.15f;
+        [SerializeField, Min(0.01f)] private float ballRadius = 0.12f;
 
         [Header("Ground discs")]
-        [SerializeField, Min(0.01f)] private float shadowRadius = 0.14f;
+        [SerializeField, Min(0.01f)] private float shadowRadius = 0.11f;
         [Tooltip("How far the shadow floats above the ground, in metres, so it never sinks into a facet. It must stay above the hole's lift.")]
         [SerializeField, Min(0f)] private float shadowLift = 0.02f;
         [SerializeField, Min(0.01f)] private float holeRadius = 0.25f;
