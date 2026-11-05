@@ -18,26 +18,37 @@ namespace IsoGolf.Rendering
         }
 
         private readonly CameraNavigator _navigator;
+        private readonly PanMomentum _momentum;
         private State _state = State.Idle;
         private Vector2 _previousA;
         private Vector2 _previousB;
 
-        public CameraGestureRouter(CameraNavigator navigator)
+        public CameraGestureRouter(CameraNavigator navigator, PanMomentum momentum)
         {
             _navigator = navigator;
+            _momentum = momentum;
         }
 
         /// <summary>
         /// Call once per frame. Positions are viewport coordinates from -1 to 1. <paramref name="claim"/>
         /// is asked once, when a first finger lands, whether something else owns that touch.
         /// </summary>
-        public void Update(int fingerCount, Vector2 a, Vector2 b, bool enabled, Func<Vector2, bool> claim)
+        public void Update(int fingerCount, Vector2 a, Vector2 b, bool enabled, Func<Vector2, bool> claim, float deltaTime)
         {
             if (fingerCount == 0)
             {
+                if (_state == State.Panning)
+                {
+                    _momentum.Release();
+                }
+
                 _state = State.Idle;
+                UpdateGlide(enabled, deltaTime);
                 return;
             }
+
+            // Any finger on the screen ends the glide, including one about to start a shot.
+            _momentum.Stop();
 
             // Stays ignored until every finger lifts, so a shot can't turn into a camera move
             // when a second finger lands or when gestures come back on mid-touch.
@@ -54,7 +65,7 @@ namespace IsoGolf.Rendering
 
             if (fingerCount == 1)
             {
-                UpdateOneFinger(a, claim);
+                UpdateOneFinger(a, claim, deltaTime);
             }
             else if (fingerCount == 2)
             {
@@ -67,19 +78,36 @@ namespace IsoGolf.Rendering
             }
         }
 
-        private void UpdateOneFinger(Vector2 position, Func<Vector2, bool> claim)
+        private void UpdateGlide(bool enabled, float deltaTime)
+        {
+            if (!enabled)
+            {
+                _momentum.Stop();
+                return;
+            }
+
+            Vector3 requested = _momentum.Step(deltaTime);
+            if (requested != Vector3.zero)
+            {
+                _momentum.ApplyLimits(requested, _navigator.Move(requested));
+            }
+        }
+
+        private void UpdateOneFinger(Vector2 position, Func<Vector2, bool> claim, float deltaTime)
         {
             switch (_state)
             {
                 case State.Idle:
                     _state = claim != null && claim(position) ? State.Ignoring : State.Panning;
+                    _momentum.ClearSamples();
                     break;
                 case State.Panning:
-                    _navigator.Pan(_previousA, position);
+                    _momentum.AddSample(_navigator.Pan(_previousA, position), deltaTime);
                     break;
                 case State.Pinching:
                     // One finger lifted: carry on panning from where the other one is, without a jump.
                     _state = State.Panning;
+                    _momentum.ClearSamples();
                     break;
             }
 
