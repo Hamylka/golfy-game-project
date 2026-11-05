@@ -4,6 +4,17 @@ All notable progress on Iso Golf. The format follows [Keep a Changelog](https://
 
 ## [Unreleased]
 
+### 2026-11-05: Ball simulation (`feature/m2-ball-simulation`)
+
+#### Added
+
+- `BallSimulation`: the ball's flight, bounces, roll, hole capture and lost ball, as plain C# in the course's local space at a fixed time step. Nothing in a scene uses it yet.
+- `BallisticArc`: a flight as an exact formula of time, with the search for where it meets the ground. The ball and the coming aim preview read the same formula, so they can't disagree.
+- `ShotSettings` and its asset: power sets a carry or a putt distance, and each surface has its own bounce and rolling friction. An arc from the rough carries 75% as far and one from a bunker 50%, by the human's decision on the penalty, with the amounts to tune. All values are starting points for the tuning PR.
+- `IBallGround` and `BallGround`: the ball sits and lands on `Height`, feels `Slope`, and takes water and the island's edge from the outlines, not from height.
+- `CourseSurface` and `CourseFields.Surface`, in the order the terrain draws surfaces.
+- `BallisticArcTests`, `BallSimulationTests` and `BallOnCourseTests`.
+
 ### 2026-11-04: Smooth ground, tee, hole and slopes (`feature/m2-height-field`)
 
 #### Added

@@ -28,6 +28,37 @@ namespace IsoGolf.Generation
 
         public float Green(Vector3 p) => Ellipse(p, _shape.Green);
 
+        /// <summary>
+        /// The surface at a point, in the same order the terrain mesh draws them. Height plays no part: the
+        /// ground height under a pond isn't its water level. These are the true outlines, and the mesh cuts
+        /// them as straight chords across each cell, so what's drawn can differ a little: up to 27 cm at the
+        /// pond's wobble on the par 3.
+        /// </summary>
+        public CourseSurface Surface(Vector3 p)
+        {
+            if (Island(p) >= 0f)
+            {
+                return CourseSurface.OffIsland;
+            }
+
+            if (Pond(p) < 0f)
+            {
+                return CourseSurface.Water;
+            }
+
+            if (Bunker(p) < 0f)
+            {
+                return CourseSurface.Bunker;
+            }
+
+            if (Green(p) < 0f)
+            {
+                return CourseSurface.Green;
+            }
+
+            return Fairway(p) < 0f ? CourseSurface.Fairway : CourseSurface.Rough;
+        }
+
         public float Fairway(Vector3 p)
         {
             float wobble = (Mathf.PerlinNoise((p.x * 0.2f) + 70f, 1.3f) - 0.5f) * _shape.FairwayWobble;
