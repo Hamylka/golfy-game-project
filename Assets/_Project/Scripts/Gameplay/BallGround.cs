@@ -37,5 +37,16 @@ namespace IsoGolf.Gameplay
         public Vector3 Normal(float x, float z) => _heights.Normal(x, z);
 
         public CourseSurface Surface(float x, float z) => _fields.Surface(new Vector3(x, 0f, z));
+
+        /// <summary>
+        /// The height of what's drawn here: the water's surface over a pond, otherwise the visible facet. It's
+        /// for what must lie on the drawing, like the ball's shadow, and not for the ball, which uses <see cref="Height"/>.
+        /// </summary>
+        public float DrawnHeight(float x, float z)
+        {
+            return _fields.Pond(new Vector3(x, 0f, z)) < 0f ? _waterLevel : _heights.FacetHeight(x, z);
+        }
+
+        public bool IsOnIsland(float x, float z) => _fields.Island(new Vector3(x, 0f, z)) < 0f;
     }
 }

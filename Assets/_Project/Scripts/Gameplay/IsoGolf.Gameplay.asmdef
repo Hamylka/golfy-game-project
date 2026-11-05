@@ -3,6 +3,7 @@
     "rootNamespace": "IsoGolf.Gameplay",
     "references": [
         "IsoGolf.Generation",
-        "IsoGolf.Rendering"
+        "IsoGolf.Rendering",
+        "Unity.InputSystem"
     ]
 }

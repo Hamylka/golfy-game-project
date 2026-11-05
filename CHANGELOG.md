@@ -4,6 +4,24 @@ All notable progress on Iso Golf. The format follows [Keep a Changelog](https://
 
 ## [Unreleased]
 
+### 2026-11-05: Ball in the scene (`feature/m2-ball-in-scene`)
+
+#### Added
+
+- `BallView`: the ball in `Main`, under `Course`, drawn from `BallSimulation` in the course's local space. It has 80 facets, spins as it moves, and casts no shadow of its own.
+- `BallShadowView` and `GroundDisc`: the ball's shadow, a disc mesh draped over the facets and over the water, trimmed at the island's edge, with no depth texture.
+- `HoleView`: the hole, a dark disc on the ground, and the flag, whose flutter waits for M4.
+- `GroundShadow`, an Unlit transparent Shader Graph using vertex colors and alpha, and its material.
+- `PlayPieceSettings` and its asset, `PlayPieceBuilder`, and ball, shadow, hole and flag colors in `PaletteSettings`.
+- `TestShotTap`, `TapGesture` and `TestShotAim`: **temporary**, until the shot input PR. Tap the ground to play the ball toward that spot, and tap after holing out to return to the tee.
+- `GroundDiscTests`, `PlayPieceBuilderTests`, `BallViewPartsTests`, and ball checks in `MainSceneTests`.
+
+#### Changed
+
+- `TerrainMeshData.ToMesh`, moved out of `TerrainView` so the ball and flag can share it.
+- `IsoGolf.Gameplay` references `Unity.InputSystem`.
+- `CLAUDE.md`: a new first section, the Unity agent workflow, asks for a compile through the MCP after every script change, never asks the human to focus the Editor, and asks to fix console errors until the build is clean.
+
 ### 2026-11-05: Ball simulation (`feature/m2-ball-simulation`)
 
 #### Added

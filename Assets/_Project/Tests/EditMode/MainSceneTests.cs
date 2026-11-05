@@ -82,6 +82,45 @@ namespace IsoGolf.Tests
         }
 
         [Test]
+        public void BallShadowAndHoleLiveDirectlyInTheCourseContainer()
+        {
+            // Directly, at the container's origin, because their positions and vertices are in its local space.
+            Transform course = Root("Course").transform;
+
+            foreach (Component piece in new Component[]
+            {
+                course.GetComponentInChildren<BallView>(true),
+                course.GetComponentInChildren<BallShadowView>(true),
+                course.GetComponentInChildren<HoleView>(true),
+            })
+            {
+                Assert.That(piece, Is.Not.Null);
+                Assert.That(piece.transform.parent, Is.EqualTo(course), piece.name);
+                Assert.That(piece.transform.localPosition, Is.EqualTo(Vector3.zero), piece.name);
+                Assert.That(piece.transform.localRotation, Is.EqualTo(Quaternion.identity), piece.name);
+                Assert.That(piece.transform.localScale, Is.EqualTo(Vector3.one), piece.name);
+            }
+        }
+
+        [Test]
+        public void BallUsesNoUnityPhysics()
+        {
+            GameObject course = Root("Course");
+
+            Assert.That(course.GetComponentsInChildren<Rigidbody>(true), Is.Empty);
+            Assert.That(course.GetComponentsInChildren<Collider>(true), Is.Empty);
+        }
+
+        [Test]
+        public void BootstrapBuildsTheBallAndHole()
+        {
+            var bootstrap = new SerializedObject(Root("Level").GetComponent<LevelBootstrap>());
+
+            Assert.That(bootstrap.FindProperty("ball").objectReferenceValue, Is.Not.Null);
+            Assert.That(bootstrap.FindProperty("hole").objectReferenceValue, Is.Not.Null);
+        }
+
+        [Test]
         public void SkyAndSunMatchTheChosenLook()
         {
             var background = AssetDatabase.LoadAssetAtPath<Material>(BackgroundPath);
