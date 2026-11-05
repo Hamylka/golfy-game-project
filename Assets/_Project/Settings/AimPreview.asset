@@ -26,3 +26,4 @@ MonoBehaviour:
   gaugeHeight: 0.014
   gaugeBorder: 0.003
   gaugeGap: 0.015
+  gaugeSmoothTime: 0.08

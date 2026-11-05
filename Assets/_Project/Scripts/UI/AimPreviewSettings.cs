@@ -36,6 +36,9 @@ namespace IsoGolf.UI
         [Tooltip("The gap from the top of the ball to the gauge, as a share of the screen's width.")]
         [SerializeField, Range(0f, 0.2f)] private float gaugeGap = 0.015f;
 
+        [Tooltip("How gently the fill follows the power: the seconds to close about 63% of the gap. 0 follows at once. Only the drawing eases, never the shot.")]
+        [SerializeField, Range(0f, 0.5f)] private float gaugeSmoothTime = 0.08f;
+
         public float DotRadius => dotRadius;
         public int DotSegments => dotSegments;
         public float ArcDotSpacing => arcDotSpacing;
@@ -50,5 +53,6 @@ namespace IsoGolf.UI
         public float GaugeHeight => gaugeHeight;
         public float GaugeBorder => gaugeBorder;
         public float GaugeGap => gaugeGap;
+        public float GaugeSmoothTime => gaugeSmoothTime;
     }
 }

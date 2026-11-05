@@ -40,6 +40,7 @@ namespace IsoGolf.UI
         private Vector2 _aimedDirection;
         private float _aimedPower;
         private bool _ringVisible;
+        private float _shownPower;
 
         private void Awake()
         {
@@ -67,6 +68,9 @@ namespace IsoGolf.UI
             {
                 _renderer.enabled = false;
                 _hasAim = false;
+
+                // So the next aim's gauge rises from empty.
+                _shownPower = 0f;
                 return;
             }
 
@@ -84,7 +88,8 @@ namespace IsoGolf.UI
                 _aimedPower = power;
             }
 
-            Draw(power);
+            _shownPower = GaugeMotion.Toward(_shownPower, power, settings.GaugeSmoothTime, Time.unscaledDeltaTime);
+            Draw();
             _renderer.enabled = true;
         }
 
@@ -120,7 +125,7 @@ namespace IsoGolf.UI
             }
         }
 
-        private void Draw(float power)
+        private void Draw()
         {
             Transform view = sceneCamera.transform;
             Vector3 right = transform.InverseTransformDirection(view.right);
@@ -137,7 +142,7 @@ namespace IsoGolf.UI
                 settings.GaugeWidth * metres,
                 height,
                 settings.GaugeBorder * metres,
-                power,
+                _shownPower,
                 right,
                 up,
                 _gaugeBorderColor,
