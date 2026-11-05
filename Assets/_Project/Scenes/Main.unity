@@ -538,7 +538,8 @@ GameObject:
   - component: {fileID: 1103648088}
   - component: {fileID: 1103648087}
   - component: {fileID: 1103648086}
-  - component: {fileID: 1103648085}
+  - component: {fileID: 1103648090}
+  - component: {fileID: 1103648089}
   m_Layer: 0
   m_Name: Ball
   m_TagString: Untagged
@@ -561,19 +562,6 @@ Transform:
   m_Children: []
   m_Father: {fileID: 951827837}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &1103648085
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1103648083}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: a7651f429c71ffb48b9eaf1117a7ecd5, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: IsoGolf.Gameplay::IsoGolf.Gameplay.TestShotTap
-  viewCamera: {fileID: 431362527}
 --- !u!114 &1103648086
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -647,6 +635,32 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1103648083}
   m_Mesh: {fileID: 0}
+--- !u!114 &1103648089
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1103648083}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 89321c16dd630c34fbca037c33ba0d66, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: IsoGolf.Gameplay::IsoGolf.Gameplay.ShotController
+--- !u!114 &1103648090
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1103648083}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e4ce3a5afd9e0f44692b074b4bff9ac9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: IsoGolf.Gameplay::IsoGolf.Gameplay.SlingshotShotInput
+  shot: {fileID: 11400000, guid: 71c9d077eeec4e94db39892f9562739f, type: 2}
+  islandCamera: {fileID: 431362524}
 --- !u!1 &1678882213
 GameObject:
   m_ObjectHideFlags: 0

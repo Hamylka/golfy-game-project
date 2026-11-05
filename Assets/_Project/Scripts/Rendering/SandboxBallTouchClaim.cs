@@ -4,7 +4,7 @@ namespace IsoGolf.Rendering
 {
     /// <summary>
     /// Sandbox stand-in for the shot input: a touch starting near the ball is kept away from the camera,
-    /// and logs a line. M2 replaces this with the real hold and drag on the ball.
+    /// and logs a line. Main uses the real gesture, SlingshotShotInput. This stays for Sandbox_Camera.
     /// </summary>
     [RequireComponent(typeof(IslandCamera))]
     public sealed class SandboxBallTouchClaim : MonoBehaviour
