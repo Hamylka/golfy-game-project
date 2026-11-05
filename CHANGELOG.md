@@ -4,6 +4,25 @@ All notable progress on Iso Golf. The format follows [Keep a Changelog](https://
 
 ## [Unreleased]
 
+### 2026-11-05: Camera follow (`feature/m2-camera-follow`)
+
+#### Added
+
+- `CameraFollow`: moves the camera for the shot in play, at the player's zoom. It stays still until the ball reaches a band between about 40% and 60% of the screen's height, glides to keep it there, and eases until a stopped ball sits about 30% up the screen with the course ahead. A finger during a shot pauses this until the ball has stopped and the finger has lifted, and a finger during the ease cancels it, so an aim never starts on a moving camera. Outside a shot it does nothing, so a pan is never fought.
+- The band's lower edge only counts once the ball has reached it, so a shot from low on screen doesn't pull the camera backward at launch. A backstop and side limits keep a backward or sideways shot on screen.
+- `BallCameraFollow`: passes the ball's position, free of the course's floating, and its state to the camera.
+- Long courses: `CameraFraming.FitCourse` frames a course longer than `framedLength` in stretches, and `CameraNavigator` lets the zoomed out view travel along +X. A par 3 keeps its exact framing and stays locked when zoomed out.
+- `Sandbox_LongCourse` and `Par5SandboxCourseShape`: an 80 m hand-made course without trees, to test the follow until M3 generates courses.
+- Follow, rest and long course settings in `CameraRigSettings`, all starting values for the tuning PR. The rest spot leaves room for a full pull on phones from 9:16 to 20:9, but not quite on a 3:4 tablet.
+- `CameraFollowTests`, corridor tests in `CameraNavigatorTests` and `CameraFramingTests`, and a follow check in `MainSceneTests`.
+
+#### Changed
+
+- Every level now starts at a default zoom, halfway between fully out and the closest, instead of fully zoomed out, after a playtest. A par 3 still fits whole when fully zoomed out. `CLAUDE.md` and `ART_DIRECTION.md` record this.
+- `CameraNavigator` reaches its full limits from the default zoom, not only at the closest zoom, so the ball can rest at its spot along the whole course.
+- `IslandCamera.VisibleGround` covers the whole corridor, so clouds don't run out on a long course.
+- `LevelBootstrap` starts the view on the ball.
+
 ### 2026-11-05: Aim preview (`feature/m2-aim-preview`)
 
 #### Added

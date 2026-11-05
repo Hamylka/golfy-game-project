@@ -10,6 +10,7 @@ namespace IsoGolf.Tests
         private const float ScreenFill = 0.94f;
         private const float ClosestZoom = 0.3f;
         private const float Tolerance = 0.01f;
+        private const float Corridor = 46f;
 
         private static readonly Bounds Island = new Bounds(Vector3.zero, new Vector3(34f, 4f, 10f));
         private static readonly Rect Limits = new Rect(-17f, -5f, 34f, 10f);
@@ -133,6 +134,84 @@ namespace IsoGolf.Tests
             _navigator.ZoomAround(new Vector2(0.3f, 0.2f), 100f);
 
             Assert.That((_navigator.Position - _home).magnitude, Is.EqualTo(0f).Within(Tolerance));
+        }
+
+        [TestCase(0f)]
+        [TestCase(0.5f)]
+        [TestCase(1f)]
+        public void ZoomTo_ReachesThatZoom(float zoom)
+        {
+            _navigator.ZoomTo(zoom);
+
+            Assert.That(_navigator.Zoom, Is.EqualTo(zoom).Within(Tolerance));
+        }
+
+        [Test]
+        public void ZoomTo_FullyOut_ReturnsToTheFramedPosition()
+        {
+            ZoomFullyIn();
+            _navigator.Pan(Vector2.zero, new Vector2(0.3f, 0.2f));
+
+            _navigator.ZoomTo(0f);
+
+            Assert.That((_navigator.Position - _home).magnitude, Is.EqualTo(0f).Within(Tolerance));
+        }
+
+        [Test]
+        public void FullLimitsZoom_OpensTheLimitsFromThatZoom_AndZoomingOutStillLandsOnTheFramedView()
+        {
+            var navigator = new CameraNavigator(_home, _view, Limits, 0f, ClosestZoom, 0f, 0.5f);
+            navigator.ZoomTo(0.5f);
+
+            navigator.Move(new Vector3(1000f, 0f, 0f));
+
+            Assert.That(_view.OnPlane(navigator.Position, Vector2.zero, 0f).x, Is.EqualTo(Limits.xMax).Within(Tolerance));
+
+            navigator.ZoomTo(0f);
+
+            Assert.That((navigator.Position - _home).magnitude, Is.EqualTo(0f).Within(Tolerance));
+        }
+
+        [Test]
+        public void Reachable_ReportsTheLimitWithoutMoving()
+        {
+            Assert.That(_navigator.Reachable(new Vector3(5f, 0f, 0f)).magnitude, Is.EqualTo(0f).Within(Tolerance));
+
+            ZoomFullyIn();
+            Vector3 before = _navigator.Position;
+
+            Assert.That(_navigator.Reachable(new Vector3(1f, 0f, 0f)).x, Is.EqualTo(1f).Within(Tolerance));
+            Assert.That((_navigator.Position - before).magnitude, Is.EqualTo(0f).Within(Tolerance));
+        }
+
+        [Test]
+        public void Corridor_LetsTheZoomedOutViewTravelAlongTheCourse_AndOnlyThere()
+        {
+            var navigator = new CameraNavigator(_home, _view, Limits, 0f, ClosestZoom, Corridor);
+
+            Assert.That(navigator.Move(new Vector3(10f, 0f, 3f)).x, Is.EqualTo(10f).Within(Tolerance));
+            Assert.That((navigator.Position - _home).z, Is.EqualTo(0f).Within(Tolerance));
+
+            navigator.Move(new Vector3(1000f, 0f, 0f));
+            Assert.That((navigator.Position - _home).x, Is.EqualTo(Corridor).Within(Tolerance));
+
+            navigator.Move(new Vector3(-1000f, 0f, 0f));
+            Assert.That((navigator.Position - _home).magnitude, Is.EqualTo(0f).Within(Tolerance));
+        }
+
+        [Test]
+        public void Corridor_ZoomingBackOut_LandsOnAFramedView()
+        {
+            var navigator = new CameraNavigator(_home, _view, Limits, 0f, ClosestZoom, Corridor);
+            navigator.Move(new Vector3(20f, 0f, 0f));
+
+            navigator.ZoomAround(Vector2.zero, 0.01f);
+            navigator.ZoomAround(new Vector2(0.3f, 0.2f), 100f);
+
+            Vector3 offset = navigator.Position - _home;
+            Assert.That(offset.y, Is.EqualTo(0f).Within(Tolerance));
+            Assert.That(offset.z, Is.EqualTo(0f).Within(Tolerance));
+            Assert.That(offset.x, Is.GreaterThanOrEqualTo(0f).And.LessThanOrEqualTo(Corridor));
         }
 
         [Test]
