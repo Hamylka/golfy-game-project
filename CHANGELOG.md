@@ -4,6 +4,20 @@ All notable progress on Iso Golf. The format follows [Keep a Changelog](https://
 
 ## [Unreleased]
 
+### 2026-11-05: Lip-out (`feature/m2-lip-out`)
+
+#### Added
+
+- `HoleRim`: the rule for a ball crossing the hole's rim, with no randomness. The same line at the same speed always ends the same way.
+- A ball too fast for its line lips out: it curves away from the center, as tight as the hole, and loses speed. A dead-center ball carries on straight and a graze barely changes. This replaces running straight over the hole.
+- A ball that uses up its speed while still over the hole drops in.
+- `Lip_*` tests in `BallSimulationTests`.
+
+#### Changed
+
+- Capture is fairer for central hits: the fastest capture depends on the line, from 2.6 m/s through the center down to 1 m/s at the rim, in place of 2.2 m/s for every line. Lines far enough off center now lip out at speeds that used to drop. All values are for the tuning PR to judge.
+- `ShotSettings`: `holeCaptureSpeed` is replaced by `centerCaptureSpeed`, `rimCaptureSpeed`, `lipOutMaxTurn` and `lipOutSpeedKeep`.
+
 ### 2026-11-05: Ball in the scene (`feature/m2-ball-in-scene`)
 
 #### Added

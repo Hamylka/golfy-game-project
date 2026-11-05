@@ -21,6 +21,7 @@ namespace IsoGolf.Gameplay
     /// A shot from the green rolls. Any other shot follows a <see cref="BallisticArc"/>, then hops in shorter
     /// arcs until it rolls. Each landing and each rolling step asks the ground which surface it's on, and
     /// that decides water and the island's edge. A lost ball returns to where the shot was played.
+    /// A ball that crosses the hole's rim drops in or lips out, as <see cref="HoleRim"/> decides.
     /// </summary>
     public sealed class BallSimulation
     {
@@ -35,6 +36,8 @@ namespace IsoGolf.Gameplay
         private Vector3 _previousPosition;
         private Vector3 _shotOrigin;
         private Vector3 _holeBottom;
+        private bool _insideRim;
+        private float _lipTurnLeft;
 
         public BallSimulation(IBallGround ground, ShotSettings settings, Vector2 start)
         {
@@ -79,6 +82,8 @@ namespace IsoGolf.Gameplay
 
             _shotOrigin = Position;
             Bounces = 0;
+            _insideRim = false;
+            _lipTurnLeft = 0f;
 
             if (IsPutt)
             {
@@ -167,8 +172,10 @@ namespace IsoGolf.Gameplay
                     return;
             }
 
-            if (TryCapture())
+            // A landing too fast to drop in just bounces: the ball meets the rim only once it rolls.
+            if (IsOverHole() && MeetRim().Captured)
             {
+                DropIntoHole();
                 return;
             }
 
@@ -221,7 +228,15 @@ namespace IsoGolf.Gameplay
                 Velocity = Vector3.zero;
                 if (pull.magnitude <= deceleration)
                 {
-                    Stop();
+                    // A lip-out can use up its speed before leaving the hole, and nothing can rest on top of one.
+                    if (IsOverHole())
+                    {
+                        DropIntoHole();
+                    }
+                    else
+                    {
+                        Stop();
+                    }
                 }
 
                 // Otherwise it has only paused at the top of its travel, on ground too steep to hold it.
@@ -229,6 +244,7 @@ namespace IsoGolf.Gameplay
             }
 
             velocity *= (speed - friction) / speed;
+            velocity = RideLip(velocity);
             Velocity = new Vector3(velocity.x, 0f, velocity.y);
 
             float x = Position.x + (velocity.x * step);
@@ -244,7 +260,7 @@ namespace IsoGolf.Gameplay
                     FallOff();
                     break;
                 default:
-                    TryCapture();
+                    CrossRim();
                     break;
             }
         }
@@ -255,20 +271,68 @@ namespace IsoGolf.Gameplay
             State = BallState.Resting;
         }
 
-        private bool TryCapture()
+        private Vector2 FromHoleCenter => new Vector2(Position.x - _ground.Hole.x, Position.z - _ground.Hole.y);
+
+        private bool IsOverHole() => FromHoleCenter.magnitude <= _settings.HoleCaptureRadius;
+
+        private RimMeeting MeetRim() => HoleRim.Meet(FromHoleCenter, new Vector2(Velocity.x, Velocity.z), _settings);
+
+        /// <summary>
+        /// Decides once per pass over the hole. Without the latch, the speed a lip-out takes away would let the
+        /// next step capture the same ball. A ball that leaves and rolls back meets the rim again.
+        /// </summary>
+        private void CrossRim()
         {
-            Vector2 hole = _ground.Hole;
-            Vector2 toHole = new Vector2(Position.x - hole.x, Position.z - hole.y);
-            float speed = new Vector2(Velocity.x, Velocity.z).magnitude;
-            if (toHole.magnitude > _settings.HoleCaptureRadius || speed > _settings.HoleCaptureSpeed)
+            if (!IsOverHole())
             {
-                return false;
+                _insideRim = false;
+                return;
             }
 
+            if (_insideRim)
+            {
+                return;
+            }
+
+            RimMeeting meeting = MeetRim();
+            if (meeting.Captured)
+            {
+                DropIntoHole();
+                return;
+            }
+
+            _insideRim = true;
+            _lipTurnLeft = meeting.TurnDegrees;
+            Velocity *= meeting.SpeedKeep;
+        }
+
+        /// <summary>
+        /// Spends a lip-out's turn over distance, at a fixed curve as tight as the hole, so the ball visibly
+        /// rides round the rim at any speed and ends up with the same total turn.
+        /// </summary>
+        private Vector2 RideLip(Vector2 velocity)
+        {
+            if (_lipTurnLeft == 0f)
+            {
+                return velocity;
+            }
+
+            float most = velocity.magnitude * _settings.FixedTimeStep * _settings.LipOutMaxTurn / _settings.HoleCaptureRadius;
+            float turn = Mathf.Clamp(_lipTurnLeft, -most, most);
+            _lipTurnLeft -= turn;
+
+            float radians = turn * Mathf.Deg2Rad;
+            float cos = Mathf.Cos(radians);
+            float sin = Mathf.Sin(radians);
+            return new Vector2((velocity.x * cos) - (velocity.y * sin), (velocity.x * sin) + (velocity.y * cos));
+        }
+
+        private void DropIntoHole()
+        {
+            Vector2 hole = _ground.Hole;
             _holeBottom = new Vector3(hole.x, _ground.Height(hole.x, hole.y) - _settings.HoleDepth, hole.y);
             Velocity = Vector3.zero;
             State = BallState.Holed;
-            return true;
         }
 
         private void StepDrop()
