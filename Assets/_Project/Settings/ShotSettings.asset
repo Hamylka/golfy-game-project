@@ -27,18 +27,22 @@ MonoBehaviour:
     restitution: 0.2
     tangentKeep: 0.4
     rollingDeceleration: 3
+    carryScale: 0.75
   fairway:
     restitution: 0.3
     tangentKeep: 0.55
     rollingDeceleration: 1.6
+    carryScale: 1
   green:
     restitution: 0.25
     tangentKeep: 0.5
     rollingDeceleration: 1.2
+    carryScale: 1
   bunker:
     restitution: 0
     tangentKeep: 0.1
     rollingDeceleration: 8
+    carryScale: 0.5
   holeCaptureRadius: 0.25
   holeCaptureSpeed: 2.2
   holeDepth: 0.35

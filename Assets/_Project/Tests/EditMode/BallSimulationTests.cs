@@ -290,6 +290,45 @@ namespace IsoGolf.Tests
             Assert.That(bunker, Is.LessThan(rough));
         }
 
+        private float CarryFrom(CourseSurface lie)
+        {
+            var ground = PlaneBallGround.All(lie);
+            var ball = new BallSimulation(ground, _settings, Vector2.zero);
+            return ball.ArcFor(Vector2.right, 1f).FindLanding(ground, _settings.LandingSearchStep).Point.x;
+        }
+
+        [Test]
+        public void Lie_RoughCarriesLessThanFairway_AndBunkerLessStill()
+        {
+            float fairway = CarryFrom(CourseSurface.Fairway);
+            float rough = CarryFrom(CourseSurface.Rough);
+            float bunker = CarryFrom(CourseSurface.Bunker);
+
+            Assert.That(fairway, Is.EqualTo(_settings.CarryFor(1f)).Within(0.02f), "The fairway has no penalty.");
+            Assert.That(rough, Is.LessThan(fairway));
+            Assert.That(bunker, Is.LessThan(rough));
+        }
+
+        [TestCase(CourseSurface.Rough)]
+        [TestCase(CourseSurface.Bunker)]
+        public void Lie_ThePenaltyIsTheSameInThePreviewAndTheShot(CourseSurface lie)
+        {
+            var ground = PlaneBallGround.All(lie);
+            var ball = new BallSimulation(ground, _settings, Vector2.zero);
+            ArcLanding preview = ball.ArcFor(Vector2.right, 1f).FindLanding(ground, _settings.LandingSearchStep);
+
+            ball.Shoot(Vector2.right, 1f);
+
+            // The ground is level at zero, and the ball is above it for the whole flight.
+            ball.Step();
+            for (int i = 0; i < StepLimit && ball.Position.y > 0f; i++)
+            {
+                ball.Step();
+            }
+
+            Assert.That(ball.Position, Is.EqualTo(preview.Point));
+        }
+
         [Test]
         public void Bunker_TakesNoBounce()
         {

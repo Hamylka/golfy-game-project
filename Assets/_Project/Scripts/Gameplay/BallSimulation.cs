@@ -58,10 +58,15 @@ namespace IsoGolf.Gameplay
         /// <summary>Between the last two steps, for drawing smoothly when frames and steps don't line up.</summary>
         public Vector3 InterpolatedPosition => Vector3.Lerp(_previousPosition, Position, _accumulator / _settings.FixedTimeStep);
 
-        /// <summary>The arc a shot from here would follow. The aim preview draws this; <see cref="Shoot"/> flies it.</summary>
+        /// <summary>
+        /// The arc a shot from here would follow, shortened by the surface it's played from. The penalty lives
+        /// here so the aim preview, which draws this arc, shows it too. <see cref="Shoot"/> flies the same arc.
+        /// </summary>
         public BallisticArc ArcFor(Vector2 direction, float power)
         {
-            return BallisticArc.ForCarry(Position, direction, _settings.CarryFor(Mathf.Clamp01(power)), _settings.LaunchAngle, _settings.Gravity);
+            float lie = _settings.ResponseOf(_ground.Surface(Position.x, Position.z)).CarryScale;
+            float carry = _settings.CarryFor(Mathf.Clamp01(power)) * lie;
+            return BallisticArc.ForCarry(Position, direction, carry, _settings.LaunchAngle, _settings.Gravity);
         }
 
         /// <summary>Plays a shot. Refused, returning false, unless the ball is at rest and the direction is real.</summary>

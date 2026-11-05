@@ -124,6 +124,20 @@ namespace IsoGolf.Tests
         }
 
         [Test]
+        public void Shot_FromTheRealBunker_CarriesLessThanFromTheFairwayBesideIt()
+        {
+            Vector2 sand = _shape.Bunker.Center;
+            var fairway = new Vector2(sand.x, 0f);
+            Assert.That(_ground.Surface(sand.x, sand.y), Is.EqualTo(CourseSurface.Bunker));
+            Assert.That(_ground.Surface(fairway.x, fairway.y), Is.EqualTo(CourseSurface.Fairway));
+
+            float fromSand = new BallSimulation(_ground, _settings, sand).ArcFor(Vector2.left, 1f).Velocity.magnitude;
+            float fromFairway = new BallSimulation(_ground, _settings, fairway).ArcFor(Vector2.left, 1f).Velocity.magnitude;
+
+            Assert.That(fromSand, Is.LessThan(fromFairway));
+        }
+
+        [Test]
         public void Putt_FromTheGreen_CanFindTheHole()
         {
             // Close, on the side the green rises from, aimed straight: the hole's flat area holds it.

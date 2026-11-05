@@ -17,16 +17,21 @@ namespace IsoGolf.Gameplay
         [Tooltip("How fast rolling slows down, in m/s². To let a ball stop, this must beat the slope's pull.")]
         [SerializeField, Min(0.01f)] private float rollingDeceleration;
 
-        public SurfaceResponse(float restitution, float tangentKeep, float rollingDeceleration)
+        [Tooltip("Share of the normal carry for an arc played from this surface. 1 is no penalty. Putts ignore it.")]
+        [SerializeField, Range(0.1f, 1f)] private float carryScale;
+
+        public SurfaceResponse(float restitution, float tangentKeep, float rollingDeceleration, float carryScale)
         {
             this.restitution = restitution;
             this.tangentKeep = tangentKeep;
             this.rollingDeceleration = rollingDeceleration;
+            this.carryScale = carryScale;
         }
 
         public float Restitution => restitution;
         public float TangentKeep => tangentKeep;
         public float RollingDeceleration => rollingDeceleration;
+        public float CarryScale => carryScale;
     }
 
     /// <summary>Everything tunable about a shot. These are starting values, for the M2 tuning PR to judge on the phone.</summary>
@@ -62,10 +67,10 @@ namespace IsoGolf.Gameplay
         [Header("Rolling")]
         [Tooltip("Acceleration per unit of slope, in m/s². A sphere rolling without slipping feels 5/7 of gravity.")]
         [SerializeField, Min(0f)] private float slopePull = 7f;
-        [SerializeField] private SurfaceResponse rough = new SurfaceResponse(0.2f, 0.4f, 3f);
-        [SerializeField] private SurfaceResponse fairway = new SurfaceResponse(0.3f, 0.55f, 1.6f);
-        [SerializeField] private SurfaceResponse green = new SurfaceResponse(0.25f, 0.5f, 1.2f);
-        [SerializeField] private SurfaceResponse bunker = new SurfaceResponse(0f, 0.1f, 8f);
+        [SerializeField] private SurfaceResponse rough = new SurfaceResponse(0.2f, 0.4f, 3f, 0.75f);
+        [SerializeField] private SurfaceResponse fairway = new SurfaceResponse(0.3f, 0.55f, 1.6f, 1f);
+        [SerializeField] private SurfaceResponse green = new SurfaceResponse(0.25f, 0.5f, 1.2f, 1f);
+        [SerializeField] private SurfaceResponse bunker = new SurfaceResponse(0f, 0.1f, 8f, 0.5f);
 
         [Header("Hole")]
         [Tooltip("How close to the hole's center the ball's contact point must be, in metres.")]
