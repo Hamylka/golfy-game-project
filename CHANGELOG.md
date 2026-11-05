@@ -4,6 +4,23 @@ All notable progress on Iso Golf. The format follows [Keep a Changelog](https://
 
 ## [Unreleased]
 
+### 2026-11-05: Aim preview (`feature/m2-aim-preview`)
+
+#### Added
+
+- `AimPreview`: what the player sees while aiming, in one mesh under `Course`. An arc shows dots through the ball's flight and a ring where it first lands. A putt shows dots low on the ground along the first 40% of its true path by distance, with no end marker, and the lightest putts keep one dot so they still show a direction. Both can reveal a hazard, and a putt can reveal a lip-out.
+- The power gauge: a small yellow bar with a dark border above the ball, the same size on screen at any zoom or distance. It's a mesh rather than UGUI, so it floats with the course and adds no Canvas. It shows power after the pull curve.
+- `BallSimulation.PredictPutt` and `PredictLanding`. A predicted putt plays the real shot on a private copy of the simulation, so it can't disagree with the shot, and allocates nothing.
+- `DottedPath`, `AimMesh`, `AimPreviewSettings` and its asset, with starting values for the tuning PR.
+- Inner radius on `GroundDisc`, so the landing ring drapes over facets as the shadow does.
+- Aim mark and gauge colors in `PaletteSettings`.
+- `DottedPathTests`, `AimMeshTests`, `PredictedPutt_*` and `PredictedLanding_*` tests, ring tests in `GroundDiscTests`, and an aim preview check in `MainSceneTests`.
+
+#### Changed
+
+- `IsoGolf.UI` now references `IsoGolf.Gameplay` and `IsoGolf.Generation`.
+- `BallView` exposes `Ground` and `Radius`, for the preview.
+
 ### 2026-11-05: Shot input (`feature/m2-shot-input`)
 
 #### Added
