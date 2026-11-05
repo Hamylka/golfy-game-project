@@ -14,9 +14,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: IsoGolf.Gameplay::IsoGolf.Gameplay.ShotSettings
   fixedTimeStep: 0.016666668
   gravity: 9.81
-  launchAngle: 40
+  launchAngle: 36
   minCarry: 1
-  maxCarry: 22
+  maxCarry: 26
   landingSearchStep: 0.02
   minPuttDistance: 0.3
   maxPuttDistance: 10
@@ -24,18 +24,18 @@ MonoBehaviour:
   maxBounces: 3
   slopePull: 7
   rough:
-    restitution: 0.2
+    restitution: 0.25
     tangentKeep: 0.4
     rollingDeceleration: 3
     carryScale: 0.75
   fairway:
-    restitution: 0.3
-    tangentKeep: 0.55
+    restitution: 0.4
+    tangentKeep: 0.45
     rollingDeceleration: 1.6
     carryScale: 1
   green:
-    restitution: 0.25
-    tangentKeep: 0.5
+    restitution: 0.3
+    tangentKeep: 0.45
     rollingDeceleration: 1.2
     carryScale: 1
   bunker:
