@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using IsoGolf.Gameplay;
 using IsoGolf.Generation;
 using NUnit.Framework;
@@ -684,6 +685,127 @@ namespace IsoGolf.Tests
             ball.Advance(_settings.FixedTimeStep * 0.5f);
 
             Assert.That(ball.InterpolatedPosition.x, Is.EqualTo((first.x + second.x) * 0.5f).Within(0.0001f));
+        }
+
+        private static List<Vector3> PlayedPath(BallSimulation ball)
+        {
+            var played = new List<Vector3> { ball.Position };
+            for (int i = 0; i < StepLimit && ball.State == BallState.Rolling; i++)
+            {
+                ball.Step();
+                played.Add(ball.Position);
+            }
+
+            return played;
+        }
+
+        [Test]
+        public void PredictedPutt_IsExactlyThePuttPlayed_OnASideSlope()
+        {
+            var ground = PlaneBallGround.All(CourseSurface.Green, new Vector2(0.02f, -0.06f));
+            var ball = new BallSimulation(ground, _settings, new Vector2(1f, 2f));
+            var predicted = new List<Vector3>();
+
+            ball.PredictPutt(new Vector2(1f, 0.2f), 0.5f, predicted);
+            ball.Shoot(new Vector2(1f, 0.2f), 0.5f);
+
+            Assert.That(predicted, Is.EqualTo(PlayedPath(ball)));
+        }
+
+        [Test]
+        public void PredictedPutt_IsExactlyThePuttPlayed_ThroughALipOut()
+        {
+            // Too fast for this off-center line, so the ball curves around the rim.
+            var ground = PlaneBallGround.All(CourseSurface.Green);
+            ground.Hole = new Vector2(3f, 0.15f);
+            var ball = new BallSimulation(ground, _settings, Vector2.zero);
+            var predicted = new List<Vector3>();
+
+            ball.PredictPutt(Vector2.right, 1f, predicted);
+            ball.Shoot(Vector2.right, 1f);
+            List<Vector3> played = PlayedPath(ball);
+
+            Assert.That(predicted, Is.EqualTo(played));
+            Assert.That(Mathf.Abs(played[played.Count - 1].z), Is.GreaterThan(0.01f), "the ball should have been turned");
+        }
+
+        [Test]
+        public void PredictedPutt_EndsAtTheHoleWhenCaptured()
+        {
+            var ground = PlaneBallGround.All(CourseSurface.Green);
+            ground.Hole = new Vector2(1.5f, 0f);
+            var ball = new BallSimulation(ground, _settings, Vector2.zero);
+            var predicted = new List<Vector3>();
+
+            ball.PredictPutt(Vector2.right, 0.2f, predicted);
+
+            Assert.That(predicted[predicted.Count - 1].x, Is.EqualTo(1.25f).Within(0.1f));
+        }
+
+        [Test]
+        public void PredictedPutt_LeavesTheRealBallUntouched_AndCanRunAgain()
+        {
+            var ground = PlaneBallGround.All(CourseSurface.Green, new Vector2(0.01f, 0.03f));
+            var ball = new BallSimulation(ground, _settings, new Vector2(1f, 1f));
+            var first = new List<Vector3>();
+            var second = new List<Vector3>();
+            Vector3 before = ball.Position;
+
+            ball.PredictPutt(Vector2.up, 0.4f, first);
+            ball.PredictPutt(Vector2.up, 0.4f, second);
+
+            Assert.That(ball.State, Is.EqualTo(BallState.Resting));
+            Assert.That(ball.Position, Is.EqualTo(before));
+            Assert.That(ball.Velocity, Is.EqualTo(Vector3.zero));
+            Assert.That(second, Is.EqualTo(first));
+        }
+
+        [Test]
+        public void PredictedPutt_FollowsTheBallToItsNewSpot()
+        {
+            var ground = PlaneBallGround.All(CourseSurface.Green);
+            var ball = new BallSimulation(ground, _settings, Vector2.zero);
+            var predicted = new List<Vector3>();
+            ball.PredictPutt(Vector2.right, 0.2f, predicted);
+
+            ball.Shoot(Vector2.right, 0.2f);
+            RunUntilSettled(ball);
+            Vector3 rested = ball.Position;
+            ball.PredictPutt(Vector2.up, 0.2f, predicted);
+
+            Assert.That(predicted[0], Is.EqualTo(rested));
+            Assert.That(predicted[predicted.Count - 1].z, Is.GreaterThan(rested.z));
+        }
+
+        [Test]
+        public void PredictedPutt_OffTheGreen_IsJustTheStart()
+        {
+            var ball = new BallSimulation(PlaneBallGround.All(CourseSurface.Fairway), _settings, Vector2.zero);
+            var predicted = new List<Vector3>();
+
+            ball.PredictPutt(Vector2.right, 0.5f, predicted);
+
+            Assert.That(predicted.Count, Is.EqualTo(1));
+        }
+
+        [Test]
+        public void PredictedLanding_IsWhereThePlayedArcLands()
+        {
+            var ground = PlaneBallGround.All(CourseSurface.Fairway, new Vector2(0.05f, -0.02f));
+            var ball = new BallSimulation(ground, _settings, Vector2.zero);
+            var direction = new Vector2(1f, 0.4f);
+
+            BallisticArc arc = ball.ArcFor(direction, 0.7f);
+            ArcLanding predicted = ball.PredictLanding(arc);
+            ball.Shoot(direction, 0.7f);
+            while (ball.State == BallState.Flying && ball.Bounces == 0)
+            {
+                ball.Step();
+            }
+
+            // The step that lands sets the position to the landing point exactly, and only the next step moves on.
+            Assert.That(ball.Bounces, Is.GreaterThan(0));
+            Assert.That(Vector3.Distance(ball.Position, predicted.Point), Is.LessThan(0.0001f));
         }
 
         [Test]

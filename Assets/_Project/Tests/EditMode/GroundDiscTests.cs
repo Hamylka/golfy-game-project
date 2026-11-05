@@ -16,6 +16,40 @@ namespace IsoGolf.Tests
         }
 
         [Test]
+        public void Ring_HasNothingInsideItsInnerRadius_AndFacesUp()
+        {
+            var ring = new GroundDisc(1f, 3, 12, (x, z) => 0f, (x, z) => true, 0.6f);
+            ring.Place(0f, 0f, 0f, Tint);
+
+            for (int i = 0; i < ring.Triangles.Length; i += 3)
+            {
+                Vector3 a = ring.Positions[ring.Triangles[i]];
+                Vector3 b = ring.Positions[ring.Triangles[i + 1]];
+                Vector3 c = ring.Positions[ring.Triangles[i + 2]];
+
+                Assert.That(a.magnitude, Is.GreaterThanOrEqualTo(0.6f - 0.0001f));
+                Assert.That(b.magnitude, Is.GreaterThanOrEqualTo(0.6f - 0.0001f));
+                Assert.That(c.magnitude, Is.GreaterThanOrEqualTo(0.6f - 0.0001f));
+                Assert.That(Vector3.Cross(b - a, c - a).y, Is.GreaterThan(0f), $"triangle {i / 3}");
+            }
+        }
+
+        [Test]
+        public void Ring_ReachesItsOuterRadius()
+        {
+            var ring = new GroundDisc(1f, 2, 12, (x, z) => 0f, (x, z) => true, 0.6f);
+            ring.Place(0f, 0f, 0f, Tint);
+
+            float farthest = 0f;
+            foreach (Vector3 position in ring.Positions)
+            {
+                farthest = Mathf.Max(farthest, position.magnitude);
+            }
+
+            Assert.That(farthest, Is.EqualTo(1f).Within(0.0001f));
+        }
+
+        [Test]
         public void EveryTriangleFacesUp()
         {
             GroundDisc disc = FlatDisc();

@@ -10,6 +10,9 @@ namespace IsoGolf.Generation
     /// decal would do this more exactly, but the depth texture is off, because it costs too much on the phone.
     ///
     /// Moving the disc allocates nothing, because the shadow does it every frame.
+    ///
+    /// With an inner radius it's a ring instead: the same draping, with its rings between the two radii and
+    /// nothing inside. A ring needs at least two rings of vertices. Its center vertex stays, unused by any triangle.
     /// </summary>
     public sealed class GroundDisc
     {
@@ -17,11 +20,12 @@ namespace IsoGolf.Generation
         private readonly Func<float, float, bool> _hasGround;
         private readonly Vector2[] _offsets;
 
-        public GroundDisc(float radius, int rings, int segments, Func<float, float, float> height, Func<float, float, bool> hasGround)
+        public GroundDisc(float radius, int rings, int segments, Func<float, float, float> height, Func<float, float, bool> hasGround, float innerRadius = 0f)
         {
             _height = height;
             _hasGround = hasGround;
 
+            bool hollow = innerRadius > 0f;
             int count = 1 + (rings * segments);
             _offsets = new Vector2[count];
             Positions = new Vector3[count];
@@ -29,7 +33,7 @@ namespace IsoGolf.Generation
 
             for (int ring = 0; ring < rings; ring++)
             {
-                float distance = radius * (ring + 1) / rings;
+                float distance = hollow ? Mathf.Lerp(innerRadius, radius, ring / (rings - 1f)) : radius * (ring + 1) / rings;
                 for (int segment = 0; segment < segments; segment++)
                 {
                     float angle = segment * Mathf.PI * 2f / segments;
@@ -37,7 +41,7 @@ namespace IsoGolf.Generation
                 }
             }
 
-            Triangles = BuildTriangles(rings, segments);
+            Triangles = BuildTriangles(rings, segments, hollow);
         }
 
         public Vector3[] Positions { get; }
@@ -66,14 +70,15 @@ namespace IsoGolf.Generation
             return 1 + (ring * segments) + (segment % segments);
         }
 
-        private static int[] BuildTriangles(int rings, int segments)
+        private static int[] BuildTriangles(int rings, int segments, bool hollow)
         {
             // A fan around the center, then two triangles per segment for each ring beyond the first.
-            var triangles = new int[((segments + ((rings - 1) * segments * 2)) * 3)];
+            // A ring has no fan.
+            var triangles = new int[(((hollow ? 0 : segments) + ((rings - 1) * segments * 2)) * 3)];
             int next = 0;
 
             // Angles rise from +X toward +Z, so this order faces up in Unity's left-handed space.
-            for (int segment = 0; segment < segments; segment++)
+            for (int segment = 0; !hollow && segment < segments; segment++)
             {
                 triangles[next++] = 0;
                 triangles[next++] = Index(0, segment + 1, segments);
