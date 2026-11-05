@@ -21,10 +21,6 @@ namespace IsoGolf.Gameplay
 
         public BallSimulation Simulation { get; private set; }
 
-        public BallGround Ground => _ground;
-
-        public ShotSettings Shot => shot;
-
         public void Build(BallGround ground)
         {
             _ground = ground;

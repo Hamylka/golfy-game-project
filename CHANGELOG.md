@@ -4,6 +4,22 @@ All notable progress on Iso Golf. The format follows [Keep a Changelog](https://
 
 ## [Unreleased]
 
+### 2026-11-05: Shot input (`feature/m2-shot-input`)
+
+#### Added
+
+- `IShotInput`, the swappable input, and `SlingshotShotInput`, its drag on the ball: pull back and let go to shoot, and let go back on the ball to cancel. The direction runs from the finger through the ball on screen, and power comes from the pull on screen, so it's the same in every direction and at every zoom. Nothing shows the aim yet, until the aim preview PR.
+- `ShotGesture`: the gesture as plain C#. A second finger is ignored while aiming, and a touch the system takes away cancels the shot.
+- `ShotController`: plays released shots, and returns a holed ball to the tee after 2 seconds, until M5's level flow.
+- Gesture settings in `ShotSettings`: touch radius 8% of the screen width, full power at 30%, and no hold time. Power follows a curve over the pull, so light shots get more of it: squared for a putt, to the power of 1.5 for an arc. All are starting values for the tuning PR.
+- The lightest arc now carries 1 m, down from 1.5 m, after a playtest found light shots too strong.
+- `ShotGestureTests`, and a slingshot check in `MainSceneTests`.
+
+#### Removed
+
+- The temporary `TestShotTap`, `TapGesture` and `TestShotAim`, so tapping the ground no longer plays a shot.
+- `BallView.Ground` and `BallView.Shot`, which only those classes used.
+
 ### 2026-11-05: Lip-out (`feature/m2-lip-out`)
 
 #### Added

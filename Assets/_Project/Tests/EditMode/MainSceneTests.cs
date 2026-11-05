@@ -121,6 +121,17 @@ namespace IsoGolf.Tests
         }
 
         [Test]
+        public void BallTakesShotsFromTheSlingshot()
+        {
+            BallView ball = Root("Course").GetComponentInChildren<BallView>(true);
+            var input = new SerializedObject(ball.GetComponent<SlingshotShotInput>());
+
+            Assert.That(ball.GetComponent<ShotController>(), Is.Not.Null);
+            Assert.That(input.FindProperty("shot").objectReferenceValue, Is.Not.Null);
+            Assert.That(input.FindProperty("islandCamera").objectReferenceValue, Is.Not.Null);
+        }
+
+        [Test]
         public void SkyAndSunMatchTheChosenLook()
         {
             var background = AssetDatabase.LoadAssetAtPath<Material>(BackgroundPath);

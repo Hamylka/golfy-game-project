@@ -15,7 +15,7 @@ MonoBehaviour:
   fixedTimeStep: 0.016666668
   gravity: 9.81
   launchAngle: 40
-  minCarry: 1.5
+  minCarry: 1
   maxCarry: 22
   landingSearchStep: 0.02
   minPuttDistance: 0.3
@@ -53,3 +53,8 @@ MonoBehaviour:
   lostSeconds: 1
   sinkSpeed: 0.6
   waterDrag: 5
+  touchRadius: 0.08
+  fullPowerPull: 0.3
+  arcPullCurve: 1.5
+  puttPullCurve: 2
+  holdSeconds: 0
