@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using IsoGolf.Generation;
 using UnityEngine;
 
@@ -25,8 +26,13 @@ namespace IsoGolf.Gameplay
     /// </summary>
     public sealed class BallSimulation
     {
+        // Only a guard against a prediction that never ends: friction stops any real putt long before this.
+        private const float LongestPredictedRollSeconds = 60f;
+
         private readonly IBallGround _ground;
         private readonly ShotSettings _settings;
+
+        private BallSimulation _predictor;
 
         private BallisticArc _arc;
         private ArcLanding _landing;
@@ -70,6 +76,44 @@ namespace IsoGolf.Gameplay
             float lie = _settings.ResponseOf(_ground.Surface(Position.x, Position.z)).CarryScale;
             float carry = _settings.CarryFor(Mathf.Clamp01(power)) * lie;
             return BallisticArc.ForCarry(Position, direction, carry, _settings.LaunchAngle, _settings.Gravity);
+        }
+
+        /// <summary>
+        /// Where the arc from <see cref="ArcFor"/> first meets the ground, by the same search a played shot uses.
+        /// </summary>
+        public ArcLanding PredictLanding(BallisticArc arc) => arc.FindLanding(_ground, _settings.LandingSearchStep);
+
+        /// <summary>
+        /// Fills <paramref name="path"/> with the ball's contact point at each step of the putt this shot would
+        /// play, from where it rests until it stops, is holed or is lost. It plays the shot for real on a private
+        /// copy, so it has every rule of a played shot, slopes and lip-outs included, and it can't disagree with
+        /// one. The copy is reused, because this runs whenever the aim changes. Leaves only the start in the path
+        /// if the shot wouldn't be a putt.
+        /// </summary>
+        public void PredictPutt(Vector2 direction, float power, List<Vector3> path)
+        {
+            path.Clear();
+            path.Add(Position);
+            if (!IsPutt)
+            {
+                return;
+            }
+
+            _predictor ??= new BallSimulation(_ground, _settings, new Vector2(Position.x, Position.z));
+            _predictor.Position = Position;
+            _predictor.Velocity = Vector3.zero;
+            _predictor.State = BallState.Resting;
+            if (!_predictor.Shoot(direction, power))
+            {
+                return;
+            }
+
+            int steps = Mathf.CeilToInt(LongestPredictedRollSeconds / _settings.FixedTimeStep);
+            for (int i = 0; i < steps && _predictor.State == BallState.Rolling; i++)
+            {
+                _predictor.Step();
+                path.Add(_predictor.Position);
+            }
         }
 
         /// <summary>Plays a shot. Refused, returning false, unless the ball is at rest and the direction is real.</summary>
@@ -137,7 +181,7 @@ namespace IsoGolf.Gameplay
         private void FlyAlong(BallisticArc arc)
         {
             _arc = arc;
-            _landing = arc.FindLanding(_ground, _settings.LandingSearchStep);
+            _landing = PredictLanding(arc);
             _arcSteps = 0;
             Velocity = arc.Velocity;
             State = BallState.Flying;
