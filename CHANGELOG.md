@@ -4,6 +4,20 @@ All notable progress on Iso Golf. The format follows [Keep a Changelog](https://
 
 ## [Unreleased]
 
+### 2026-11-04: M2 shot decisions (`feature/m2-plan`)
+
+#### Changed
+
+- Shot gesture: a drag starting on the ball, pulled back like a slingshot, with no hold time by default. Releasing back on the ball cancels.
+- Putt preview: dots along the first part of the true path, about 40%, with no end marker. This closes the open question in `ART_DIRECTION.md`.
+- Putting from just off the green: the green's drawn border is the strict limit, and just outside it a shot is a short arc.
+- Longer courses: the camera stays still until the ball nears the top of the view, then glides after it, and at rest eases until the ball sits low on screen. This closes the open question in `ART_DIRECTION.md`.
+- A finger on the screen during flight pauses that follow, and the camera eases back to the ball once the ball has stopped and the finger has lifted.
+- A ball in the water or off the island returns to where the shot was played after about a second. Gaps between islands stay with the M3 plan.
+- Rolling uses Catmull-Rom curves over the terrain grid: the ball sits on one through the visible vertices, and feels the slope of another, which leaves out the facet noise on the fairway and green. This keeps the approved facets, chosen on the phone over calmer terrain.
+- The ball shadow is a disc mesh following the facets, with no depth texture.
+- The camera drag gets momentum: it keeps gliding and slows down after release.
+
 ### 2026-11-04: M1.5 performance and the look in `Main.unity` (`feature/m1-5-performance-main-scene`)
 
 #### Added
