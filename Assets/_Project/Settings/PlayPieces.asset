@@ -1,0 +1,26 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 35f48a3cf3f9ab94a93cc83ce6206cbe, type: 3}
+  m_Name: PlayPieces
+  m_EditorClassIdentifier: IsoGolf.Generation::IsoGolf.Generation.PlayPieceSettings
+  ballRadius: 0.15
+  shadowRadius: 0.14
+  shadowLift: 0.02
+  holeRadius: 0.25
+  holeLift: 0.01
+  discRings: 3
+  discSegments: 16
+  poleHeight: 1.8
+  poleRadius: 0.03
+  flagLength: 0.6
+  flagHeight: 0.4
+  flagFold: 0.06

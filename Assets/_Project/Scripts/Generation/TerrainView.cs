@@ -18,6 +18,8 @@ namespace IsoGolf.Generation
 
         private readonly List<Mesh> _meshes = new List<Mesh>();
 
+        public CourseShapeSettings Shape => shape;
+
         /// <summary>Points along the island edge, for framing it.</summary>
         public IReadOnlyList<Vector3> Outline { get; private set; }
 
@@ -56,23 +58,7 @@ namespace IsoGolf.Generation
                 return null;
             }
 
-            var indices = new int[data.Positions.Count];
-            for (int i = 0; i < indices.Length; i++)
-            {
-                indices[i] = i;
-            }
-
-            var mesh = new Mesh { name = meshName };
-
-            // A par 3 stays well under this, but a long course could pass the 16-bit vertex limit.
-            mesh.indexFormat = data.Positions.Count > ushort.MaxValue
-                ? UnityEngine.Rendering.IndexFormat.UInt32
-                : UnityEngine.Rendering.IndexFormat.UInt16;
-            mesh.SetVertices(data.Positions);
-            mesh.SetColors(data.Colors);
-            mesh.SetTriangles(indices, 0);
-            mesh.RecalculateNormals();
-            mesh.RecalculateBounds();
+            Mesh mesh = data.ToMesh(meshName);
             _meshes.Add(mesh);
 
             var child = new GameObject(meshName);

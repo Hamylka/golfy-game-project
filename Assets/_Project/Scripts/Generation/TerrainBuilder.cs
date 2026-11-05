@@ -33,6 +33,29 @@ namespace IsoGolf.Generation
             Colors.Add(color);
             Colors.Add(color);
         }
+
+        /// <summary>A new mesh from these triangles, with flat normals. Whoever calls this destroys it.</summary>
+        public Mesh ToMesh(string meshName)
+        {
+            var indices = new int[Positions.Count];
+            for (int i = 0; i < indices.Length; i++)
+            {
+                indices[i] = i;
+            }
+
+            var mesh = new Mesh { name = meshName };
+
+            // A par 3 stays well under this, but a long course could pass the 16-bit vertex limit.
+            mesh.indexFormat = Positions.Count > ushort.MaxValue
+                ? UnityEngine.Rendering.IndexFormat.UInt32
+                : UnityEngine.Rendering.IndexFormat.UInt16;
+            mesh.SetVertices(Positions);
+            mesh.SetColors(Colors);
+            mesh.SetTriangles(indices, 0);
+            mesh.RecalculateNormals();
+            mesh.RecalculateBounds();
+            return mesh;
+        }
     }
 
     /// <summary>What a course's terrain turns into.</summary>

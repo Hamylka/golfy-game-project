@@ -29,6 +29,14 @@ namespace IsoGolf.Generation
         [SerializeField] private Color cloudLight = new Color32(0xFF, 0xFF, 0xFF, 0xFF);
         [SerializeField] private Color cloudShade = new Color32(0xD6, 0xDE, 0xED, 0xFF);
 
+        [Header("Ball and hole")]
+        [SerializeField] private Color ball = new Color32(0xF2, 0xEE, 0xE6, 0xFF);
+        [Tooltip("Slightly transparent and cool, like cast shadows, and never black.")]
+        [SerializeField] private Color ballShadow = new Color32(0x3E, 0x42, 0x60, 0x80);
+        [SerializeField] private Color hole = new Color32(0x34, 0x48, 0x2A, 0xFF);
+        [SerializeField] private Color flag = new Color32(0xC8, 0x42, 0x3B, 0xFF);
+        [SerializeField] private Color flagPole = new Color32(0xF1, 0xEC, 0xE0, 0xFF);
+
         public Color Rough => rough;
         public Color FairwayLight => fairwayLight;
         public Color FairwayDark => fairwayDark;
@@ -45,5 +53,10 @@ namespace IsoGolf.Generation
         public Color Trunk => trunk;
         public Color CloudLight => cloudLight;
         public Color CloudShade => cloudShade;
+        public Color Ball => ball;
+        public Color BallShadow => ballShadow;
+        public Color Hole => hole;
+        public Color Flag => flag;
+        public Color FlagPole => flagPole;
     }
 }
