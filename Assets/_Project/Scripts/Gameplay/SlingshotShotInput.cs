@@ -21,6 +21,7 @@ namespace IsoGolf.Gameplay
         private Camera _camera;
         private ShotGesture _gesture;
         private Vector3 _worldDirection;
+        private Vector3 _heldBall;
 
         public bool IsAiming => _gesture != null && _gesture.IsAiming;
 
@@ -31,8 +32,6 @@ namespace IsoGolf.Gameplay
         public event Action<Vector2, float> ShotReleased;
 
         private bool BallCanBeGrabbed => _ball.Simulation != null && _ball.Simulation.State == BallState.Resting;
-
-        private Vector2 BallOnScreen => _camera.WorldToScreenPoint(transform.position);
 
         private void Awake()
         {
@@ -63,8 +62,15 @@ namespace IsoGolf.Gameplay
 
         private void Update()
         {
+            // From the grab on, the aim reads the ball where it was grabbed. The ball can't move while aimed, only
+            // the course's floating moves it, and that must not change the shot under a still finger.
+            if (!_gesture.IsActive)
+            {
+                _heldBall = transform.position;
+            }
+
             ShotPointer pointer = ReadPointer();
-            bool released = _gesture.Update(pointer, BallOnScreen, Screen.width, BallCanBeGrabbed, Time.unscaledDeltaTime);
+            bool released = _gesture.Update(pointer, _camera.WorldToScreenPoint(_heldBall), Screen.width, BallCanBeGrabbed, Time.unscaledDeltaTime);
 
             // Blocks the mouse wheel as well, and the router stays out of the touch until every finger lifts.
             islandCamera.GesturesEnabled = !_gesture.IsActive;
@@ -82,7 +88,7 @@ namespace IsoGolf.Gameplay
         private void UpdateDirection(Vector2 finger)
         {
             // A released shot uses the last direction read, the one the player saw, not the position it lifted from.
-            if (ShotGesture.TryAim(_camera.ScreenPointToRay(finger), transform.position, out Vector3 world))
+            if (ShotGesture.TryAim(_camera.ScreenPointToRay(finger), _heldBall, out Vector3 world))
             {
                 _worldDirection = world;
             }
@@ -95,7 +101,7 @@ namespace IsoGolf.Gameplay
         private bool IsTouchOnBall(Vector2 viewport)
         {
             var finger = new Vector2((viewport.x + 1f) * 0.5f * Screen.width, (viewport.y + 1f) * 0.5f * Screen.height);
-            return BallCanBeGrabbed && _gesture.IsOnBall(finger, BallOnScreen, Screen.width);
+            return BallCanBeGrabbed && _gesture.IsOnBall(finger, _camera.WorldToScreenPoint(transform.position), Screen.width);
         }
 
         private static ShotPointer ReadPointer()
