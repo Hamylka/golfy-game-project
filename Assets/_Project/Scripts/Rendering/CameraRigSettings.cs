@@ -35,17 +35,20 @@ namespace IsoGolf.Rendering
         [SerializeField, Min(1f)] private float framedLength = 36f;
 
         [Header("Following a shot")]
-        [Tooltip("The camera moves once the ball is this far up the screen. -1 is the bottom edge, 1 the top.")]
-        [SerializeField, Range(0f, 1f)] private float followZoneTop = 0.7f;
+        [Tooltip("The top of the band a flying ball stays in. -1 is the bottom edge of the screen, 1 the top, so 0.2 is 60% up.")]
+        [SerializeField, Range(0f, 1f)] private float followZoneTop = 0.2f;
 
-        [Tooltip("The camera moves once the ball is this far down the screen, for a shot played backward.")]
-        [SerializeField, Range(-1f, 0f)] private float followZoneBottom = -0.85f;
+        [Tooltip("The bottom of that band, which counts once the ball has reached it. -0.2 is 40% up the screen.")]
+        [SerializeField, Range(-1f, 0f)] private float followZoneBottom = -0.2f;
+
+        [Tooltip("How low a ball that hasn't reached the band may go before the camera moves, for a shot played backward.")]
+        [SerializeField, Range(-1f, 0f)] private float followBackstop = -0.85f;
 
         [Tooltip("The camera moves once the ball is this far to either side. 1 is the screen edge.")]
         [SerializeField, Range(0f, 1f)] private float followZoneSide = 0.8f;
 
         [Tooltip("How closely the camera trails a moving ball, in seconds. Lower is closer.")]
-        [SerializeField, Range(0.01f, 2f)] private float followSmoothTime = 0.15f;
+        [SerializeField, Range(0.01f, 2f)] private float followSmoothTime = 0.08f;
 
         [Header("Ball at rest")]
         [Tooltip("Where a stopped ball ends up on screen, from -1 to 1. Must leave room below it for a full pull.")]
@@ -64,6 +67,7 @@ namespace IsoGolf.Rendering
         public float GlideStopSpeed => glideStopSpeed;
         public float FramedLength => framedLength;
         public Rect FollowZone => Rect.MinMaxRect(-followZoneSide, followZoneBottom, followZoneSide, followZoneTop);
+        public float FollowBackstop => followBackstop;
         public float FollowSmoothTime => followSmoothTime;
         public Vector2 RestBallViewport => restBallViewport;
         public float ReturnSmoothTime => returnSmoothTime;

@@ -17,10 +17,11 @@ namespace IsoGolf.Tests
         private const float RestTolerance = 0.05f;
         private const float BallHeight = 0.12f;
         private const float FramedLength = 36f;
-        private const float FollowTime = 0.15f;
+        private const float FollowTime = 0.08f;
         private const float ReturnTime = 0.6f;
 
-        private static readonly Rect Zone = Rect.MinMaxRect(-0.8f, -0.85f, 0.8f, 0.7f);
+        private static readonly Rect Zone = Rect.MinMaxRect(-0.8f, -0.2f, 0.8f, 0.2f);
+        private const float Backstop = -0.85f;
         private static readonly Vector2 Rest = new Vector2(0f, -0.4f);
         private static readonly Vector3 Tee = new Vector3(-37f, BallHeight, 0f);
 
@@ -40,7 +41,7 @@ namespace IsoGolf.Tests
             CourseFrame frame = CameraFraming.FitCourse(CameraFraming.Corners(course), _view, 0.94f, FramedLength);
             Rect limits = Rect.MinMaxRect(course.min.x, course.min.z, course.max.x, course.max.z);
             _navigator = new CameraNavigator(frame.Home, _view, limits, 0f, 0.3f, frame.CorridorLength);
-            _follow = new CameraFollow(_navigator, _view, Zone, Rest, FollowTime, ReturnTime);
+            _follow = new CameraFollow(_navigator, _view, Zone, Backstop, Rest, FollowTime, ReturnTime);
         }
 
         private Vector2 OnScreen(Vector3 ball)
@@ -96,6 +97,59 @@ namespace IsoGolf.Tests
         }
 
         [Test]
+        public void Launch_FromBelowTheBand_DoesNotPullTheCameraBack()
+        {
+            var ball = new Vector3(0f, BallHeight, 0f);
+            _follow.PlaceOn(ball);
+            Vector3 before = _navigator.Position;
+
+            Run(ball, FollowedBallState.Moving, 1f);
+
+            Assert.That(OnScreen(ball).y, Is.LessThan(Zone.yMin));
+            Assert.That((_navigator.Position - before).magnitude, Is.EqualTo(0f).Within(Tolerance));
+        }
+
+        [Test]
+        public void BallLeavingTheBandDownward_AfterReachingIt_IsBroughtBack()
+        {
+            var ball = new Vector3(0f, BallHeight, 0f);
+            _follow.PlaceOn(ball);
+            Vector3 inBand = _view.OnPlane(_navigator.Position, Vector2.zero, BallHeight);
+            Run(inBand, FollowedBallState.Moving, 0.1f);
+
+            Vector3 below = _view.OnPlane(_navigator.Position, new Vector2(0f, -0.6f), BallHeight);
+            Run(below, FollowedBallState.Moving, 3f);
+
+            Assert.That(OnScreen(below).y, Is.EqualTo(Zone.yMin).Within(ViewportTolerance));
+        }
+
+        [Test]
+        public void BackwardShot_ThatNeverReachedTheBand_StopsAtTheBackstop()
+        {
+            var start = new Vector3(0f, BallHeight, 0f);
+            _follow.PlaceOn(start);
+            Vector3 behind = _view.OnPlane(_navigator.Position, new Vector2(0f, -0.95f), BallHeight);
+
+            Run(behind, FollowedBallState.Moving, 3f);
+
+            Assert.That(OnScreen(behind).y, Is.EqualTo(Backstop).Within(ViewportTolerance));
+        }
+
+        [Test]
+        public void NewShot_StartsBelowTheBandAgain_WithNoPullBack()
+        {
+            var first = new Vector3(0f, BallHeight, 0f);
+            _follow.PlaceOn(first);
+            Run(_view.OnPlane(_navigator.Position, Vector2.zero, BallHeight), FollowedBallState.Moving, 0.1f);
+            Run(first, FollowedBallState.AtRest, 8f);
+            Vector3 rested = _navigator.Position;
+
+            Run(first, FollowedBallState.Moving, 1f);
+
+            Assert.That((_navigator.Position - rested).magnitude, Is.EqualTo(0f).Within(Tolerance));
+        }
+
+        [Test]
         public void Moving_InsideTheZone_LeavesTheCameraStill()
         {
             _follow.PlaceOn(Tee);
@@ -139,9 +193,7 @@ namespace IsoGolf.Tests
         [TestCase(0.01f)]
         public void FullPowerShot_NeverLeavesTheView_NorPullsTheCameraBack(float zoomScale)
         {
-            // The longest arc at 40 degrees: 22 m of carry, about 4.6 m high. 0.65 is the default zoom and 0.01 zooms fully in. That leaves
-            // this course's camera about 8 m up. It doesn't cover Main's par 3, whose closest camera is 6.2 m up: there
-            // a near full power apex passes the top of the view for under a second, known and left to the tuning PR.
+            // The longest arc at 40 degrees: 22 m of carry, about 4.6 m high. 0.65 is the default zoom and 0.01 zooms fully in.
             const float Speed = 14.8f;
             const float Gravity = 9.81f;
             float horizontal = Speed * Mathf.Cos(40f * Mathf.Deg2Rad);
@@ -268,7 +320,8 @@ namespace IsoGolf.Tests
             UseCourse(new Bounds(Vector3.zero, new Vector3(34f, 4f, 10f)));
             _navigator.ZoomAround(Vector2.zero, 0.5f);
             float height = _navigator.Position.y;
-            Vector3 ball = BallAboveTheZone();
+            // On the island, so the limits leave the camera room to bring the ball back.
+            Vector3 ball = _view.OnPlane(_navigator.Position, new Vector2(0f, 0.45f), BallHeight);
 
             Run(ball, FollowedBallState.Moving, 3f);
 

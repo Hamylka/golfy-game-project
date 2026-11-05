@@ -84,7 +84,7 @@ namespace IsoGolf.Rendering
             _navigator = new CameraNavigator(_home, _view, limits, groundHeight, settings.ClosestZoom, _corridorLength, fullLimitsZoom);
             var momentum = new PanMomentum(settings.GlideTimeConstant, settings.GlideVelocityWindow, settings.GlideMinReleaseSpeed, settings.GlideStopSpeed);
             _router = new CameraGestureRouter(_navigator, momentum);
-            _follow = new CameraFollow(_navigator, _view, settings.FollowZone, settings.RestBallViewport, settings.FollowSmoothTime, settings.ReturnSmoothTime);
+            _follow = new CameraFollow(_navigator, _view, settings.FollowZone, settings.FollowBackstop, settings.RestBallViewport, settings.FollowSmoothTime, settings.ReturnSmoothTime);
             if (_placedOn.HasValue)
             {
                 StartViewOn(_placedOn.Value);
