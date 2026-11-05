@@ -106,6 +106,20 @@ namespace IsoGolf.Rendering
             ZoomAround(Vector2.zero, target / (Position.y - _groundHeight));
         }
 
+        /// <summary>
+        /// Where the camera would be at this zoom with a point on screen at a given viewport spot, limits applied.
+        /// Nothing moves: the camera is left where it was.
+        /// </summary>
+        public Vector3 PositionWith(float zoom, Vector3 point, Vector2 viewport)
+        {
+            Vector3 before = Position;
+            ZoomTo(zoom);
+            Move(point - _view.OnPlane(Position, viewport, point.y));
+            Vector3 target = Position;
+            Position = before;
+            return target;
+        }
+
         private float GroundDistance(Vector2 a, Vector2 b)
         {
             return (_view.OnPlane(Position, a, _groundHeight) - _view.OnPlane(Position, b, _groundHeight)).magnitude;

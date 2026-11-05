@@ -35,6 +35,7 @@ namespace IsoGolf.Rendering
             Following,
             Paused,
             Returning,
+            Resetting,
         }
 
         private readonly CameraNavigator _navigator;
@@ -47,6 +48,11 @@ namespace IsoGolf.Rendering
         private Phase _phase = Phase.Idle;
         private Vector3 _velocity;
         private bool _reachedBand;
+        private readonly float _defaultZoom;
+        private readonly float _resetSeconds;
+        private Vector3 _resetFrom;
+        private Vector3 _resetTo;
+        private float _resetProgress;
 
         /// <param name="navigator">Moves the camera, and applies its limits.</param>
         /// <param name="view">The camera's fixed rotation and lens.</param>
@@ -55,8 +61,12 @@ namespace IsoGolf.Rendering
         /// <param name="rest">Where the ball ends up on screen once it has stopped, in the same coordinates.</param>
         /// <param name="followSmoothTime">How closely the camera trails a moving ball, in seconds. Lower is closer.</param>
         /// <param name="returnSmoothTime">How slowly the camera eases to a stopped ball, in seconds.</param>
-        public CameraFollow(CameraNavigator navigator, in CameraView view, Rect zone, float backstop, Vector2 rest, float followSmoothTime, float returnSmoothTime)
+        /// <param name="defaultZoom">The zoom a reset view eases to.</param>
+        /// <param name="resetSeconds">How long a reset view takes.</param>
+        public CameraFollow(CameraNavigator navigator, in CameraView view, Rect zone, float backstop, Vector2 rest, float followSmoothTime, float returnSmoothTime, float defaultZoom = 0.5f, float resetSeconds = 0.35f)
         {
+            _defaultZoom = defaultZoom;
+            _resetSeconds = resetSeconds;
             _navigator = navigator;
             _view = view;
             _zone = zone;
@@ -68,6 +78,21 @@ namespace IsoGolf.Rendering
 
         /// <summary>True while easing to a stopped ball. The player's glide must not fight this.</summary>
         public bool IsReturning => _phase == Phase.Returning;
+
+        /// <summary>True while the camera moves itself, to a stopped ball or to the default view.</summary>
+        public bool IsEasing => _phase == Phase.Returning || _phase == Phase.Resetting;
+
+        /// <summary>
+        /// Eases to the default view: the default zoom, with the ball at its rest spot. The target is worked out once,
+        /// here, so it holds still while the camera gets there. A finger or a shot ends it where it is.
+        /// </summary>
+        public void BeginReset(Vector3 ball)
+        {
+            EnterPhase(Phase.Resetting);
+            _resetFrom = _navigator.Position;
+            _resetTo = _navigator.PositionWith(_defaultZoom, ball, _rest);
+            _resetProgress = 0f;
+        }
 
         /// <summary>Call once a frame, with the ball's position free of the course's floating.</summary>
         public void Update(Vector3 ball, FollowedBallState state, bool fingerDown, float deltaTime)
@@ -83,6 +108,16 @@ namespace IsoGolf.Rendering
                 // A held ball gets no target, so a camera still moving settles rather than stopping dead.
                 Vector3 wanted = state == FollowedBallState.Moving ? IntoZone(ball) : Vector3.zero;
                 EaseBy(wanted, _followSmoothTime, deltaTime);
+            }
+            else if (_phase == Phase.Resetting)
+            {
+                _resetProgress = Mathf.Min(1f, _resetProgress + (deltaTime / Mathf.Max(_resetSeconds, 0.0001f)));
+                float eased = Mathf.SmoothStep(0f, 1f, _resetProgress);
+                _navigator.Move(Vector3.Lerp(_resetFrom, _resetTo, eased) - _navigator.Position);
+                if (_resetProgress >= 1f)
+                {
+                    EnterPhase(Phase.Idle);
+                }
             }
             else if (_phase == Phase.Returning)
             {
@@ -103,6 +138,21 @@ namespace IsoGolf.Rendering
 
         private void UpdatePhase(FollowedBallState state, bool fingerDown)
         {
+            if (_phase == Phase.Resetting)
+            {
+                // A shot or a finger takes the camera back at once, wherever the reset had got to.
+                if (state == FollowedBallState.AtRest && !fingerDown)
+                {
+                    return;
+                }
+
+                EnterPhase(Phase.Idle);
+                if (state == FollowedBallState.AtRest)
+                {
+                    return;
+                }
+            }
+
             if (state != FollowedBallState.AtRest)
             {
                 if (_phase == Phase.Idle || _phase == Phase.Returning)

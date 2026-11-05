@@ -57,7 +57,11 @@ namespace IsoGolf.Rendering
         [Tooltip("How slowly the camera eases to a stopped ball, in seconds.")]
         [SerializeField, Range(0.01f, 3f)] private float returnSmoothTime = 0.6f;
 
+        [Tooltip("How long the reset view button takes to ease the camera back to the default view, in seconds.")]
+        [SerializeField, Range(0.05f, 2f)] private float resetSeconds = 0.35f;
+
         public float ScreenFill => screenFill;
+        public float ResetSeconds => resetSeconds;
         public float ClosestZoom => closestZoom;
         public float DefaultZoom => defaultZoom;
         public float WheelZoomStep => wheelZoomStep;

@@ -31,20 +31,36 @@ namespace IsoGolf.Rendering
         private CameraFollow _follow;
         private bool _fingerDown;
         private Vector3? _placedOn;
+        private readonly List<Func<Vector2, bool>> _touchClaims = new List<Func<Vector2, bool>>();
+        private Func<Vector2, bool> _claimsTouch;
 
         /// <summary>Turned off while aiming (from M2), so gestures can't disturb a shot.</summary>
         public bool GesturesEnabled { get; set; } = true;
 
         /// <summary>
-        /// Asked when a first finger lands, in viewport coordinates from -1 to 1. Returning true keeps
-        /// the camera out of that touch. The ball uses this, so dragging on it starts a shot instead.
+        /// Adds a claim, asked when a first finger lands, in viewport coordinates from -1 to 1. If any claim returns
+        /// true, the camera stays out of that touch. The ball claims its touches so dragging on it starts a shot,
+        /// and the reset view button claims its own. Claims add up, so none can overwrite another.
         /// </summary>
-        public Func<Vector2, bool> TouchClaim { get; set; }
+        public void AddTouchClaim(Func<Vector2, bool> claim)
+        {
+            if (claim != null && !_touchClaims.Contains(claim))
+            {
+                _touchClaims.Add(claim);
+            }
+        }
+
+        public void RemoveTouchClaim(Func<Vector2, bool> claim)
+        {
+            _touchClaims.Remove(claim);
+        }
 
         public CameraNavigator Navigator => _navigator;
 
         private void OnEnable()
         {
+            // One delegate for good, since the router is asked every time a finger lands.
+            _claimsTouch ??= ClaimsTouch;
             _camera = GetComponent<Camera>();
             _camera.orthographic = false;
             _camera.fieldOfView = IsoCameraConvention.VerticalFieldOfView;
@@ -63,7 +79,7 @@ namespace IsoGolf.Rendering
             _fingerDown = false;
             if (!ReadTouches() && !ReadMouse())
             {
-                _router.Update(0, default, default, GesturesEnabled, TouchClaim, Time.unscaledDeltaTime);
+                _router.Update(0, default, default, GesturesEnabled, _claimsTouch, Time.unscaledDeltaTime);
             }
 
             transform.position = _navigator.Position;
@@ -84,7 +100,7 @@ namespace IsoGolf.Rendering
             _navigator = new CameraNavigator(_home, _view, limits, groundHeight, settings.ClosestZoom, _corridorLength, fullLimitsZoom);
             var momentum = new PanMomentum(settings.GlideTimeConstant, settings.GlideVelocityWindow, settings.GlideMinReleaseSpeed, settings.GlideStopSpeed);
             _router = new CameraGestureRouter(_navigator, momentum);
-            _follow = new CameraFollow(_navigator, _view, settings.FollowZone, settings.FollowBackstop, settings.RestBallViewport, settings.FollowSmoothTime, settings.ReturnSmoothTime);
+            _follow = new CameraFollow(_navigator, _view, settings.FollowZone, settings.FollowBackstop, settings.RestBallViewport, settings.FollowSmoothTime, settings.ReturnSmoothTime, settings.DefaultZoom, settings.ResetSeconds);
             if (_placedOn.HasValue)
             {
                 StartViewOn(_placedOn.Value);
@@ -121,12 +137,35 @@ namespace IsoGolf.Rendering
         public void Follow(Vector3 ball, FollowedBallState state)
         {
             _follow.Update(ball, state, _fingerDown, Time.unscaledDeltaTime);
-            if (_follow.IsReturning)
+            if (_follow.IsEasing)
             {
                 _router.StopGlide();
             }
 
             transform.position = _navigator.Position;
+        }
+
+        /// <summary>
+        /// Eases the view back to the default one: the default zoom, with this ball at its rest spot on screen. Meant
+        /// for a ball at rest. A finger on the screen, or a shot, hands the camera back to the player.
+        /// </summary>
+        public void ResetView(Vector3 ball)
+        {
+            _router.StopGlide();
+            _follow.BeginReset(ball);
+        }
+
+        private bool ClaimsTouch(Vector2 viewport)
+        {
+            for (int i = 0; i < _touchClaims.Count; i++)
+            {
+                if (_touchClaims[i](viewport))
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         /// <summary>The rectangle a horizontal plane shows across the framed views, the widest the player can see.</summary>
@@ -189,7 +228,7 @@ namespace IsoGolf.Rendering
             _fingerDown = true;
             Vector2 a = ToViewport(first.position.ReadValue());
             Vector2 b = second != null ? ToViewport(second.position.ReadValue()) : default;
-            _router.Update(pressed, a, b, GesturesEnabled, TouchClaim, Time.unscaledDeltaTime);
+            _router.Update(pressed, a, b, GesturesEnabled, _claimsTouch, Time.unscaledDeltaTime);
             return true;
         }
 
@@ -204,7 +243,7 @@ namespace IsoGolf.Rendering
 
             _fingerDown = mouse.leftButton.isPressed;
             Vector2 position = ToViewport(mouse.position.ReadValue());
-            _router.Update(mouse.leftButton.isPressed ? 1 : 0, position, default, GesturesEnabled, TouchClaim, Time.unscaledDeltaTime);
+            _router.Update(mouse.leftButton.isPressed ? 1 : 0, position, default, GesturesEnabled, _claimsTouch, Time.unscaledDeltaTime);
 
             float scroll = mouse.scroll.ReadValue().y;
             if (GesturesEnabled && !Mathf.Approximately(scroll, 0f))

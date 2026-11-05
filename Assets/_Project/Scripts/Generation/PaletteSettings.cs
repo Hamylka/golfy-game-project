@@ -44,6 +44,14 @@ namespace IsoGolf.Generation
         [Tooltip("The gauge's border and its empty part. Warm and dark, and never black.")]
         [SerializeField] private Color gaugeBorder = new Color32(0x3A, 0x2E, 0x25, 0xFF);
 
+        [Header("Buttons")]
+        [Tooltip("A button's ring and dot. Warm and dark, never black.")]
+        [SerializeField] private Color buttonMark = new Color32(0x3A, 0x2E, 0x25, 0xFF);
+        [Tooltip("A soft, see-through disc behind a button, so it reads over sky and over grass.")]
+        [SerializeField] private Color buttonBacking = new Color32(0xF2, 0xEE, 0xE6, 0xB0);
+
+        public Color ButtonMark => buttonMark;
+        public Color ButtonBacking => buttonBacking;
         public Color Rough => rough;
         public Color FairwayLight => fairwayLight;
         public Color FairwayDark => fairwayDark;
