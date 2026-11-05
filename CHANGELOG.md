@@ -4,6 +4,19 @@ All notable progress on Iso Golf. The format follows [Keep a Changelog](https://
 
 ## [Unreleased]
 
+### 2026-11-05: M2 tuning (`feature/m2-tuning`)
+
+#### Added
+
+- `ShotSweep` and `ShotSweepTests` (EditMode, no scene): plays shots from the tee at the hole over a range of aims and powers and counts what holes out, for any `ShotSettings`. It runs at 0.01 power steps as well as the old 0.05 grid. Tests pin that the sweep is repeatable, that holes in one stay rare (under 1.5% of the fine sweep) and that full power never holes.
+
+#### Changed
+
+- `ShotSettings`: `maxCarry` 22 to 26 and `launchAngle` 40 to 36 (apex at full power 4.6 m to 4.7 m, so camera framing and follow are unaffected); fairway restitution 0.30 to 0.40 and tangent keep 0.55 to 0.45; green restitution 0.25 to 0.30 and tangent keep 0.50 to 0.45; rough restitution 0.20 to 0.25. Bounces are livelier and the landing spot matters more. Everything else (pull curves, carries, capture and lip-out, gesture radius, aim preview) is unchanged.
+- Why: a full-power shot always holed out when aimed within about 1 degree, because any pull past 30% of the screen is exactly power 1. Full power now ends 2 m past the hole; a hole in one needs a power of about 0.87 to 0.93, so a pull within roughly 11 px, as well as the aim.
+- Sweep, par 3 (28.2 m), +-6 deg at 0.1 deg: grid (power 0.50 to 1.00 at 0.05) 11 of 1331 holed before, 0 after; fine (0.01 steps) 42 of 6171 before at powers 0.97 to 1.00, 61 of 6171 after at powers 0.87 to 0.93. A straight full-power shot used to land at x=8.3, roll 6.8 m and stop 0.84 m past the hole; now it lands at x=12.0, rolls 4.3 m and stops 2.1 m past.
+- Left for the phone: whether slopes read, the ball sitting up to 17.5 cm off a facet in the rough, and whether the livelier hops (about 0.9 m at full power) feel right.
+
 ### 2026-11-05: Reset view button (`feature/m2-reset-view`)
 
 #### Added
