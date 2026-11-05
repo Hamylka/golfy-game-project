@@ -4,6 +4,22 @@ All notable progress on Iso Golf. The format follows [Keep a Changelog](https://
 
 ## [Unreleased]
 
+### 2026-11-05: Reset view button (`feature/m2-reset-view`)
+
+#### Added
+
+- A small reset view button in the top right, inside the safe area. Pressing it eases the camera back to the default view: the default zoom, with the ball at its rest spot. It takes 0.35 s (`CameraRigSettings.ResetSeconds`), and a finger on the screen or a shot ends it where it is.
+- It shows only while the ball rests and nothing is being aimed, so nothing else is on screen during a shot, the flight included (decided with the player).
+- `ResetViewButton` draws it as a mesh in front of the camera, with no Canvas or EventSystem: a see-through cream disc, and a ring and dot in warm dark `#3A2E25`. `ResetViewButtonLayout` and `ResetViewButtonState` hold the placement and press rules as plain C#: a press counts when the touch began and lifted on the button, and sliding off or a second finger cancels it.
+- `CameraFollow` has a reset phase, and `CameraNavigator.PositionWith` works out the target once, limits applied.
+- `AimMesh.AddRing`, button colors in `PaletteSettings`, and `ResetViewButtonSettings` with its asset, with starting values for the tuning PR.
+- Tests for the layout, the press rules, the reset ease, `PositionWith` and the ring, and a button check in `MainSceneTests`.
+
+#### Changed
+
+- `IslandCamera.TouchClaim` is now `AddTouchClaim` and `RemoveTouchClaim`: claims add up, so the button and the ball can't overwrite each other. `SlingshotShotInput` and `SandboxBallTouchClaim` use them.
+- `IsoGolf.UI` now references `IsoGolf.Rendering` and `Unity.InputSystem`.
+
 ### 2026-11-05: Camera follow (`feature/m2-camera-follow`)
 
 #### Added

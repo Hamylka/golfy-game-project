@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 
 namespace IsoGolf.Rendering
@@ -15,11 +16,18 @@ namespace IsoGolf.Rendering
         [SerializeField, Range(0.01f, 0.3f)] private float touchRadius = 0.08f;
 
         private Camera _camera;
+        private Func<Vector2, bool> _claim;
 
         private void OnEnable()
         {
             _camera = GetComponent<Camera>();
-            GetComponent<IslandCamera>().TouchClaim = IsOnBall;
+            _claim = IsOnBall;
+            GetComponent<IslandCamera>().AddTouchClaim(_claim);
+        }
+
+        private void OnDisable()
+        {
+            GetComponent<IslandCamera>().RemoveTouchClaim(_claim);
         }
 
         private bool IsOnBall(Vector2 viewport)

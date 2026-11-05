@@ -108,6 +108,27 @@ namespace IsoGolf.Tests
         }
 
         [Test]
+        public void Ring_StaysBetweenItsRadii_AndFacesTheCamera()
+        {
+            _mesh.AddRing(Vector3.zero, 0.6f, 1f, 12, Vector3.right, Vector3.up, Mark);
+
+            Assert.That(_mesh.Positions.Count, Is.EqualTo(24));
+            Assert.That(_mesh.Triangles.Count, Is.EqualTo(72));
+            foreach (Vector3 position in _mesh.Positions)
+            {
+                Assert.That(position.magnitude, Is.EqualTo(0.6f).Within(0.0001f).Or.EqualTo(1f).Within(0.0001f));
+            }
+
+            for (int i = 0; i < _mesh.Triangles.Count; i += 3)
+            {
+                Vector3 a = _mesh.Positions[_mesh.Triangles[i]];
+                Vector3 b = _mesh.Positions[_mesh.Triangles[i + 1]];
+                Vector3 c = _mesh.Positions[_mesh.Triangles[i + 2]];
+                Assert.That(Vector3.Cross(b - a, c - a).z, Is.LessThan(0f), $"triangle {i / 3}");
+            }
+        }
+
+        [Test]
         public void ScreenWidth_MatchesTheFrustumAtThatDepth()
         {
             // At 90° the frustum's height is twice the depth, and a 0.5 aspect makes the width half of that.

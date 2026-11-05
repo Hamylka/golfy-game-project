@@ -235,6 +235,23 @@ namespace IsoGolf.Tests
         }
 
         [Test]
+        public void PositionWith_PutsThePointAtTheViewportSpot_AtThatZoom_AndMovesNothing()
+        {
+            // From the default zoom on the view reaches the whole island, as in the game, so the point can be placed.
+            var navigator = new CameraNavigator(_home, _view, Limits, 0f, ClosestZoom, 0f, 0.5f);
+            navigator.ZoomTo(1f);
+            var point = new Vector3(3f, 0.1f, 1f);
+            Vector3 before = navigator.Position;
+
+            Vector3 target = navigator.PositionWith(0.5f, point, new Vector2(0f, -0.4f));
+
+            Assert.That(navigator.Position, Is.EqualTo(before));
+            Assert.That(target.y, Is.EqualTo(Mathf.Lerp(_home.y, _home.y * ClosestZoom, 0.5f)).Within(Tolerance));
+            Assert.That(_view.ToViewport(target, point).y, Is.EqualTo(-0.4f).Within(0.02f));
+            Assert.That(_view.ToViewport(target, point).x, Is.EqualTo(0f).Within(0.02f));
+        }
+
+        [Test]
         public void Gesture_SameSpread_MovedTogether_PansWithoutZooming()
         {
             ZoomFullyIn();

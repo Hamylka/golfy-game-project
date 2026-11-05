@@ -299,6 +299,85 @@ namespace IsoGolf.Tests
             Assert.That(OnScreen(origin).y, Is.EqualTo(Rest.y).Within(RestTolerance));
         }
 
+        /// <summary>The player has zoomed in and panned away, with the ball resting on the tee.</summary>
+        private void PlayerWanderedOff()
+        {
+            _follow.PlaceOn(Tee);
+            _navigator.ZoomAround(Vector2.zero, 0.5f);
+            _navigator.Move(new Vector3(12f, 0f, 0f));
+        }
+
+        [Test]
+        public void Reset_EasesToTheDefaultZoom_WithTheBallAtItsRestSpot()
+        {
+            PlayerWanderedOff();
+
+            _follow.BeginReset(Tee);
+            Run(Tee, FollowedBallState.AtRest, 1f);
+
+            Assert.That(_navigator.Zoom, Is.EqualTo(0.5f).Within(Tolerance));
+            Assert.That(OnScreen(Tee).y, Is.EqualTo(Rest.y).Within(RestTolerance));
+            Assert.That(OnScreen(Tee).x, Is.EqualTo(Rest.x).Within(0.2f));
+            Assert.That(_follow.IsEasing, Is.False);
+        }
+
+        [Test]
+        public void Reset_Eases_AndDoesNotJump()
+        {
+            PlayerWanderedOff();
+            Vector3 start = _navigator.Position;
+
+            _follow.BeginReset(Tee);
+            _follow.Update(Tee, FollowedBallState.AtRest, false, Frame);
+
+            Assert.That(_follow.IsEasing, Is.True);
+            Assert.That((_navigator.Position - start).magnitude, Is.LessThan(2f));
+
+            // Halfway through the time, it hasn't arrived.
+            Run(Tee, FollowedBallState.AtRest, 0.15f);
+            Assert.That(_follow.IsEasing, Is.True);
+        }
+
+        [Test]
+        public void Reset_FingerOnTheScreen_CancelsItWhereItIs()
+        {
+            PlayerWanderedOff();
+            _follow.BeginReset(Tee);
+            Run(Tee, FollowedBallState.AtRest, 0.15f);
+
+            _follow.Update(Tee, FollowedBallState.AtRest, true, Frame);
+            Vector3 stopped = _navigator.Position;
+            Assert.That(_follow.IsEasing, Is.False);
+
+            Run(Tee, FollowedBallState.AtRest, 2f);
+            Assert.That((_navigator.Position - stopped).magnitude, Is.EqualTo(0f).Within(Tolerance));
+        }
+
+        [Test]
+        public void Reset_ABallInMotion_HandsTheCameraToTheFollow()
+        {
+            PlayerWanderedOff();
+            _follow.BeginReset(Tee);
+
+            _follow.Update(Tee, FollowedBallState.Moving, false, Frame);
+
+            Assert.That(_follow.IsEasing, Is.False);
+        }
+
+        [Test]
+        public void Reset_Ends_AndHandsTheCameraBackToThePlayer()
+        {
+            PlayerWanderedOff();
+            _follow.BeginReset(Tee);
+            Run(Tee, FollowedBallState.AtRest, 2f);
+
+            _navigator.Move(new Vector3(3f, 0f, 0f));
+            Vector3 panned = _navigator.Position;
+            Run(Tee, FollowedBallState.AtRest, 1f);
+
+            Assert.That((_navigator.Position - panned).magnitude, Is.EqualTo(0f).Within(Tolerance));
+        }
+
         [Test]
         public void FramedPar3_FullyZoomedOut_NeverMoves()
         {

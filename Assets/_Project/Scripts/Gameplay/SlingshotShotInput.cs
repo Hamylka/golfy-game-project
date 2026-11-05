@@ -22,6 +22,7 @@ namespace IsoGolf.Gameplay
         private ShotGesture _gesture;
         private Vector3 _worldDirection;
         private Vector3 _heldBall;
+        private Func<Vector2, bool> _touchClaim;
 
         public bool IsAiming => _gesture != null && _gesture.IsAiming;
 
@@ -38,16 +39,17 @@ namespace IsoGolf.Gameplay
             _ball = GetComponent<BallView>();
             _camera = islandCamera.GetComponent<Camera>();
             _gesture = new ShotGesture(shot.TouchRadius, shot.FullPowerPull, shot.HoldSeconds);
+            _touchClaim = IsTouchOnBall;
         }
 
         private void OnEnable()
         {
-            islandCamera.TouchClaim = IsTouchOnBall;
+            islandCamera.AddTouchClaim(_touchClaim);
         }
 
         private void OnDisable()
         {
-            islandCamera.TouchClaim = null;
+            islandCamera.RemoveTouchClaim(_touchClaim);
             islandCamera.GesturesEnabled = true;
             _gesture.Cancel();
         }

@@ -143,6 +143,20 @@ namespace IsoGolf.Tests
         }
 
         [Test]
+        public void ResetViewButtonLivesOnTheCamera_AndResetsThatCameraToTheBall()
+        {
+            ResetViewButton button = Root("Island Camera").GetComponentInChildren<ResetViewButton>(true);
+            var serialized = new SerializedObject(button);
+
+            Assert.That(button, Is.Not.Null);
+            Assert.That(serialized.FindProperty("islandCamera").objectReferenceValue, Is.EqualTo(Root("Island Camera").GetComponent<IslandCamera>()));
+            Assert.That(serialized.FindProperty("ball").objectReferenceValue, Is.EqualTo(Root("Course").GetComponentInChildren<BallView>(true)));
+            Assert.That(serialized.FindProperty("settings").objectReferenceValue, Is.Not.Null);
+            Assert.That(serialized.FindProperty("palette").objectReferenceValue, Is.Not.Null);
+            Assert.That(button.GetComponent<MeshRenderer>().sharedMaterial.name, Is.EqualTo("GroundShadow"));
+        }
+
+        [Test]
         public void AimPreviewReadsTheBallAndDrawsWithSeeThroughVertexColors()
         {
             AimPreview aim = Root("Course").GetComponentInChildren<AimPreview>(true);

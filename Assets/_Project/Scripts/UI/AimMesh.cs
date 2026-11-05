@@ -50,6 +50,30 @@ namespace IsoGolf.UI
             }
         }
 
+        /// <summary>A flat ring facing the camera, between an inner and an outer radius.</summary>
+        public void AddRing(Vector3 center, float innerRadius, float outerRadius, int segments, Vector3 right, Vector3 up, Color32 color)
+        {
+            int first = Positions.Count;
+            for (int i = 0; i < segments; i++)
+            {
+                float angle = i * Mathf.PI * 2f / segments;
+                Vector3 direction = (right * Mathf.Cos(angle)) + (up * Mathf.Sin(angle));
+                AddVertex(center + (direction * innerRadius), color);
+                AddVertex(center + (direction * outerRadius), color);
+            }
+
+            // Same winding as a dot: counterclockwise as the camera sees it.
+            for (int i = 0; i < segments; i++)
+            {
+                int inner = first + (i * 2);
+                int outer = inner + 1;
+                int nextInner = first + (((i + 1) % segments) * 2);
+                int nextOuter = nextInner + 1;
+                AddTriangle(inner, nextOuter, outer);
+                AddTriangle(inner, nextInner, nextOuter);
+            }
+        }
+
         /// <summary>
         /// A horizontal gauge facing the camera: the border and empty part in one color, with the fill growing
         /// from the left inside it. Width and height include the border.
