@@ -13,6 +13,7 @@ namespace IsoGolf.Rendering
         private readonly Rect _groundLimits;
         private readonly float _groundHeight;
         private readonly float _closestHeight;
+        private readonly float _corridorLength;
         private CameraView _view;
 
         /// <param name="homePosition">The fully zoomed out camera position.</param>
@@ -20,8 +21,10 @@ namespace IsoGolf.Rendering
         /// <param name="groundLimits">Where the view centre may go when fully zoomed in, in world X and Z.</param>
         /// <param name="groundHeight">World height of the ground plane.</param>
         /// <param name="closestFraction">Closest zoom, as a fraction of the home distance to the ground.</param>
-        public CameraNavigator(Vector3 homePosition, in CameraView view, Rect groundLimits, float groundHeight, float closestFraction)
+        /// <param name="corridorLength">How far along +X the fully zoomed out view can travel, for a long course.</param>
+        public CameraNavigator(Vector3 homePosition, in CameraView view, Rect groundLimits, float groundHeight, float closestFraction, float corridorLength = 0f)
         {
+            _corridorLength = corridorLength;
             _homePosition = homePosition;
             _view = view;
             _groundLimits = groundLimits;
@@ -75,6 +78,12 @@ namespace IsoGolf.Rendering
             return Position - before;
         }
 
+        /// <summary>The part of a move that the limits would allow, without moving.</summary>
+        public Vector3 Reachable(Vector3 displacement)
+        {
+            return Clamp(Position + displacement) - Position;
+        }
+
         /// <summary>
         /// Scales the camera's distance around the ground under a viewport point, which keeps that point
         /// in place on screen. A scale below 1 moves closer. The lens and rotation never change.
@@ -94,12 +103,12 @@ namespace IsoGolf.Rendering
 
         private Vector3 Clamp(Vector3 position)
         {
-            // The allowed area grows from a single point when zoomed out to the full limits when
-            // zoomed in. So zooming out always lands back on the framed island, with no off-centre
-            // view that would need correcting afterwards.
+            // The allowed area grows from the framed views when zoomed out to the full limits when zoomed in.
+            // That's a single point on a course that fits one view, and a line along +X on a longer one. So zooming
+            // out always lands back on a framed view, with no off-centre view that would need correcting afterwards.
             float zoom = Mathf.InverseLerp(_homePosition.y, _closestHeight, position.y);
             float minX = Mathf.Lerp(_homeCenter.x, _groundLimits.xMin, zoom);
-            float maxX = Mathf.Lerp(_homeCenter.x, _groundLimits.xMax, zoom);
+            float maxX = Mathf.Lerp(_homeCenter.x + _corridorLength, _groundLimits.xMax, zoom);
             float minZ = Mathf.Lerp(_homeCenter.z, _groundLimits.yMin, zoom);
             float maxZ = Mathf.Lerp(_homeCenter.z, _groundLimits.yMax, zoom);
 

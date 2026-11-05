@@ -41,9 +41,53 @@ namespace IsoGolf.Rendering
         }
     }
 
+    /// <summary>How a course is framed when fully zoomed out.</summary>
+    public readonly struct CourseFrame
+    {
+        public CourseFrame(Vector3 home, float corridorLength)
+        {
+            Home = home;
+            CorridorLength = corridorLength;
+        }
+
+        /// <summary>The first view, at the course's -X end.</summary>
+        public Vector3 Home { get; }
+
+        /// <summary>How far along +X the view can travel from there. Zero for a course that fits in one view.</summary>
+        public float CorridorLength { get; }
+    }
+
     public static class CameraFraming
     {
         private const int Iterations = 60;
+
+        /// <summary>
+        /// Frames a whole course if it's no longer than <paramref name="framedLength"/> along X. A longer one is
+        /// framed as a box that long and as wide as the course, so every stretch shows at the same scale.
+        /// </summary>
+        public static CourseFrame FitCourse(IReadOnlyList<Vector3> points, in CameraView view, float screenFill, float framedLength)
+        {
+            float minX = float.MaxValue, maxX = float.MinValue, minY = float.MaxValue, maxY = float.MinValue, minZ = float.MaxValue, maxZ = float.MinValue;
+            foreach (Vector3 point in points)
+            {
+                minX = Mathf.Min(minX, point.x);
+                maxX = Mathf.Max(maxX, point.x);
+                minY = Mathf.Min(minY, point.y);
+                maxY = Mathf.Max(maxY, point.y);
+                minZ = Mathf.Min(minZ, point.z);
+                maxZ = Mathf.Max(maxZ, point.z);
+            }
+
+            float length = maxX - minX;
+            if (length <= framedLength)
+            {
+                return new CourseFrame(Fit(points, view, screenFill), 0f);
+            }
+
+            var first = new Bounds();
+            first.SetMinMax(new Vector3(minX, minY, minZ), new Vector3(minX + framedLength, maxY, maxZ));
+            return new CourseFrame(Fit(Corners(first), view, screenFill), length - framedLength);
+        }
 
         /// <summary>The rectangle of a horizontal plane that a camera at this position sees.</summary>
         public static Rect GroundFootprint(Vector3 position, in CameraView view, float height)
