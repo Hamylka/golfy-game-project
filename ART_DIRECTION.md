@@ -88,9 +88,9 @@ No photo textures, no fine normal maps.
 - **Minimal and diegetic**. No cluttered HUD.
 - Power bar: a small yellow gauge (`#E6B53A`) with a dark border, floating above the ball.
 - Aiming: a dotted white arc following the bell-shaped shot curve, with the landing point marked by a small cross or circle on the ground.
-- Putting: on the green there is no arc and no landing marker. The preview stays on the ground. **Open:** its exact form, to settle in the M2 shot prototype.
-- Shot gesture: a hold and drag that starts on the ball. Its visual feedback is limited to the gauge and the arc.
-- Camera gestures: one-finger drag to move around and pinch to zoom, both within the island. Blocked while aiming, allowed during flight.
+- Putting: on the green there is no arc and no landing marker. The preview stays on the ground: dots along the first part of the putt's true path, about 40%, with no end marker. It never lies, and it leaves the rest of the slope to be read from the facets.
+- Shot gesture: a drag that starts on the ball, pulled back like a slingshot. Its visual feedback is limited to the gauge and the arc.
+- Camera gestures: one-finger drag to move around, which keeps gliding and slows down after release, and pinch to zoom, both within the island. Blocked while aiming, allowed during flight.
 - Typography: a small, readable font in a warm dark color (`#3A2E25`) over the sky.
 - Transitions: fade to white between levels, or the next island "dropping" into place.
 
@@ -100,7 +100,8 @@ No photo textures, no fine normal maps.
 
 - **The ball is the player.** Off-white and small, but always readable on the phone, with a round shadow on the ground, essential for reading height.
 - **Bell-shaped arc** shots away from the green: rise, apex, descent. The shadow stays on the ground and meets the ball on landing: it is what makes the arc readable.
-- **Putts on the green**: the ball only rolls along the ground, with no flight.
+- **Putts on the green**: the ball only rolls along the ground, with no flight. The green's drawn border is the strict limit: just outside it, a shot is a short arc.
+- **Lost ball**: in the water or off the island, the ball sinks or falls out of sight, then returns to where the shot was played after about a second.
 - **Slopes affect the ball**: it rolls downhill, curves on a side slope, travels further going down and stops sooner going up. Start with gentle slopes, which suit the calm mood. Slopes must be readable on the phone through facet shading; judge that before adding any guide marks.
 - Light trail in flight, a small puff of grass or sand on impact, short bounces.
 
@@ -109,7 +110,7 @@ No photo textures, no fine normal maps.
 - Progression through **procedurally generated levels**, each one an island diorama.
 - Constant play axis: start in the **south-west**, finish in the **north-east**. On screen: the course runs **up the screen with a slight lean to the right**, from bottom-left to top-right.
 - The start is always in the lower part of the island, the green in the upper part: the eye reads the level in the direction of the shot.
-- **Par 3 courses** fit the whole island in one view. **Longer courses (par 4, par 5, possibly more)** are only partly visible at once, which leaves room for more detail on the course: the camera moves along the course during play, always at the same rotation. **Open:** exactly how it moves, to settle in the M2 shot prototype. Between levels, the next island appears to the north-east (camera slide or fade to white).
+- **Par 3 courses** fit the whole island in one view. **Longer courses (par 4, par 5, possibly more)** are only partly visible at once, which leaves room for more detail on the course: the camera moves along the course during play, always at the same rotation. It stays still until the ball nears the top of the view, then glides after it, and at rest eases until the ball sits low on screen with the course ahead. A finger on the screen during flight pauses this follow, and the camera eases back to the ball once the ball has stopped and the finger has lifted. Between levels, the next island appears to the north-east (camera slide or fade to white).
 
 ### Procedural kit
 
