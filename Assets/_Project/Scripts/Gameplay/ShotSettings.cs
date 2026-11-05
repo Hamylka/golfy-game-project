@@ -75,8 +75,14 @@ namespace IsoGolf.Gameplay
         [Header("Hole")]
         [Tooltip("How close to the hole's center the ball's contact point must be, in metres.")]
         [SerializeField, Min(0.01f)] private float holeCaptureRadius = 0.25f;
-        [Tooltip("Faster than this along the ground, in m/s, the ball runs over the hole.")]
-        [SerializeField, Min(0f)] private float holeCaptureSpeed = 2.2f;
+        [Tooltip("Fastest capture for a line through the hole's center, in m/s. Faster lips out.")]
+        [SerializeField, Min(0f)] private float centerCaptureSpeed = 2.6f;
+        [Tooltip("Fastest capture for a line that only touches the rim, in m/s. Slower is always captured.")]
+        [SerializeField, Min(0f)] private float rimCaptureSpeed = 1f;
+        [Tooltip("Most a lip-out can turn the ball, in degrees. It also sets the curve: this much turn along one hole radius.")]
+        [SerializeField, Range(0f, 120f)] private float lipOutMaxTurn = 70f;
+        [Tooltip("Share of its speed the ball keeps through a lip-out on a central line. A graze keeps it all.")]
+        [SerializeField, Range(0f, 1f)] private float lipOutSpeedKeep = 0.6f;
         [Tooltip("How far below the ground the captured ball settles, in metres.")]
         [SerializeField, Min(0f)] private float holeDepth = 0.35f;
         [SerializeField, Min(0.01f)] private float holeDropSpeed = 1.5f;
@@ -97,7 +103,10 @@ namespace IsoGolf.Gameplay
         public int MaxBounces => maxBounces;
         public float SlopePull => slopePull;
         public float HoleCaptureRadius => holeCaptureRadius;
-        public float HoleCaptureSpeed => holeCaptureSpeed;
+        public float CenterCaptureSpeed => centerCaptureSpeed;
+        public float RimCaptureSpeed => rimCaptureSpeed;
+        public float LipOutMaxTurn => lipOutMaxTurn;
+        public float LipOutSpeedKeep => lipOutSpeedKeep;
         public float HoleDepth => holeDepth;
         public float HoleDropSpeed => holeDropSpeed;
         public float LostSeconds => lostSeconds;

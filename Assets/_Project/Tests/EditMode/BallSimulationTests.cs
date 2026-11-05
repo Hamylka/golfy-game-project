@@ -355,7 +355,7 @@ namespace IsoGolf.Tests
         }
 
         [Test]
-        public void Hole_ABallThatIsTooFast_RunsOver()
+        public void Hole_ABallTooFastForACentralLine_CarriesOnStraight()
         {
             var ground = PlaneBallGround.All(CourseSurface.Green);
             ground.Hole = new Vector2(0.5f, 0f);
@@ -366,6 +366,147 @@ namespace IsoGolf.Tests
 
             Assert.That(ball.State, Is.EqualTo(BallState.Resting));
             Assert.That(ball.Position.x, Is.GreaterThan(0.5f));
+            Assert.That(ball.Position.z, Is.EqualTo(0f), "Dead center gives the rim no side to turn the ball toward.");
+        }
+
+        /// <summary>A putt along +X whose line passes the hole's center at this offset, reaching the rim at about this speed.</summary>
+        private BallSimulation PuttPastHole(float offset, float entrySpeed, out PlaneBallGround ground)
+        {
+            const float Run = 2f;
+            float deceleration = _settings.ResponseOf(CourseSurface.Green).RollingDeceleration;
+            float distance = ((entrySpeed * entrySpeed) / (2f * deceleration)) + Run;
+            float power = Mathf.InverseLerp(_settings.PuttDistanceFor(0f), _settings.PuttDistanceFor(1f), distance);
+
+            ground = PlaneBallGround.All(CourseSurface.Green);
+            float rimAhead = Mathf.Sqrt((_settings.HoleCaptureRadius * _settings.HoleCaptureRadius) - (offset * offset));
+            ground.Hole = new Vector2(Run + rimAhead, offset);
+            var ball = new BallSimulation(ground, _settings, Vector2.zero);
+            ball.Shoot(Vector2.right, power);
+            return ball;
+        }
+
+        private float FastestCapture(float offsetShare)
+        {
+            var fromCenter = new Vector2(0f, _settings.HoleCaptureRadius * offsetShare);
+            float speed = 0f;
+            while (HoleRim.Meet(fromCenter, new Vector2(speed + 0.01f, 0f), _settings).Captured)
+            {
+                speed += 0.01f;
+            }
+
+            return speed;
+        }
+
+        [Test]
+        public void Lip_TheSameSpeed_DropsOnACentralLine_AndLipsOutNearTheRim()
+        {
+            float speed = _settings.CenterCaptureSpeed - 0.05f;
+
+            BallSimulation central = PuttPastHole(0f, speed, out _);
+            RunUntilSettled(central);
+            Assert.That(central.State, Is.EqualTo(BallState.Holed));
+
+            BallSimulation offCenter = PuttPastHole(_settings.HoleCaptureRadius * 0.8f, speed, out _);
+            RunUntilSettled(offCenter);
+            Assert.That(offCenter.State, Is.EqualTo(BallState.Resting));
+        }
+
+        [TestCase(0.45f)]
+        [TestCase(-0.45f)]
+        public void Lip_TurnsTheBallAwayFromTheCenter(float offsetShare)
+        {
+            float offset = _settings.HoleCaptureRadius * offsetShare;
+            BallSimulation ball = PuttPastHole(offset, _settings.CenterCaptureSpeed + 0.5f, out PlaneBallGround ground);
+            RunUntilSettled(ball);
+
+            Assert.That(ball.State, Is.EqualTo(BallState.Resting));
+
+            // The hole is on the offset's side of the ball's line, so the ball ends up on the other side.
+            Assert.That(ball.Position.z * Mathf.Sign(offset), Is.LessThan(-0.05f));
+            Assert.That(ball.Position.x, Is.GreaterThan(ground.Hole.x), "The turn bends the ball's path. It doesn't send it back.");
+        }
+
+        [Test]
+        public void Lip_SlowsTheBall()
+        {
+            float entry = _settings.CenterCaptureSpeed + 0.5f;
+            float deceleration = _settings.ResponseOf(CourseSurface.Green).RollingDeceleration;
+            float withoutRim = (entry * entry) / (2f * deceleration);
+
+            BallSimulation ball = PuttPastHole(0f, entry, out PlaneBallGround ground);
+            RunUntilSettled(ball);
+
+            Assert.That(ball.Position.x - (ground.Hole.x - _settings.HoleCaptureRadius), Is.LessThan(withoutRim * 0.6f));
+        }
+
+        [Test]
+        public void Lip_AGraze_BarelyChangesTheBall()
+        {
+            RimMeeting meeting = HoleRim.Meet(
+                new Vector2(0f, _settings.HoleCaptureRadius * -0.999f),
+                new Vector2(4f, 0f),
+                _settings);
+
+            Assert.That(meeting.Captured, Is.False);
+            Assert.That(Mathf.Abs(meeting.TurnDegrees), Is.LessThan(5f));
+            Assert.That(meeting.SpeedKeep, Is.GreaterThan(0.95f));
+        }
+
+        [Test]
+        public void Lip_ASlowBallIsCaptured_HoweverCloseToTheRim()
+        {
+            RimMeeting meeting = HoleRim.Meet(
+                new Vector2(0f, _settings.HoleCaptureRadius * 0.999f),
+                new Vector2(_settings.RimCaptureSpeed, 0f),
+                _settings);
+
+            Assert.That(meeting.Captured, Is.True);
+        }
+
+        [Test]
+        public void Lip_CaptureSpeedOnlyGrowsTowardTheCenter()
+        {
+            float previous = 0f;
+            for (int i = 19; i >= 0; i--)
+            {
+                float limit = FastestCapture(i * 0.05f);
+                Assert.That(limit, Is.GreaterThanOrEqualTo(previous), $"at offset share {i * 0.05f}");
+                previous = limit;
+            }
+
+            Assert.That(previous, Is.EqualTo(_settings.CenterCaptureSpeed).Within(0.02f));
+        }
+
+        [Test]
+        public void Lip_IsTheSameEveryTime()
+        {
+            float offset = _settings.HoleCaptureRadius * 0.6f;
+            BallSimulation first = PuttPastHole(offset, _settings.CenterCaptureSpeed, out _);
+            BallSimulation second = PuttPastHole(offset, _settings.CenterCaptureSpeed, out _);
+            RunUntilSettled(first);
+            RunUntilSettled(second);
+
+            Assert.That(second.Position, Is.EqualTo(first.Position));
+        }
+
+        [Test]
+        public void Lip_ABallThatStopsOverTheHole_DropsIn()
+        {
+            // Sand from just before the rim stops the ball in the middle of its lip-out.
+            var ground = new PlaneBallGround(Vector2.zero, (x, z) => x < 1.7f ? CourseSurface.Green : CourseSurface.Bunker);
+            ground.Hole = new Vector2(2f, 0f);
+            var ball = new BallSimulation(ground, _settings, Vector2.zero);
+
+            ball.Shoot(Vector2.right, 0.5f);
+            while (ball.State == BallState.Rolling && ball.Position.x < 1.8f)
+            {
+                ball.Step();
+            }
+
+            Assert.That(ball.State, Is.EqualTo(BallState.Rolling), "The ball must be too fast to drop in as it crosses the rim.");
+            RunUntilSettled(ball);
+
+            Assert.That(ball.State, Is.EqualTo(BallState.Holed));
         }
 
         [Test]

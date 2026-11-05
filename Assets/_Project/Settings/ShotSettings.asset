@@ -44,7 +44,10 @@ MonoBehaviour:
     rollingDeceleration: 8
     carryScale: 0.5
   holeCaptureRadius: 0.25
-  holeCaptureSpeed: 2.2
+  centerCaptureSpeed: 2.6
+  rimCaptureSpeed: 1
+  lipOutMaxTurn: 70
+  lipOutSpeedKeep: 0.6
   holeDepth: 0.35
   holeDropSpeed: 1.5
   lostSeconds: 1
