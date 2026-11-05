@@ -130,8 +130,9 @@ namespace IsoGolf.Tests
         [TestCase(0.01f)]
         public void FullPowerShot_NeverLeavesTheView_NorPullsTheCameraBack(float zoomScale)
         {
-            // The longest arc at 40 degrees: 22 m of carry, about 4.6 m high. A scale of 0.01 zooms fully in,
-            // where the ball crosses the screen fastest.
+            // The longest arc at 40 degrees: 22 m of carry, about 4.6 m high. A scale of 0.01 zooms fully in. That leaves
+            // this course's camera about 8 m up. It doesn't cover Main's par 3, whose closest camera is 6.2 m up: there
+            // a near full power apex passes the top of the view for under a second, known and left to the tuning PR.
             const float Speed = 14.8f;
             const float Gravity = 9.81f;
             float horizontal = Speed * Mathf.Cos(40f * Mathf.Deg2Rad);

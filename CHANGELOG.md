@@ -4,6 +4,23 @@ All notable progress on Iso Golf. The format follows [Keep a Changelog](https://
 
 ## [Unreleased]
 
+### 2026-11-05: Camera follow (`feature/m2-camera-follow`)
+
+#### Added
+
+- `CameraFollow`: moves the camera for the shot in play, at the player's zoom. It stays still while the ball is inside a zone of the screen, glides after it once it leaves, and eases until a stopped ball sits low on screen with the course ahead. A finger during a shot pauses this until the ball has stopped and the finger has lifted, and a finger during the ease cancels it, so an aim never starts on a moving camera. Outside a shot it does nothing, so a pan is never fought.
+- The zone also has a bottom and sides, beyond the brief's top of the view, so a backward or sideways shot stays on screen when zoomed in.
+- `BallCameraFollow`: passes the ball's position, free of the course's floating, and its state to the camera.
+- Long courses: `CameraFraming.FitCourse` frames a course longer than `framedLength` in stretches, and `CameraNavigator` lets the zoomed out view travel along +X. A par 3 keeps its exact framing and stays locked when zoomed out.
+- `Sandbox_LongCourse` and `Par5SandboxCourseShape`: an 80 m hand-made course without trees, to test the follow until M3 generates courses.
+- Follow, rest and long course settings in `CameraRigSettings`, all starting values for the tuning PR. The rest spot leaves room for a full pull on phones from 9:16 to 20:9, but not quite on a 3:4 tablet. At the closest zoom on the par 3, a near full power apex passes the top of the view for under a second, for the tuning PR to judge.
+- `CameraFollowTests`, corridor tests in `CameraNavigatorTests` and `CameraFramingTests`, and a follow check in `MainSceneTests`.
+
+#### Changed
+
+- `IslandCamera.VisibleGround` covers the whole corridor, so clouds don't run out on a long course.
+- `LevelBootstrap` starts the view on the ball.
+
 ### 2026-11-05: Aim preview (`feature/m2-aim-preview`)
 
 #### Added
