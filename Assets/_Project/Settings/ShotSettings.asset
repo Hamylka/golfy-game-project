@@ -1,0 +1,48 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fa3d8defb1614224e8338ecc5dd255ff, type: 3}
+  m_Name: ShotSettings
+  m_EditorClassIdentifier: IsoGolf.Gameplay::IsoGolf.Gameplay.ShotSettings
+  fixedTimeStep: 0.016666668
+  gravity: 9.81
+  launchAngle: 40
+  minCarry: 1.5
+  maxCarry: 22
+  landingSearchStep: 0.02
+  minPuttDistance: 0.3
+  maxPuttDistance: 10
+  minBounceSpeed: 0.8
+  maxBounces: 3
+  slopePull: 7
+  rough:
+    restitution: 0.2
+    tangentKeep: 0.4
+    rollingDeceleration: 3
+  fairway:
+    restitution: 0.3
+    tangentKeep: 0.55
+    rollingDeceleration: 1.6
+  green:
+    restitution: 0.25
+    tangentKeep: 0.5
+    rollingDeceleration: 1.2
+  bunker:
+    restitution: 0
+    tangentKeep: 0.1
+    rollingDeceleration: 8
+  holeCaptureRadius: 0.25
+  holeCaptureSpeed: 2.2
+  holeDepth: 0.35
+  holeDropSpeed: 1.5
+  lostSeconds: 1
+  sinkSpeed: 0.6
+  waterDrag: 5
