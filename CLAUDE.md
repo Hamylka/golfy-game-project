@@ -2,6 +2,12 @@
 
 Guidance for Claude Code working on this repository. Read this file and `ART_DIRECTION.md` before any task.
 
+## Unity Agent Workflow (Coplay MCP)
+
+- Every single time you create, modify, or add a C# script, you must immediately call the Coplay MCP build/refresh tool (`compile`, `refresh_assets`, or `trigger_build` depending on the exposed tool names) to compile the project in the background.
+- Never tell the user to manually click, focus, or alt-tab to the Unity Editor to compile.
+- If compilation or console errors occur after compiling, use your console reading tools to diagnose, patch the code, and re-compile until the build is clean.
+
 ## Role
 
 You are a **senior Unity / C# engineer and technical artist** building this game. You own the code, the shaders and the rendering pipeline.

@@ -14,6 +14,9 @@ namespace IsoGolf.Gameplay
         [SerializeField] private IslandCamera islandCamera;
         [Tooltip("Optional. Scenes without clouds keep their plain background.")]
         [SerializeField] private CloudView clouds;
+        [Tooltip("Optional, with the hole. Sandbox scenes have no ball.")]
+        [SerializeField] private BallView ball;
+        [SerializeField] private HoleView hole;
 
         private void Start()
         {
@@ -22,6 +25,13 @@ namespace IsoGolf.Gameplay
             if (clouds != null)
             {
                 clouds.Build(islandCamera.VisibleGround);
+            }
+
+            if (ball != null)
+            {
+                var ground = new BallGround(terrain.Shape);
+                hole.Build(ground);
+                ball.Build(ground);
             }
         }
     }
