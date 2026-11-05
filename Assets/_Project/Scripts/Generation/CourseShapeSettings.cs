@@ -23,6 +23,26 @@ namespace IsoGolf.Generation
         public float Wobble => wobble;
     }
 
+    /// <summary>A broad rise, or a dip when its height is negative.</summary>
+    [Serializable]
+    public struct GroundSwell
+    {
+        [SerializeField] private Vector2 center;
+        [SerializeField] private float radius;
+        [SerializeField] private float height;
+
+        public GroundSwell(Vector2 center, float radius, float height)
+        {
+            this.center = center;
+            this.radius = radius;
+            this.height = height;
+        }
+
+        public Vector2 Center => center;
+        public float Radius => radius;
+        public float Height => height;
+    }
+
     /// <summary>
     /// A hand-written course shape, with the X axis running from tee to hole. The defaults are the
     /// par 3 from the look test. M3's generator will produce these values from a seed.
@@ -59,6 +79,25 @@ namespace IsoGolf.Generation
         [SerializeField, Min(0.1f)] private float reliefDistance = 5f;
         [SerializeField, Min(0f)] private float reliefNoiseScale = 0.55f;
 
+        [Header("Slopes")]
+        [Tooltip("Broad rises and dips the ball feels. M3 generates these from a seed.")]
+        [SerializeField] private GroundSwell[] swells =
+        {
+            new GroundSwell(new Vector2(-6f, 0.5f), 4f, 0.45f),
+            new GroundSwell(new Vector2(6f, -0.5f), 3f, -0.25f),
+        };
+
+        [Tooltip("The green's rise per metre along X and along Z. 0.05 is a 5% slope.")]
+        [SerializeField] private Vector2 greenTilt = new Vector2(0.03f, 0.04f);
+
+        [Header("Play")]
+        [SerializeField] private Vector2 tee = new Vector2(-14f, 0f);
+        [SerializeField] private Vector2 hole = new Vector2(14.2f, 0.4f);
+        [Tooltip("The ground is flat this far around the tee and the hole, in metres.")]
+        [SerializeField, Min(0f)] private float flatRadius = 1.2f;
+        [Tooltip("How far the ground then takes to return to its full slope, in metres.")]
+        [SerializeField, Min(0.01f)] private float flatBlend = 0.8f;
+
         [Header("Edge")]
         [Tooltip("Shortest and longest depth of the earth band under the island edge, in metres.")]
         [SerializeField] private Vector2 skirtDepth = new Vector2(0.9f, 1.8f);
@@ -82,6 +121,12 @@ namespace IsoGolf.Generation
         public float EdgeRelief => edgeRelief;
         public float ReliefDistance => reliefDistance;
         public float ReliefNoiseScale => reliefNoiseScale;
+        public GroundSwell[] Swells => swells;
+        public Vector2 GreenTilt => greenTilt;
+        public Vector2 Tee => tee;
+        public Vector2 Hole => hole;
+        public float FlatRadius => flatRadius;
+        public float FlatBlend => flatBlend;
         public Vector2 SkirtDepth => skirtDepth;
         public float SkirtNoiseScale => skirtNoiseScale;
     }

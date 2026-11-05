@@ -39,5 +39,17 @@ MonoBehaviour:
   edgeRelief: 0.4
   reliefDistance: 5
   reliefNoiseScale: 0.55
+  swells:
+  - center: {x: -6, y: 0.5}
+    radius: 4
+    height: 0.45
+  - center: {x: 6, y: -0.5}
+    radius: 3
+    height: -0.25
+  greenTilt: {x: 0.03, y: 0.04}
+  tee: {x: -14, y: 0}
+  hole: {x: 14.2, y: 0.4}
+  flatRadius: 1.2
+  flatBlend: 0.8
   skirtDepth: {x: 0.9, y: 1.8}
   skirtNoiseScale: 0.7

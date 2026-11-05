@@ -4,6 +4,17 @@ All notable progress on Iso Golf. The format follows [Keep a Changelog](https://
 
 ## [Unreleased]
 
+### 2026-11-04: Smooth ground, tee, hole and slopes (`feature/m2-height-field`)
+
+#### Added
+
+- `CourseHeightField`: the ground as the ball meets it, as smooth Catmull-Rom curves over the terrain grid. The ball sits on a curve through the visible vertices, and feels the slope of a second curve, which on the fairway and green leaves out the facet noise. It also gives the height of the visible facet at any point.
+- Tee and hole positions in `CourseShapeSettings`, with flat ground around both.
+- `CourseHeightFieldTests`.
+
+#### Changed
+
+- The `Main` par 3 has hand-set slopes so M2 can test the ball on them: a rise and a dip on the fairway, and a green tilted by 5%, flat around the hole. M3 generates slopes from a seed.
 ### 2026-11-04: Camera glide (`feature/camera-momentum`)
 
 #### Added
