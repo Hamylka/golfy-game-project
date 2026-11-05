@@ -51,8 +51,11 @@ namespace IsoGolf.Gameplay
         /// <summary>Whether letting go now would play a shot.</summary>
         public bool IsAiming { get; private set; }
 
-        /// <summary>The shot's power, from 0 to 1. Only meaningful while <see cref="IsAiming"/>.</summary>
-        public float Power { get; private set; }
+        /// <summary>
+        /// How far the pull has gone, from 0 at the touch radius to 1 at full pull. <see cref="ShotSettings"/> turns
+        /// this into power. Only meaningful while <see cref="IsAiming"/>.
+        /// </summary>
+        public float Pull { get; private set; }
 
         public bool IsOnBall(Vector2 finger, Vector2 ball, float screenWidth)
         {
@@ -61,7 +64,7 @@ namespace IsoGolf.Gameplay
 
         /// <summary>
         /// Call once a frame. <paramref name="ball"/> is the ball's center on screen. Returns true on the frame
-        /// a shot is released, with <see cref="Power"/> as it last read while the finger was down.
+        /// a shot is released, with <see cref="Pull"/> as it last read while the finger was down.
         /// </summary>
         public bool Update(ShotPointer pointer, Vector2 ball, float screenWidth, bool ballCanBeGrabbed, float deltaTime)
         {
@@ -141,12 +144,12 @@ namespace IsoGolf.Gameplay
             }
 
             IsAiming = pull > _touchRadius;
-            Power = IsAiming ? Mathf.InverseLerp(_touchRadius, _fullPowerPull, pull) : 0f;
+            Pull = IsAiming ? Mathf.InverseLerp(_touchRadius, _fullPowerPull, pull) : 0f;
         }
 
         private void Reset()
         {
-            // Power stays as it last read, for the frame a shot is released.
+            // Pull stays as it last read, for the frame a shot is released.
             IsActive = false;
             IsAiming = false;
         }

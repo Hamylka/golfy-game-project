@@ -26,7 +26,7 @@ namespace IsoGolf.Gameplay
 
         public Vector2 Direction { get; private set; }
 
-        public float Power => _gesture != null ? _gesture.Power : 0f;
+        public float Power => _gesture != null && _ball.Simulation != null ? shot.PowerForPull(_gesture.Pull, _ball.Simulation.IsPutt) : 0f;
 
         public event Action<Vector2, float> ShotReleased;
 
@@ -71,7 +71,7 @@ namespace IsoGolf.Gameplay
 
             if (released)
             {
-                ShotReleased?.Invoke(Direction, _gesture.Power);
+                ShotReleased?.Invoke(Direction, Power);
             }
             else if (_gesture.IsAiming)
             {

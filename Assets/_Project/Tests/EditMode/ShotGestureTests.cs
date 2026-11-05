@@ -119,47 +119,47 @@ namespace IsoGolf.Tests
         }
 
         [Test]
-        public void Power_GrowsFromTheRadiusToTheFullPull()
+        public void Pull_GrowsFromTheRadiusToTheFullPull()
         {
             ShotGesture gesture = Gesture();
             Press(gesture, Ball);
 
             Press(gesture, Pulled(Radius + 0.001f));
-            Assert.That(gesture.Power, Is.EqualTo(0f).Within(0.001f));
+            Assert.That(gesture.Pull, Is.EqualTo(0f).Within(0.001f));
 
             Press(gesture, Pulled((Radius + Full) * 0.5f));
-            Assert.That(gesture.Power, Is.EqualTo(0.5f).Within(0.001f));
+            Assert.That(gesture.Pull, Is.EqualTo(0.5f).Within(0.001f));
 
             Press(gesture, Pulled(Full));
-            Assert.That(gesture.Power, Is.EqualTo(1f).Within(0.001f));
+            Assert.That(gesture.Pull, Is.EqualTo(1f).Within(0.001f));
         }
 
         [Test]
-        public void Power_StopsAtFull()
+        public void Pull_StopsAtFull()
         {
             ShotGesture gesture = Gesture();
             Press(gesture, Ball);
 
             Press(gesture, Pulled(Full * 3f));
 
-            Assert.That(gesture.Power, Is.EqualTo(1f));
+            Assert.That(gesture.Pull, Is.EqualTo(1f));
         }
 
         [Test]
-        public void Power_IsTheSameInEveryDirection()
+        public void Pull_IsTheSameInEveryDirection()
         {
             ShotGesture gesture = Gesture();
             Press(gesture, Ball);
 
             Press(gesture, Pulled(200f));
-            float down = gesture.Power;
+            float down = gesture.Pull;
             Press(gesture, Ball + (Vector2.right * 200f));
 
-            Assert.That(gesture.Power, Is.EqualTo(down).Within(0.0001f));
+            Assert.That(gesture.Pull, Is.EqualTo(down).Within(0.0001f));
         }
 
         [Test]
-        public void Power_IsAShareOfTheScreenWidth()
+        public void Pull_IsAShareOfTheScreenWidth()
         {
             ShotGesture gesture = Gesture();
             const float WiderScreen = Width * 2f;
@@ -167,11 +167,11 @@ namespace IsoGolf.Tests
 
             gesture.Update(new ShotPointer { Pressed = true, Position = Pulled(Full * 2f), Fingers = 1 }, Ball, WiderScreen, true, Frame);
 
-            Assert.That(gesture.Power, Is.EqualTo(1f).Within(0.001f));
+            Assert.That(gesture.Pull, Is.EqualTo(1f).Within(0.001f));
         }
 
         [Test]
-        public void Release_KeepsThePowerItLastRead()
+        public void Release_KeepsThePullItLastRead()
         {
             ShotGesture gesture = Gesture();
             Press(gesture, Ball);
@@ -179,7 +179,7 @@ namespace IsoGolf.Tests
 
             Lift(gesture);
 
-            Assert.That(gesture.Power, Is.EqualTo(1f).Within(0.001f));
+            Assert.That(gesture.Pull, Is.EqualTo(1f).Within(0.001f));
         }
 
         [Test]
@@ -283,12 +283,55 @@ namespace IsoGolf.Tests
         }
 
         [Test]
+        public void PowerForPull_TheEndsDontMove([Values] bool isPutt)
+        {
+            ShotSettings settings = RealSettings();
+
+            Assert.That(settings.PowerForPull(0f, isPutt), Is.EqualTo(0f));
+            Assert.That(settings.PowerForPull(1f, isPutt), Is.EqualTo(1f));
+            Assert.That(settings.PowerForPull(2f, isPutt), Is.EqualTo(1f), "Past a full pull is still full power.");
+        }
+
+        [Test]
+        public void PowerForPull_AlwaysGrows([Values] bool isPutt)
+        {
+            ShotSettings settings = RealSettings();
+            float previous = 0f;
+
+            for (float pull = 0.1f; pull <= 1f; pull += 0.1f)
+            {
+                float power = settings.PowerForPull(pull, isPutt);
+                Assert.That(power, Is.GreaterThan(previous));
+                previous = power;
+            }
+        }
+
+        [Test]
+        public void PowerForPull_ALightPullIsLighterThanItsShare([Values] bool isPutt)
+        {
+            Assert.That(RealSettings().PowerForPull(0.25f, isPutt), Is.LessThan(0.25f));
+        }
+
+        [Test]
+        public void PowerForPull_PuttsGetTheFinestControl()
+        {
+            ShotSettings settings = RealSettings();
+
+            Assert.That(settings.PowerForPull(0.25f, true), Is.LessThan(settings.PowerForPull(0.25f, false)));
+        }
+
+        [Test]
         public void RealSettings_FullPowerIsBeyondTheTouchRadius()
         {
-            var settings = AssetDatabase.LoadAssetAtPath<ShotSettings>("Assets/_Project/Settings/ShotSettings.asset");
+            ShotSettings settings = RealSettings();
 
             Assert.That(settings.FullPowerPull, Is.GreaterThan(settings.TouchRadius));
             Assert.That(settings.HoldSeconds, Is.EqualTo(0f), "No hold time by default.");
+        }
+
+        private static ShotSettings RealSettings()
+        {
+            return AssetDatabase.LoadAssetAtPath<ShotSettings>("Assets/_Project/Settings/ShotSettings.asset");
         }
     }
 }

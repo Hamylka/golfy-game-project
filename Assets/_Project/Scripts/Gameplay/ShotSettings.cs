@@ -100,6 +100,10 @@ namespace IsoGolf.Gameplay
         [SerializeField, Range(0.01f, 0.3f)] private float touchRadius = 0.08f;
         [Tooltip("How far from the ball the finger reaches full power, as a share of the screen width. The ball's spot on screen must leave this much room.")]
         [SerializeField, Range(0.1f, 0.6f)] private float fullPowerPull = 0.3f;
+        [Tooltip("How much finer the first part of the pull is for an arc. 1 is linear; higher gives light shots more of the pull, and leaves less for strong ones.")]
+        [SerializeField, Range(1f, 4f)] private float arcPullCurve = 1.5f;
+        [Tooltip("The same for a putt, where short distances need the most care.")]
+        [SerializeField, Range(1f, 4f)] private float puttPullCurve = 2f;
         [Tooltip("Seconds the ball must be held before a pull counts. 0 means no wait.")]
         [SerializeField, Min(0f)] private float holdSeconds;
 
@@ -123,6 +127,9 @@ namespace IsoGolf.Gameplay
         public float TouchRadius => touchRadius;
         public float FullPowerPull => fullPowerPull;
         public float HoldSeconds => holdSeconds;
+
+        /// <summary>The power for a pull from 0 to 1. The ends never move: no pull is the lightest shot and a full pull is full power.</summary>
+        public float PowerForPull(float pull, bool isPutt) => Mathf.Pow(Mathf.Clamp01(pull), isPutt ? puttPullCurve : arcPullCurve);
 
         /// <summary>The carry over level ground at a power from 0 to 1.</summary>
         public float CarryFor(float power) => Mathf.Lerp(minCarry, maxCarry, power);
