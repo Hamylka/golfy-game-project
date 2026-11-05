@@ -14,6 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: IsoGolf.Rendering::IsoGolf.Rendering.CameraRigSettings
   screenFill: 0.94
   closestZoom: 0.3
+  defaultZoom: 0.5
   wheelZoomStep: 0.1
   glideTimeConstant: 0.5
   glideVelocityWindow: 0.1
@@ -24,5 +25,5 @@ MonoBehaviour:
   followZoneBottom: -0.85
   followZoneSide: 0.8
   followSmoothTime: 0.15
-  restBallViewport: {x: 0, y: -0.6}
+  restBallViewport: {x: 0, y: -0.4}
   returnSmoothTime: 0.6

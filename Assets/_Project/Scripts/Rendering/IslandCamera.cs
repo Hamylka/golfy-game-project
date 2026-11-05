@@ -79,13 +79,15 @@ namespace IsoGolf.Rendering
             _corridorLength = frame.CorridorLength;
             Rect limits = GroundLimits(points);
 
-            _navigator = new CameraNavigator(_home, _view, limits, groundHeight, settings.ClosestZoom, _corridorLength);
+            // From the default zoom on, so the follow can rest the ball at its spot along the whole course.
+            float fullLimitsZoom = settings.DefaultZoom > 0f ? settings.DefaultZoom : 1f;
+            _navigator = new CameraNavigator(_home, _view, limits, groundHeight, settings.ClosestZoom, _corridorLength, fullLimitsZoom);
             var momentum = new PanMomentum(settings.GlideTimeConstant, settings.GlideVelocityWindow, settings.GlideMinReleaseSpeed, settings.GlideStopSpeed);
             _router = new CameraGestureRouter(_navigator, momentum);
             _follow = new CameraFollow(_navigator, _view, settings.FollowZone, settings.RestBallViewport, settings.FollowSmoothTime, settings.ReturnSmoothTime);
             if (_placedOn.HasValue)
             {
-                _follow.PlaceOn(_placedOn.Value);
+                StartViewOn(_placedOn.Value);
             }
 
             transform.position = _navigator.Position;
@@ -98,12 +100,18 @@ namespace IsoGolf.Rendering
             Rebuild();
         }
 
-        /// <summary>Starts the level's view on this spot, for the ball on its tee. A par 3 stays framed whole.</summary>
+        /// <summary>Starts the level's view on this spot, for the ball on its tee, at the default zoom.</summary>
         public void PlaceOn(Vector3 ball)
         {
             _placedOn = ball;
-            _follow.PlaceOn(ball);
+            StartViewOn(ball);
             transform.position = _navigator.Position;
+        }
+
+        private void StartViewOn(Vector3 ball)
+        {
+            _navigator.ZoomTo(settings.DefaultZoom);
+            _follow.PlaceOn(ball);
         }
 
         /// <summary>

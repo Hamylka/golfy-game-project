@@ -8,7 +8,7 @@ All notable progress on Iso Golf. The format follows [Keep a Changelog](https://
 
 #### Added
 
-- `CameraFollow`: moves the camera for the shot in play, at the player's zoom. It stays still while the ball is inside a zone of the screen, glides after it once it leaves, and eases until a stopped ball sits low on screen with the course ahead. A finger during a shot pauses this until the ball has stopped and the finger has lifted, and a finger during the ease cancels it, so an aim never starts on a moving camera. Outside a shot it does nothing, so a pan is never fought.
+- `CameraFollow`: moves the camera for the shot in play, at the player's zoom. It stays still while the ball is inside a zone of the screen, glides after it once it leaves, and eases until a stopped ball sits about 30% up the screen with the course ahead. A finger during a shot pauses this until the ball has stopped and the finger has lifted, and a finger during the ease cancels it, so an aim never starts on a moving camera. Outside a shot it does nothing, so a pan is never fought.
 - The zone also has a bottom and sides, beyond the brief's top of the view, so a backward or sideways shot stays on screen when zoomed in.
 - `BallCameraFollow`: passes the ball's position, free of the course's floating, and its state to the camera.
 - Long courses: `CameraFraming.FitCourse` frames a course longer than `framedLength` in stretches, and `CameraNavigator` lets the zoomed out view travel along +X. A par 3 keeps its exact framing and stays locked when zoomed out.
@@ -18,6 +18,8 @@ All notable progress on Iso Golf. The format follows [Keep a Changelog](https://
 
 #### Changed
 
+- Every level now starts at a default zoom, halfway between fully out and the closest, instead of fully zoomed out, after a playtest. A par 3 still fits whole when fully zoomed out. `CLAUDE.md` and `ART_DIRECTION.md` record this.
+- `CameraNavigator` reaches its full limits from the default zoom, not only at the closest zoom, so the ball can rest at its spot along the whole course.
 - `IslandCamera.VisibleGround` covers the whole corridor, so clouds don't run out on a long course.
 - `LevelBootstrap` starts the view on the ball.
 

@@ -136,6 +136,42 @@ namespace IsoGolf.Tests
             Assert.That((_navigator.Position - _home).magnitude, Is.EqualTo(0f).Within(Tolerance));
         }
 
+        [TestCase(0f)]
+        [TestCase(0.5f)]
+        [TestCase(1f)]
+        public void ZoomTo_ReachesThatZoom(float zoom)
+        {
+            _navigator.ZoomTo(zoom);
+
+            Assert.That(_navigator.Zoom, Is.EqualTo(zoom).Within(Tolerance));
+        }
+
+        [Test]
+        public void ZoomTo_FullyOut_ReturnsToTheFramedPosition()
+        {
+            ZoomFullyIn();
+            _navigator.Pan(Vector2.zero, new Vector2(0.3f, 0.2f));
+
+            _navigator.ZoomTo(0f);
+
+            Assert.That((_navigator.Position - _home).magnitude, Is.EqualTo(0f).Within(Tolerance));
+        }
+
+        [Test]
+        public void FullLimitsZoom_OpensTheLimitsFromThatZoom_AndZoomingOutStillLandsOnTheFramedView()
+        {
+            var navigator = new CameraNavigator(_home, _view, Limits, 0f, ClosestZoom, 0f, 0.5f);
+            navigator.ZoomTo(0.5f);
+
+            navigator.Move(new Vector3(1000f, 0f, 0f));
+
+            Assert.That(_view.OnPlane(navigator.Position, Vector2.zero, 0f).x, Is.EqualTo(Limits.xMax).Within(Tolerance));
+
+            navigator.ZoomTo(0f);
+
+            Assert.That((navigator.Position - _home).magnitude, Is.EqualTo(0f).Within(Tolerance));
+        }
+
         [Test]
         public void Reachable_ReportsTheLimitWithoutMoving()
         {

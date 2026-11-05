@@ -21,7 +21,7 @@ namespace IsoGolf.Tests
         private const float ReturnTime = 0.6f;
 
         private static readonly Rect Zone = Rect.MinMaxRect(-0.8f, -0.85f, 0.8f, 0.7f);
-        private static readonly Vector2 Rest = new Vector2(0f, -0.6f);
+        private static readonly Vector2 Rest = new Vector2(0f, -0.4f);
         private static readonly Vector3 Tee = new Vector3(-37f, BallHeight, 0f);
 
         private CameraView _view;
@@ -88,6 +88,14 @@ namespace IsoGolf.Tests
         }
 
         [Test]
+        public void DefaultZoom_StartsCloserThanFullyOut()
+        {
+            var camera = AssetDatabase.LoadAssetAtPath<CameraRigSettings>("Assets/_Project/Settings/CameraRigSettings.asset");
+
+            Assert.That(camera.DefaultZoom, Is.GreaterThan(0f));
+        }
+
+        [Test]
         public void Moving_InsideTheZone_LeavesTheCameraStill()
         {
             _follow.PlaceOn(Tee);
@@ -127,10 +135,11 @@ namespace IsoGolf.Tests
         }
 
         [TestCase(1f)]
+        [TestCase(0.65f)]
         [TestCase(0.01f)]
         public void FullPowerShot_NeverLeavesTheView_NorPullsTheCameraBack(float zoomScale)
         {
-            // The longest arc at 40 degrees: 22 m of carry, about 4.6 m high. A scale of 0.01 zooms fully in. That leaves
+            // The longest arc at 40 degrees: 22 m of carry, about 4.6 m high. 0.65 is the default zoom and 0.01 zooms fully in. That leaves
             // this course's camera about 8 m up. It doesn't cover Main's par 3, whose closest camera is 6.2 m up: there
             // a near full power apex passes the top of the view for under a second, known and left to the tuning PR.
             const float Speed = 14.8f;

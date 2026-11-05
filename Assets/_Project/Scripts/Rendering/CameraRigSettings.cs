@@ -11,6 +11,9 @@ namespace IsoGolf.Rendering
         [Tooltip("Closest zoom, as a fraction of the zoomed out distance. Lower means closer.")]
         [SerializeField, Range(0.05f, 1f)] private float closestZoom = 0.3f;
 
+        [Tooltip("The zoom a level starts at. 0 is fully zoomed out, where a par 3 shows whole, and 1 is the closest.")]
+        [SerializeField, Range(0f, 1f)] private float defaultZoom = 0.5f;
+
         [Tooltip("Mouse wheel zoom per scroll step, for the Editor and WebGL. 0.1 means 10%.")]
         [SerializeField, Range(0.01f, 0.5f)] private float wheelZoomStep = 0.1f;
 
@@ -46,13 +49,14 @@ namespace IsoGolf.Rendering
 
         [Header("Ball at rest")]
         [Tooltip("Where a stopped ball ends up on screen, from -1 to 1. Must leave room below it for a full pull.")]
-        [SerializeField] private Vector2 restBallViewport = new Vector2(0f, -0.6f);
+        [SerializeField] private Vector2 restBallViewport = new Vector2(0f, -0.4f);
 
         [Tooltip("How slowly the camera eases to a stopped ball, in seconds.")]
         [SerializeField, Range(0.01f, 3f)] private float returnSmoothTime = 0.6f;
 
         public float ScreenFill => screenFill;
         public float ClosestZoom => closestZoom;
+        public float DefaultZoom => defaultZoom;
         public float WheelZoomStep => wheelZoomStep;
         public float GlideTimeConstant => glideTimeConstant;
         public float GlideVelocityWindow => glideVelocityWindow;

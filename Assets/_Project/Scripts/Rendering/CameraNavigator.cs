@@ -14,6 +14,7 @@ namespace IsoGolf.Rendering
         private readonly float _groundHeight;
         private readonly float _closestHeight;
         private readonly float _corridorLength;
+        private readonly float _fullLimitsZoom;
         private CameraView _view;
 
         /// <param name="homePosition">The fully zoomed out camera position.</param>
@@ -22,9 +23,11 @@ namespace IsoGolf.Rendering
         /// <param name="groundHeight">World height of the ground plane.</param>
         /// <param name="closestFraction">Closest zoom, as a fraction of the home distance to the ground.</param>
         /// <param name="corridorLength">How far along +X the fully zoomed out view can travel, for a long course.</param>
-        public CameraNavigator(Vector3 homePosition, in CameraView view, Rect groundLimits, float groundHeight, float closestFraction, float corridorLength = 0f)
+        /// <param name="fullLimitsZoom">The zoom from which the view can reach the full limits. Above 0.</param>
+        public CameraNavigator(Vector3 homePosition, in CameraView view, Rect groundLimits, float groundHeight, float closestFraction, float corridorLength = 0f, float fullLimitsZoom = 1f)
         {
             _corridorLength = corridorLength;
+            _fullLimitsZoom = fullLimitsZoom;
             _homePosition = homePosition;
             _view = view;
             _groundLimits = groundLimits;
@@ -96,6 +99,13 @@ namespace IsoGolf.Rendering
             Position = Clamp(focus + ((Position - focus) * (limited / height)));
         }
 
+        /// <summary>Zooms straight to a level, around the middle of the view. 0 is fully zoomed out, 1 the closest.</summary>
+        public void ZoomTo(float zoom)
+        {
+            float target = Mathf.Lerp(_homePosition.y, _closestHeight, zoom) - _groundHeight;
+            ZoomAround(Vector2.zero, target / (Position.y - _groundHeight));
+        }
+
         private float GroundDistance(Vector2 a, Vector2 b)
         {
             return (_view.OnPlane(Position, a, _groundHeight) - _view.OnPlane(Position, b, _groundHeight)).magnitude;
@@ -103,14 +113,15 @@ namespace IsoGolf.Rendering
 
         private Vector3 Clamp(Vector3 position)
         {
-            // The allowed area grows from the framed views when zoomed out to the full limits when zoomed in.
+            // The allowed area grows from the framed views when zoomed out to the full limits from fullLimitsZoom on.
             // That's a single point on a course that fits one view, and a line along +X on a longer one. So zooming
             // out always lands back on a framed view, with no off-centre view that would need correcting afterwards.
             float zoom = Mathf.InverseLerp(_homePosition.y, _closestHeight, position.y);
-            float minX = Mathf.Lerp(_homeCenter.x, _groundLimits.xMin, zoom);
-            float maxX = Mathf.Lerp(_homeCenter.x + _corridorLength, _groundLimits.xMax, zoom);
-            float minZ = Mathf.Lerp(_homeCenter.z, _groundLimits.yMin, zoom);
-            float maxZ = Mathf.Lerp(_homeCenter.z, _groundLimits.yMax, zoom);
+            float reach = Mathf.Clamp01(zoom / _fullLimitsZoom);
+            float minX = Mathf.Lerp(_homeCenter.x, _groundLimits.xMin, reach);
+            float maxX = Mathf.Lerp(_homeCenter.x + _corridorLength, _groundLimits.xMax, reach);
+            float minZ = Mathf.Lerp(_homeCenter.z, _groundLimits.yMin, reach);
+            float maxZ = Mathf.Lerp(_homeCenter.z, _groundLimits.yMax, reach);
 
             Vector3 center = _view.OnPlane(position, Vector2.zero, _groundHeight);
             var limited = new Vector3(Mathf.Clamp(center.x, minX, maxX), center.y, Mathf.Clamp(center.z, minZ, maxZ));
