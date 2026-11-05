@@ -32,6 +32,7 @@ namespace IsoGolf.Gameplay
                 var ground = new BallGround(terrain.Shape);
                 hole.Build(ground);
                 ball.Build(ground);
+                islandCamera.PlaceOn(ball.transform.localPosition);
             }
         }
     }

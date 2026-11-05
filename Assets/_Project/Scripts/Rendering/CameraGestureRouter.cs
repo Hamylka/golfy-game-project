@@ -78,6 +78,12 @@ namespace IsoGolf.Rendering
             }
         }
 
+        /// <summary>Ends the glide, for when something else takes over the camera.</summary>
+        public void StopGlide()
+        {
+            _momentum.Stop();
+        }
+
         private void UpdateGlide(bool enabled, float deltaTime)
         {
             if (!enabled)

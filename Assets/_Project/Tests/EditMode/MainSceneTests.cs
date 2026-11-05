@@ -134,6 +134,15 @@ namespace IsoGolf.Tests
         }
 
         [Test]
+        public void CameraFollowsTheBall()
+        {
+            BallView ball = Root("Course").GetComponentInChildren<BallView>(true);
+            var follow = new SerializedObject(ball.GetComponent<BallCameraFollow>());
+
+            Assert.That(follow.FindProperty("islandCamera").objectReferenceValue, Is.EqualTo(Root("Island Camera").GetComponent<IslandCamera>()));
+        }
+
+        [Test]
         public void AimPreviewReadsTheBallAndDrawsWithSeeThroughVertexColors()
         {
             AimPreview aim = Root("Course").GetComponentInChildren<AimPreview>(true);

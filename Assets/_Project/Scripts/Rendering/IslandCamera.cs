@@ -26,7 +26,11 @@ namespace IsoGolf.Rendering
         private Vector2Int _screenSize;
         private IReadOnlyList<Vector3> _framePoints;
         private Vector3 _home;
+        private float _corridorLength;
         private CameraView _view;
+        private CameraFollow _follow;
+        private bool _fingerDown;
+        private Vector3? _placedOn;
 
         /// <summary>Turned off while aiming (from M2), so gestures can't disturb a shot.</summary>
         public bool GesturesEnabled { get; set; } = true;
@@ -56,6 +60,7 @@ namespace IsoGolf.Rendering
             }
 
             // The router must run exactly once a frame, because it also advances the glide.
+            _fingerDown = false;
             if (!ReadTouches() && !ReadMouse())
             {
                 _router.Update(0, default, default, GesturesEnabled, TouchClaim, Time.unscaledDeltaTime);
@@ -69,13 +74,21 @@ namespace IsoGolf.Rendering
             _screenSize = new Vector2Int(Screen.width, Screen.height);
             _view = new CameraView(IsoCameraConvention.Rotation, IsoCameraConvention.VerticalFieldOfView, _screenSize.x / (float)_screenSize.y);
             IReadOnlyList<Vector3> points = _framePoints ?? CameraFraming.Corners(island);
-            _home = CameraFraming.Fit(points, _view, settings.ScreenFill);
+            CourseFrame frame = CameraFraming.FitCourse(points, _view, settings.ScreenFill, settings.FramedLength);
+            _home = frame.Home;
+            _corridorLength = frame.CorridorLength;
             Rect limits = GroundLimits(points);
 
-            _navigator = new CameraNavigator(_home, _view, limits, groundHeight, settings.ClosestZoom);
+            _navigator = new CameraNavigator(_home, _view, limits, groundHeight, settings.ClosestZoom, _corridorLength);
             var momentum = new PanMomentum(settings.GlideTimeConstant, settings.GlideVelocityWindow, settings.GlideMinReleaseSpeed, settings.GlideStopSpeed);
             _router = new CameraGestureRouter(_navigator, momentum);
-            transform.position = _home;
+            _follow = new CameraFollow(_navigator, _view, settings.FollowZone, settings.RestBallViewport, settings.FollowSmoothTime, settings.ReturnSmoothTime);
+            if (_placedOn.HasValue)
+            {
+                _follow.PlaceOn(_placedOn.Value);
+            }
+
+            transform.position = _navigator.Position;
         }
 
         /// <summary>Frames these points instead of the box, for a tighter fit around a real island shape.</summary>
@@ -85,10 +98,35 @@ namespace IsoGolf.Rendering
             Rebuild();
         }
 
-        /// <summary>The rectangle a horizontal plane shows in the framed view, the widest the player can see.</summary>
+        /// <summary>Starts the level's view on this spot, for the ball on its tee. A par 3 stays framed whole.</summary>
+        public void PlaceOn(Vector3 ball)
+        {
+            _placedOn = ball;
+            _follow.PlaceOn(ball);
+            transform.position = _navigator.Position;
+        }
+
+        /// <summary>
+        /// Moves the camera for the shot in play. Call once a frame, after every Update, with the ball's position
+        /// free of the course's floating.
+        /// </summary>
+        public void Follow(Vector3 ball, FollowedBallState state)
+        {
+            _follow.Update(ball, state, _fingerDown, Time.unscaledDeltaTime);
+            if (_follow.IsReturning)
+            {
+                _router.StopGlide();
+            }
+
+            transform.position = _navigator.Position;
+        }
+
+        /// <summary>The rectangle a horizontal plane shows across the framed views, the widest the player can see.</summary>
         public Rect VisibleGround(float height)
         {
-            return CameraFraming.GroundFootprint(_home, _view, height);
+            Rect first = CameraFraming.GroundFootprint(_home, _view, height);
+            first.xMax += _corridorLength;
+            return first;
         }
 
         private static Rect GroundLimits(IReadOnlyList<Vector3> points)
@@ -140,6 +178,7 @@ namespace IsoGolf.Rendering
                 return false;
             }
 
+            _fingerDown = true;
             Vector2 a = ToViewport(first.position.ReadValue());
             Vector2 b = second != null ? ToViewport(second.position.ReadValue()) : default;
             _router.Update(pressed, a, b, GesturesEnabled, TouchClaim, Time.unscaledDeltaTime);
@@ -155,6 +194,7 @@ namespace IsoGolf.Rendering
                 return false;
             }
 
+            _fingerDown = mouse.leftButton.isPressed;
             Vector2 position = ToViewport(mouse.position.ReadValue());
             _router.Update(mouse.leftButton.isPressed ? 1 : 0, position, default, GesturesEnabled, TouchClaim, Time.unscaledDeltaTime);
 
