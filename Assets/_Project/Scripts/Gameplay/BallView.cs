@@ -21,6 +21,12 @@ namespace IsoGolf.Gameplay
 
         public BallSimulation Simulation { get; private set; }
 
+        /// <summary>The ground the ball plays on, or null until <see cref="Build"/>.</summary>
+        public BallGround Ground => _ground;
+
+        /// <summary>How far the drawn ball's center sits above its contact point.</summary>
+        public float Radius => settings.BallRadius;
+
         public void Build(BallGround ground)
         {
             _ground = ground;

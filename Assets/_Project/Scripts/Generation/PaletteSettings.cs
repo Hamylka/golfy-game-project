@@ -37,6 +37,13 @@ namespace IsoGolf.Generation
         [SerializeField] private Color flag = new Color32(0xC8, 0x42, 0x3B, 0xFF);
         [SerializeField] private Color flagPole = new Color32(0xF1, 0xEC, 0xE0, 0xFF);
 
+        [Header("Aiming")]
+        [Tooltip("The dots and the landing ring.")]
+        [SerializeField] private Color aimMark = new Color32(0xF2, 0xEE, 0xE6, 0xFF);
+        [SerializeField] private Color gaugeFill = new Color32(0xE6, 0xB5, 0x3A, 0xFF);
+        [Tooltip("The gauge's border and its empty part. Warm and dark, and never black.")]
+        [SerializeField] private Color gaugeBorder = new Color32(0x3A, 0x2E, 0x25, 0xFF);
+
         public Color Rough => rough;
         public Color FairwayLight => fairwayLight;
         public Color FairwayDark => fairwayDark;
@@ -58,5 +65,8 @@ namespace IsoGolf.Generation
         public Color Hole => hole;
         public Color Flag => flag;
         public Color FlagPole => flagPole;
+        public Color AimMark => aimMark;
+        public Color GaugeFill => gaugeFill;
+        public Color GaugeBorder => gaugeBorder;
     }
 }

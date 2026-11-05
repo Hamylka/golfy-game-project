@@ -1,6 +1,7 @@
 using IsoGolf.Generation;
 using IsoGolf.Gameplay;
 using IsoGolf.Rendering;
+using IsoGolf.UI;
 using NUnit.Framework;
 using UnityEditor;
 using UnityEditor.SceneManagement;
@@ -92,6 +93,7 @@ namespace IsoGolf.Tests
                 course.GetComponentInChildren<BallView>(true),
                 course.GetComponentInChildren<BallShadowView>(true),
                 course.GetComponentInChildren<HoleView>(true),
+                course.GetComponentInChildren<AimPreview>(true),
             })
             {
                 Assert.That(piece, Is.Not.Null);
@@ -129,6 +131,19 @@ namespace IsoGolf.Tests
             Assert.That(ball.GetComponent<ShotController>(), Is.Not.Null);
             Assert.That(input.FindProperty("shot").objectReferenceValue, Is.Not.Null);
             Assert.That(input.FindProperty("islandCamera").objectReferenceValue, Is.Not.Null);
+        }
+
+        [Test]
+        public void AimPreviewReadsTheBallAndDrawsWithSeeThroughVertexColors()
+        {
+            AimPreview aim = Root("Course").GetComponentInChildren<AimPreview>(true);
+            var preview = new SerializedObject(aim);
+
+            Assert.That(preview.FindProperty("ball").objectReferenceValue, Is.EqualTo(Root("Course").GetComponentInChildren<BallView>(true)));
+            Assert.That(preview.FindProperty("sceneCamera").objectReferenceValue, Is.EqualTo(Root("Island Camera").GetComponent<Camera>()));
+            Assert.That(preview.FindProperty("settings").objectReferenceValue, Is.Not.Null);
+            Assert.That(preview.FindProperty("palette").objectReferenceValue, Is.Not.Null);
+            Assert.That(aim.GetComponent<MeshRenderer>().sharedMaterial.name, Is.EqualTo("GroundShadow"));
         }
 
         [Test]

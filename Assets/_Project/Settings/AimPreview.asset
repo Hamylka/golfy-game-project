@@ -1,0 +1,28 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b8381c4e4f41df645b7a2db576895a89, type: 3}
+  m_Name: AimPreview
+  m_EditorClassIdentifier: IsoGolf.UI::IsoGolf.UI.AimPreviewSettings
+  dotRadius: 0.05
+  dotSegments: 8
+  arcDotSpacing: 0.6
+  puttDotSpacing: 0.25
+  puttShare: 0.4
+  ringRadius: 0.2
+  ringInnerRadius: 0.14
+  ringVertexRings: 2
+  ringSegments: 20
+  ringLift: 0.03
+  gaugeWidth: 0.08
+  gaugeHeight: 0.014
+  gaugeBorder: 0.003
+  gaugeGap: 0.015
