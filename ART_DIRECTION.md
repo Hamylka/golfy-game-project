@@ -66,8 +66,9 @@ No photo textures, no fine normal maps.
 - Each scene is an **island floating a little above the clouds**, with a short uneven band of earth visible under its edge. Chosen on the phone and in Play Mode over a white gradient, a continuous cloud sea (which read as ice) and a soft bank fixed to the camera, for the feeling of lightness and the depth clouds give when the camera moves.
 - Clouds: scattered clusters of faceted blobs, well below the island, with the sky showing between them. Each facet takes one pale, baked tone, never lit shading, which turns them into grey boulders. They drift very slowly across the screen.
 - The whole course **floats very gently up and down**, about 0.15 m each way over 7 seconds, against clouds that stay at their own height. All its islands move together. The motion is only visual and never affects the ball.
-- A course may have **gaps**: separate islands that still belong to one course. **Open:** how often, and what happens to a ball that lands in a gap, to settle in the M3 plan.
-- Portrait and the camera angle favor a **long, narrow island**: about 34 × 10 m for the par 3 in the look test, and longer for higher pars.
+- A course may have **gaps**: separate islands that still belong to one course, with open sky between them. About one par 4 or 5 in three has one, 4–10 m wide, and now and then a par 3 has its green on its own islet. Each island has its own fringe and earth band. A ball that falls into a gap is lost, like one off the island's edge.
+- Portrait and the camera angle favor a **long, narrow island**: about 34 × 10 m for the par 3 in the look test, and longer for higher pars (tee to hole: par 3 18–26 m, par 4 40–55 m, par 5 65–85 m).
+- Par 3 islands are straight. About half of par 4s and 5s bend once as a **dogleg** of up to 35°, and a par 5 may bend twice; the others bend softly. Every course keeps heading up the screen.
 - The outline is irregular, and its grass edge is a **continuous fringe of small, short, blunt tufts**: never a clean geometric edge. The tufts overlap and fold over the edge like thatch, so they read as the ground itself rather than objects on it. Chosen on the phone in M1.4 over separate prisms, which read as rough shards, and over longer or sharper teeth, which looked too spiky.
 - Where water reaches the island's edge, there is no fringe. Water falling from that edge is an idea for later.
 - Vegetation: trees with **cauliflower foliage** (clusters of low-detail faceted blobs), short trunk. Cypresses as 6- to 8-sided cones. Round bushes.
@@ -101,8 +102,8 @@ No photo textures, no fine normal maps.
 - **The ball is the player.** Off-white and small, but always readable on the phone, with a round shadow on the ground, essential for reading height.
 - **Bell-shaped arc** shots away from the green: rise, apex, descent. The shadow stays on the ground and meets the ball on landing: it is what makes the arc readable.
 - **Putts on the green**: the ball only rolls along the ground, with no flight. The green's drawn border is the strict limit: just outside it, a shot is a short arc.
-- **Lost ball**: in the water or off the island, the ball sinks or falls out of sight, then returns to where the shot was played after about a second.
-- **Slopes affect the ball**: it rolls downhill, curves on a side slope, travels further going down and stops sooner going up. Start with gentle slopes, which suit the calm mood. Slopes must be readable on the phone through facet shading; judge that before adding any guide marks.
+- **Lost ball**: in the water, off the island or in a gap between islands, the ball sinks or falls out of sight, then returns to where the shot was played after about a second.
+- **Slopes affect the ball**: it rolls downhill, curves on a side slope, travels further going down and stops sooner going up. Slopes stay moderate, which suits the calm mood: the fairway rises and dips up to about ±1.2 m, the green sits up to 1.5 m above or below the tee and tilts 2–6%, and the ground is nearly flat around the hole and flat at the tee. Slopes must be readable on the phone through facet shading; judge that before adding any guide marks.
 - Light trail in flight, a small puff of grass or sand on impact, short bounces.
 
 ### Progression and orientation
@@ -110,13 +111,14 @@ No photo textures, no fine normal maps.
 - Progression through **procedurally generated levels**, each one an island diorama.
 - Constant play axis: start in the **south-west**, finish in the **north-east**. On screen: the course runs **up the screen with a slight lean to the right**, from bottom-left to top-right.
 - The start is always in the lower part of the island, the green in the upper part: the eye reads the level in the direction of the shot.
-- **Par 3 courses** fit the whole island in one view when fully zoomed out, and every course starts closer than that, at a default zoom. **Longer courses (par 4, par 5, possibly more)** are only partly visible at once, which leaves room for more detail on the course: the camera moves along the course during play, always at the same rotation. It stays still until the ball reaches the middle of the screen, then glides to keep it between about 40% and 60% of the screen's height and width, and at rest eases until the ball sits low on screen with the course ahead. A finger on the screen during flight pauses this follow, and the camera eases back to the ball once the ball has stopped and the finger has lifted. Between levels, the next island appears to the north-east (camera slide or fade to white).
+- **Par 3 courses** fit the whole island in one view when fully zoomed out, and every course starts closer than that, at a default zoom. Every par zooms out to the same scale, so the ball and props keep their size. **Longer courses (par 4, par 5)** show mostly whole when fully zoomed out, as an overview for planning a dogleg or a gap, with the far end small. At the default zoom they are only partly visible, which leaves room for more detail on the course: the camera moves along the course during play, always at the same rotation, following its bends. It stays still until the ball reaches the middle of the screen, then glides to keep it between about 40% and 60% of the screen's height and width, and at rest eases until the ball sits low on screen with the course ahead. A finger on the screen during flight pauses this follow, and the camera eases back to the ball once the ball has stopped and the finger has lifted. Between levels, the next island appears to the north-east (camera slide or fade to white).
 
 ### Procedural kit
 
 To keep generation faithful to the art direction, levels are assembled from a **modular kit** that follows the palette and the rules above:
 
-- Island outline: shape generated with noise, tufted grass edge applied automatically along the whole dry edge.
+- Island outline: shape generated with noise along the course's centreline, one or more islands per course, tufted grass edge applied automatically along the whole dry edge of each.
+- Strategy: hazards guard the direct line (beside or in front of the green, at a dogleg's corner, across a gap), and a safer, longer route always exists. Holes in one stay rare.
 - Surfaces: fairway, green, rough, bunker, water, gravel, each with its own material.
 - Props: trees, bushes, rocks, low walls, sheds, benches, bridges. Placed by rules: low density, grouped in clusters rather than scattered, never on the main shot line.
 - Per-seed variation: island shape and length, elevation, obstacles, mood (see variants).
@@ -124,7 +126,7 @@ To keep generation faithful to the art direction, levels are assembled from a **
 
 ### Course elements
 
-- **Fairway**: long mowing stripes alternating two greens (`#8FA85A` / `#7E9A48`), aligned with the SW → NE axis. **No tile or checkerboard pattern.**
+- **Fairway**: long mowing stripes alternating two greens (`#8FA85A` / `#7E9A48`), aligned with the SW → NE axis. **No tile or checkerboard pattern.** **Open:** on a dogleg, whether the stripes follow each leg or keep the main axis, to judge on a capture when the generator places surfaces.
 - **Green**: lighter and smoother green, gently sloped, flat around the hole, red or yellow flag.
 - **Rough**: darker grass (`#6A8541`) with more broken facets, blending into the edge.
 - **Bunkers**: sand palette, rolled edge, a few rake marks.
