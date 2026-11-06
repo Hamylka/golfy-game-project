@@ -21,6 +21,9 @@ namespace IsoGolf.Gameplay
 
         public BallSimulation Simulation { get; private set; }
 
+        /// <summary>The shot settings this ball plays with.</summary>
+        public ShotSettings Shot => shot;
+
         /// <summary>The ground the ball plays on, or null until <see cref="Build"/>.</summary>
         public BallGround Ground => _ground;
 

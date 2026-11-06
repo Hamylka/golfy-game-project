@@ -247,14 +247,20 @@ namespace IsoGolf.Tests
         }
 
         [Test]
-        public void Glide_NoneWhenPanningIsLockedFullyZoomedOut()
+        public void Glide_FullyZoomedOut_StopsWithTheViewCentreOverTheIsland()
         {
+            // Since the camera rotation decisions the zoomed-out view pans too, within the same limits as closer in.
             _navigator.ZoomAround(Vector2.zero, 100f);
-            Vector3 home = _navigator.Position;
-            Flick();
-            GlideDistance(30);
+            for (int i = 0; i < 5; i++)
+            {
+                Flick();
+                GlideDistance(60);
+            }
 
-            Assert.That((_navigator.Position - home).magnitude, Is.EqualTo(0f).Within(Tolerance));
+            Vector3 centre = _navigator.ViewCentre;
+            Assert.That(centre.x, Is.InRange(Limits.xMin - Tolerance, Limits.xMax + Tolerance));
+            Assert.That(centre.z, Is.InRange(Limits.yMin - Tolerance, Limits.yMax + Tolerance));
+            Assert.That(_navigator.Zoom, Is.EqualTo(0f).Within(Tolerance));
         }
     }
 }

@@ -34,8 +34,25 @@ namespace IsoGolf.Rendering
         [Tooltip("The most course one view shows along X, in metres. A longer course is framed in stretches this long.")]
         [SerializeField, Min(1f)] private float framedLength = 36f;
 
-        [Tooltip("On a dogleg, how much further back the zoomed-out view may go so a leg running diagonally on screen keeps its whole width in view. 1 keeps every course at the same scale, and lets such a leg's sides leave the overview.")]
-        [SerializeField, Range(1f, 2f)] private float doglegMaxStepBack = 1f;
+        [Header("Limits")]
+        [Tooltip("How far past the islands, and past the course's centreline across a gap, the middle of the view may go, in metres. The same at every zoom and heading.")]
+        [SerializeField, Min(0f)] private float islandMargin = 3f;
+
+        [Header("Heading at rest")]
+        [Tooltip("How slowly the camera turns to its automatic heading while it eases onto a stopped ball, in seconds.")]
+        [SerializeField, Range(0.01f, 3f)] private float headingSmoothTime = 0.5f;
+
+        [Tooltip("A new automatic heading closer than this to the one in effect is ignored, in degrees, so a straight course never turns by a hair.")]
+        [SerializeField, Range(0f, 20f)] private float headingMinTurn = 5f;
+
+        [Tooltip("Nearer the hole than this, in metres, the heading follows the ball's leg instead of facing the hole, whose direction means little that close.")]
+        [SerializeField, Min(0f)] private float holeHeadingMinDistance = 0.3f;
+
+        [Tooltip("How far, in degrees, the heading toward the hole may turn away from the ball's leg. 180 always faces the hole, even from past the green, where the course then runs down the screen. Lower keeps the course running up it.")]
+        [SerializeField, Range(0f, 180f)] private float holeHeadingMaxTurn = 180f;
+
+        [Tooltip("The furthest a player twist may turn the view from the automatic heading, in degrees.")]
+        [SerializeField, Range(0f, 90f)] private float maxTwist = 45f;
 
         [Header("Following a shot")]
         [Tooltip("The top of the band a flying ball stays in. -1 is the bottom edge of the screen, 1 the top, so 0.2 is 60% up.")]
@@ -57,12 +74,6 @@ namespace IsoGolf.Rendering
         [Tooltip("Where a stopped ball ends up on screen, from -1 to 1. Must leave room below it for a full pull.")]
         [SerializeField] private Vector2 restBallViewport = new Vector2(0f, -0.4f);
 
-        [Tooltip("On a course that bends, how far ahead of a stopped ball the camera reads the course's heading, in metres. 0 keeps the rest spot fixed.")]
-        [SerializeField, Min(0f)] private float restLookAhead = 10f;
-
-        [Tooltip("How far a bend may move the stopped ball to the side on screen, so the course ahead crosses the view. 1 is half the screen's width.")]
-        [SerializeField, Range(0f, 0.5f)] private float restMaxShift = 0.25f;
-
         [Tooltip("How slowly the camera eases to a stopped ball, in seconds.")]
         [SerializeField, Range(0.01f, 3f)] private float returnSmoothTime = 0.6f;
 
@@ -79,13 +90,16 @@ namespace IsoGolf.Rendering
         public float GlideMinReleaseSpeed => glideMinReleaseSpeed;
         public float GlideStopSpeed => glideStopSpeed;
         public float FramedLength => framedLength;
-        public float DoglegMaxStepBack => doglegMaxStepBack;
+        public float IslandMargin => islandMargin;
+        public float HeadingSmoothTime => headingSmoothTime;
+        public float HeadingMinTurn => headingMinTurn;
+        public float HoleHeadingMinDistance => holeHeadingMinDistance;
+        public float HoleHeadingMaxTurn => holeHeadingMaxTurn;
+        public float MaxTwist => maxTwist;
         public Rect FollowZone => Rect.MinMaxRect(-followZoneSide, followZoneBottom, followZoneSide, followZoneTop);
         public float FollowBackstop => followBackstop;
         public float FollowSmoothTime => followSmoothTime;
         public Vector2 RestBallViewport => restBallViewport;
-        public float RestLookAhead => restLookAhead;
-        public float RestMaxShift => restMaxShift;
         public float ReturnSmoothTime => returnSmoothTime;
     }
 }

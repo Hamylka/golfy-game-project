@@ -24,6 +24,9 @@ namespace IsoGolf.Generation
         /// <summary>Points along the island edge, for framing it.</summary>
         public IReadOnlyList<Vector3> Outline { get; private set; }
 
+        /// <summary>Every piece of every island's edge, for where the camera may look.</summary>
+        public IReadOnlyList<EdgeSegment> Edge { get; private set; }
+
         public void Build()
         {
             Clear();
@@ -46,6 +49,7 @@ namespace IsoGolf.Generation
             }
 
             Outline = result.Outline;
+            Edge = result.Edge;
         }
 
         private void OnDestroy()

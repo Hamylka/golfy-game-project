@@ -7,12 +7,19 @@ using UnityEngine.InputSystem.Controls;
 namespace IsoGolf.Rendering
 {
     /// <summary>
-    /// Frames the island and applies the player's camera gestures: drag to move around, pinch to zoom.
+    /// Frames the island and applies the player's camera gestures: drag to move around, pinch to zoom. Turns the view
+    /// to the automatic heading when a ball comes to rest and on the reset view.
     /// </summary>
     [DisallowMultipleComponent]
     [RequireComponent(typeof(Camera))]
     public sealed class IslandCamera : MonoBehaviour
     {
+        // How far apart, in metres, the island spots are where the headings the camera can take are read.
+        private const float HeadingSampleStep = 1f;
+
+        // How finely, in degrees, those headings are swept for the ground the views can show.
+        private const float YawSampleStep = 5f;
+
         [SerializeField] private CameraRigSettings settings;
 
         [Tooltip("The box to frame, usually the island.")]
@@ -26,8 +33,10 @@ namespace IsoGolf.Rendering
         private Vector2Int _screenSize;
         private IReadOnlyList<Vector3> _framePoints;
         private Vector3 _home;
-        private IReadOnlyList<Vector2> _corridor;
         private IReadOnlyList<Vector2> _centreline;
+        private IReadOnlyList<GroundSegment> _edges;
+        private IslandArea _area;
+        private CameraHeading _rule;
         private CameraView _view;
         private CameraFollow _follow;
         private bool _fingerDown;
@@ -58,6 +67,9 @@ namespace IsoGolf.Rendering
 
         public CameraNavigator Navigator => _navigator;
 
+        /// <summary>The follow, for the twist gesture to come (it turns the view through <see cref="CameraFollow.SetTwist"/>).</summary>
+        public CameraFollow Follower => _follow;
+
         private void OnEnable()
         {
             // One delegate for good, since the router is asked every time a finger lands.
@@ -65,7 +77,6 @@ namespace IsoGolf.Rendering
             _camera = GetComponent<Camera>();
             _camera.orthographic = false;
             _camera.fieldOfView = IsoCameraConvention.VerticalFieldOfView;
-            transform.rotation = IsoCameraConvention.Rotation;
             Rebuild();
         }
 
@@ -83,42 +94,71 @@ namespace IsoGolf.Rendering
                 _router.Update(0, default, default, GesturesEnabled, _claimsTouch, Time.unscaledDeltaTime);
             }
 
-            transform.position = _navigator.Position;
+            ApplyPose();
+        }
+
+        private void ApplyPose()
+        {
+            transform.SetPositionAndRotation(_navigator.Position, _navigator.View.Rotation);
         }
 
         private void Rebuild()
         {
             _screenSize = new Vector2Int(Screen.width, Screen.height);
-            _view = new CameraView(IsoCameraConvention.Rotation, IsoCameraConvention.VerticalFieldOfView, _screenSize.x / (float)_screenSize.y);
             IReadOnlyList<Vector3> points = _framePoints ?? CameraFraming.Corners(island);
-            CourseFrame frame = CameraFraming.FitCourse(points, _centreline, _view, settings.ScreenFill, settings.FramedLength, groundHeight, settings.DoglegMaxStepBack);
-            _home = frame.Home;
-            _corridor = frame.Corridor;
-            Rect limits = GroundLimits(points);
 
-            // From the default zoom on, so the follow can rest the ball at its spot along the whole course.
-            float fullLimitsZoom = settings.DefaultZoom > 0f ? settings.DefaultZoom : 1f;
-            _navigator = new CameraNavigator(_home, _view, limits, groundHeight, settings.ClosestZoom, _corridor, fullLimitsZoom);
+            // Framed facing the first leg, which sets the one zoomed-out height for every heading. A straight course
+            // faces +X, at the convention's exact rotation.
+            Vector2 firstLeg = new CameraHeading(_centreline, Vector2.zero, 0f, 0f).FirstLeg;
+            float yaw = IsoCameraConvention.YawFor(firstLeg);
+            Quaternion rotation = Mathf.Abs(Mathf.DeltaAngle(yaw, IsoCameraConvention.StraightYaw)) < 1e-3f
+                ? IsoCameraConvention.Rotation
+                : IsoCameraConvention.RotationAt(yaw);
+            _view = new CameraView(rotation, IsoCameraConvention.VerticalFieldOfView, _screenSize.x / (float)_screenSize.y);
+            _home = CameraFraming.FitCourse(points, _centreline, _view, settings.ScreenFill, settings.FramedLength);
+
+            _area = _edges != null && _edges.Count > 0
+                ? new IslandArea(_edges, _centreline, settings.IslandMargin)
+                : IslandArea.FromRect(GroundLimits(points), settings.IslandMargin);
+            _navigator = new CameraNavigator(_home, _view, _area, groundHeight, settings.ClosestZoom);
             var momentum = new PanMomentum(settings.GlideTimeConstant, settings.GlideVelocityWindow, settings.GlideMinReleaseSpeed, settings.GlideStopSpeed);
             _router = new CameraGestureRouter(_navigator, momentum);
-            _follow = new CameraFollow(_navigator, _view, settings.FollowZone, settings.FollowBackstop, settings.RestBallViewport, settings.FollowSmoothTime, settings.ReturnSmoothTime, settings.DefaultZoom, settings.ResetSeconds, settings.RestLookAhead, settings.RestMaxShift);
+            var ease = new HeadingEase(settings.HeadingSmoothTime, settings.HeadingMinTurn, settings.MaxTwist);
+            _follow = new CameraFollow(_navigator, settings.FollowZone, settings.FollowBackstop, settings.RestBallViewport, settings.FollowSmoothTime, settings.ReturnSmoothTime, settings.DefaultZoom, settings.ResetSeconds, ease)
+            {
+                Rule = _rule,
+            };
+
             if (_placedOn.HasValue)
             {
                 StartViewOn(_placedOn.Value);
             }
 
-            transform.position = _navigator.Position;
+            ApplyPose();
         }
 
         /// <summary>
         /// Frames these points instead of the box, for a tighter fit around a real island shape, along the course's
-        /// centreline (world X and Z, tee to hole). Without a centreline, or with a straight one, along +X.
+        /// centreline (world X and Z, tee to hole). Without a centreline, or with a straight one, along +X. The edges,
+        /// every piece of every island's outline, set where the view's centre may go; without them, the points'
+        /// bounding rectangle does.
         /// </summary>
-        public void SetIsland(IReadOnlyList<Vector3> points, IReadOnlyList<Vector2> centreline = null)
+        public void SetIsland(IReadOnlyList<Vector3> points, IReadOnlyList<Vector2> centreline = null, IReadOnlyList<GroundSegment> edges = null)
         {
             _framePoints = points;
             _centreline = centreline;
+            _edges = edges;
             Rebuild();
+        }
+
+        /// <summary>
+        /// Gives the camera the hole and how far a full-power shot goes on flat fairway, so a ball at rest within that
+        /// reach turns the view to face the hole. Without it, the view follows the leg the ball is on.
+        /// </summary>
+        public void SetHole(Vector2 hole, float fullPowerReach)
+        {
+            _rule = new CameraHeading(_centreline, hole, fullPowerReach, settings.HoleHeadingMinDistance, settings.HoleHeadingMaxTurn);
+            _follow.Rule = _rule;
         }
 
         /// <summary>Starts the level's view on this spot, for the ball on its tee, at the default zoom.</summary>
@@ -126,11 +166,12 @@ namespace IsoGolf.Rendering
         {
             _placedOn = ball;
             StartViewOn(ball);
-            transform.position = _navigator.Position;
+            ApplyPose();
         }
 
         private void StartViewOn(Vector3 ball)
         {
+            _follow.Rule = _rule;
             _navigator.ZoomTo(settings.DefaultZoom);
             _follow.PlaceOn(ball);
         }
@@ -147,12 +188,13 @@ namespace IsoGolf.Rendering
                 _router.StopGlide();
             }
 
-            transform.position = _navigator.Position;
+            ApplyPose();
         }
 
         /// <summary>
-        /// Eases the view back to the default one: the default zoom, with this ball at its rest spot on screen. Meant
-        /// for a ball at rest. A finger on the screen, or a shot, hands the camera back to the player.
+        /// Eases the view back to the default one: the default zoom and the automatic heading, with this ball at its
+        /// rest spot, and clears any twist. Meant for a ball at rest. A finger on the screen, or a shot, hands the
+        /// camera back to the player.
         /// </summary>
         public void ResetView(Vector3 ball)
         {
@@ -173,22 +215,85 @@ namespace IsoGolf.Rendering
             return false;
         }
 
-        /// <summary>The rectangle a horizontal plane shows across the framed views, the widest the player can see.</summary>
+        /// <summary>
+        /// The rectangle a horizontal plane shows across every fully zoomed out view the player can reach: the view's
+        /// centre anywhere in the island's area, at every heading the camera can take there, twist included.
+        /// </summary>
         public Rect VisibleGround(float height)
         {
-            // Every framed view is the first one moved along the corridor, so together they cover its footprint
-            // widened by the corridor's extent.
-            Rect first = CameraFraming.GroundFootprint(_home, _view, height);
-            float minX = 0f, maxX = 0f, minZ = 0f, maxZ = 0f;
-            foreach (Vector2 move in _corridor)
+            return VisibleGround(height, _home, _view, groundHeight, _area, ReachableYaws(_rule, _area, _view.Yaw, settings.MaxTwist));
+        }
+
+        /// <summary>The same, worked out from its parts, for tests.</summary>
+        public static Rect VisibleGround(float height, Vector3 home, in CameraView view, float groundHeight, IslandArea area, IEnumerable<float> yaws)
+        {
+            // A view's footprint only depends on its heading, moved with its centre, so the views' union is the area's
+            // bounds widened by the footprints of a view centred on the origin, at every heading.
+            Vector3 centre = view.OnPlane(home, Vector2.zero, groundHeight);
+            float minX = float.MaxValue, maxX = float.MinValue, minZ = float.MaxValue, maxZ = float.MinValue;
+            foreach (float yaw in yaws)
             {
-                minX = Mathf.Min(minX, move.x);
-                maxX = Mathf.Max(maxX, move.x);
-                minZ = Mathf.Min(minZ, move.y);
-                maxZ = Mathf.Max(maxZ, move.y);
+                Vector3 camera = CameraNavigator.Turned(home, view.Yaw, yaw, centre) - centre;
+                Rect footprint = CameraFraming.GroundFootprint(camera, view.WithYaw(yaw), height);
+                minX = Mathf.Min(minX, footprint.xMin);
+                maxX = Mathf.Max(maxX, footprint.xMax);
+                minZ = Mathf.Min(minZ, footprint.yMin);
+                maxZ = Mathf.Max(maxZ, footprint.yMax);
             }
 
-            return Rect.MinMaxRect(first.xMin + minX, first.yMin + minZ, first.xMax + maxX, first.yMax + maxZ);
+            Rect bounds = area.Bounds;
+            return Rect.MinMaxRect(bounds.xMin + minX, bounds.yMin + minZ, bounds.xMax + maxX, bounds.yMax + maxZ);
+        }
+
+        /// <summary>
+        /// Every yaw the camera can take on this course, in steps of <see cref="YawSampleStep"/>: the automatic heading
+        /// for a ball at rest anywhere on the islands, the starting one, and up to <paramref name="maxTwist"/> either
+        /// side of each. With no rule, the starting yaw and its twists.
+        /// </summary>
+        public static List<float> ReachableYaws(CameraHeading rule, IslandArea area, float startYaw, float maxTwist)
+        {
+            var headings = new HashSet<int> { Bin(startYaw) };
+            if (rule != null)
+            {
+                Rect bounds = area.IslandBounds;
+                for (float x = bounds.xMin; x <= bounds.xMax; x += HeadingSampleStep)
+                {
+                    for (float z = bounds.yMin; z <= bounds.yMax; z += HeadingSampleStep)
+                    {
+                        var spot = new Vector2(x, z);
+                        if (area.OnIsland(spot))
+                        {
+                            headings.Add(Bin(rule.YawFor(spot)));
+                        }
+                    }
+                }
+            }
+
+            var yaws = new HashSet<int>();
+            int twistBins = Mathf.CeilToInt(maxTwist / YawSampleStep);
+            foreach (int heading in headings)
+            {
+                for (int twist = -twistBins; twist <= twistBins; twist++)
+                {
+                    yaws.Add(((heading + twist) % BinCount + BinCount) % BinCount);
+                }
+            }
+
+            var result = new List<float>(yaws.Count);
+            foreach (int bin in yaws)
+            {
+                result.Add(bin * YawSampleStep);
+            }
+
+            result.Sort();
+            return result;
+        }
+
+        private static int BinCount => Mathf.RoundToInt(360f / YawSampleStep);
+
+        private static int Bin(float yaw)
+        {
+            return Mathf.RoundToInt(Mathf.Repeat(yaw, 360f) / YawSampleStep) % BinCount;
         }
 
         private static Rect GroundLimits(IReadOnlyList<Vector3> points)

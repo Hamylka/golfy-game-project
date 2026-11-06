@@ -13,7 +13,7 @@ namespace IsoGolf.Tests
         private const float Tolerance = 0.01f;
         private const float ViewportTolerance = 0.01f;
 
-        // Zoomed out, the view only travels along X, so a ball off the line it travels on settles close to the spot.
+        // How close a stopped ball settles to its rest spot.
         private const float RestTolerance = 0.05f;
         private const float BallHeight = 0.12f;
         private const float FramedLength = 36f;
@@ -38,10 +38,10 @@ namespace IsoGolf.Tests
 
         private void UseCourse(Bounds course)
         {
-            CourseFrame frame = CameraFraming.FitCourse(CameraFraming.Corners(course), _view, 0.94f, FramedLength);
+            Vector3 home = CameraFraming.FitCourse(CameraFraming.Corners(course), _view, 0.94f, FramedLength);
             Rect limits = Rect.MinMaxRect(course.min.x, course.min.z, course.max.x, course.max.z);
-            _navigator = new CameraNavigator(frame.Home, _view, limits, 0f, 0.3f, frame.CorridorLength);
-            _follow = new CameraFollow(_navigator, _view, Zone, Backstop, Rest, FollowTime, ReturnTime);
+            _navigator = new CameraNavigator(home, _view, limits, 0f, 0.3f);
+            _follow = new CameraFollow(_navigator, Zone, Backstop, Rest, FollowTime, ReturnTime);
         }
 
         private Vector2 OnScreen(Vector3 ball)
@@ -168,8 +168,6 @@ namespace IsoGolf.Tests
 
             Run(ball, FollowedBallState.Moving, 3f);
 
-            // On a long course the view only travels along X, which also moves the ball sideways on screen. The
-            // camera then settles on a compromise between the two bands, so the ball ends just past the top edge.
             Assert.That(OnScreen(ball).y, Is.EqualTo(Zone.yMax).Within(0.05f));
         }
 
@@ -381,17 +379,20 @@ namespace IsoGolf.Tests
         }
 
         [Test]
-        public void FramedPar3_FullyZoomedOut_NeverMoves()
+        public void FramedPar3_FullyZoomedOut_FollowsTheBall_WithTheViewCentreOverTheIsland()
         {
             UseCourse(new Bounds(Vector3.zero, new Vector3(34f, 4f, 10f)));
-            Vector3 home = _navigator.Position;
             var teeOnPar3 = new Vector3(-14f, BallHeight, 0f);
 
             _follow.PlaceOn(teeOnPar3);
             Run(new Vector3(14f, 4f, 3f), FollowedBallState.Moving, 2f);
             Run(new Vector3(14f, BallHeight, 3f), FollowedBallState.AtRest, 5f);
 
-            Assert.That((_navigator.Position - home).magnitude, Is.EqualTo(0f).Within(Tolerance));
+            // Since the camera rotation decisions, the zoomed-out view may move too, its centre kept over the island.
+            Vector3 centre = _view.OnPlane(_navigator.Position, Vector2.zero, 0f);
+            Assert.That(_navigator.Zoom, Is.EqualTo(0f).Within(Tolerance));
+            Assert.That(centre.x, Is.InRange(-17f - Tolerance, 17f + Tolerance));
+            Assert.That(centre.z, Is.InRange(-5f - Tolerance, 5f + Tolerance));
             Assert.That(_follow.IsReturning, Is.False);
         }
 
