@@ -4,20 +4,41 @@ using UnityEngine;
 namespace IsoGolf.Rendering
 {
     /// <summary>
-    /// The view of a perspective camera with a fixed rotation. Pure maths, so it can be tested without a scene.
+    /// The view of a perspective camera: a rotation (the fixed pitch and a yaw, never a roll) and a lens. Pure maths,
+    /// so it can be tested without a scene.
     /// </summary>
     public readonly struct CameraView
     {
         public CameraView(Quaternion rotation, float verticalFieldOfView, float aspect)
+            : this(rotation, Mathf.Tan(verticalFieldOfView * 0.5f * Mathf.Deg2Rad), aspect, true)
+        {
+        }
+
+        /// <summary>The convention's pitch at this yaw, in degrees.</summary>
+        public CameraView(float yaw, float verticalFieldOfView, float aspect)
+            : this(IsoCameraConvention.RotationAt(yaw), verticalFieldOfView, aspect)
+        {
+        }
+
+        private CameraView(Quaternion rotation, float tanHalfFov, float aspect, bool _)
         {
             Rotation = rotation;
             Aspect = aspect;
-            TanHalfFov = Mathf.Tan(verticalFieldOfView * 0.5f * Mathf.Deg2Rad);
+            TanHalfFov = tanHalfFov;
         }
 
         public Quaternion Rotation { get; }
         public float Aspect { get; }
         public float TanHalfFov { get; }
+
+        /// <summary>The yaw, in degrees from 0 to 360.</summary>
+        public float Yaw => Rotation.eulerAngles.y;
+
+        /// <summary>The same view turned to another yaw, keeping its pitch and lens.</summary>
+        public CameraView WithYaw(float yaw)
+        {
+            return new CameraView(Quaternion.Euler(Rotation.eulerAngles.x, yaw, 0f), TanHalfFov, Aspect, true);
+        }
 
         /// <summary>World direction through a viewport point, where x and y run from -1 to 1.</summary>
         public Vector3 Direction(Vector2 viewport)
@@ -41,90 +62,18 @@ namespace IsoGolf.Rendering
         }
     }
 
-    /// <summary>How a course is framed when fully zoomed out.</summary>
-    public readonly struct CourseFrame
-    {
-        private static readonly Vector2[] NoCorridor = { Vector2.zero };
-
-        /// <summary>A frame whose view travels this far along +X, or not at all.</summary>
-        public CourseFrame(Vector3 home, float corridorLength)
-            : this(home, corridorLength > 0f ? new[] { Vector2.zero, new Vector2(corridorLength, 0f) } : NoCorridor)
-        {
-        }
-
-        public CourseFrame(Vector3 home, IReadOnlyList<Vector2> corridor)
-        {
-            Home = home;
-            Corridor = corridor ?? NoCorridor;
-            float length = 0f;
-            for (int i = 1; i < Corridor.Count; i++)
-            {
-                length += Vector2.Distance(Corridor[i - 1], Corridor[i]);
-            }
-
-            CorridorLength = length;
-        }
-
-        /// <summary>The first view, at the course's start.</summary>
-        public Vector3 Home { get; }
-
-        /// <summary>
-        /// Where the fully zoomed out camera can travel, as a polyline of moves from <see cref="Home"/> along the
-        /// ground (x is world X, y is world Z). It starts at zero, and is that single point for a course that fits
-        /// one view.
-        /// </summary>
-        public IReadOnlyList<Vector2> Corridor { get; }
-
-        /// <summary>How far the view can travel along <see cref="Corridor"/>. Zero for a course that fits in one view.</summary>
-        public float CorridorLength { get; }
-    }
-
     public static class CameraFraming
     {
         private const int Iterations = 60;
 
-        // A bent course's framing is measured on its outline: each pass centres the legs, finds the corridor's end and
-        // steps back if a leg is still too wide. This is how many times it may step back; one or two usually settle it.
-        private const int BentPasses = 4;
-
-        // A leg may reach this much past the screen fill before the camera steps back, so a measuring pass can stop.
-        private const float WidthSlack = 1.01f;
-
-        // The outline points that count as a view's middle row, in viewport units above and below its middle.
-        private const float MiddleRowHalfHeight = 0.1f;
-
-        // How far apart, in metres, the places tried for the end of a bent corridor are.
-        private const float EndSearchStep = 0.25f;
-
-        // How far apart, in metres, the views checked for a leg's width are.
-        private const float WidthSampleStep = 2f;
-
-        // Views this share of a framed stretch from a bend aren't checked for width: they see the corner.
-        private const float CornerShare = 0.25f;
-
         /// <summary>
-        /// Frames a course along the straight +X axis: the whole course if it's no longer than
-        /// <paramref name="framedLength"/>, otherwise in stretches that long, at the same scale.
+        /// The fully zoomed out camera for a course: the whole course if it's no longer than
+        /// <paramref name="framedLength"/> along its centreline, otherwise its first stretch that long, laid along the
+        /// first leg and as wide as the course measured across it. The view should face the first leg's heading. The
+        /// camera's height then sets the one zoomed-out scale, kept at every heading the camera later takes.
         /// </summary>
-        public static CourseFrame FitCourse(IReadOnlyList<Vector3> points, in CameraView view, float screenFill, float framedLength)
-        {
-            return FitCourse(points, null, view, screenFill, framedLength);
-        }
-
-        /// <summary>
-        /// Frames a course along its centreline. A course no longer than <paramref name="framedLength"/> along its
-        /// centreline is framed whole. A longer one is framed on its first stretch, that long and as wide as the
-        /// course measured across the centreline, and the fully zoomed out view then travels along the centreline at
-        /// that same scale. A centreline with a single leg counts as straight along +X: a straight course runs along
-        /// the play axis, whatever small offset to the side its hole has.
-        /// </summary>
-        /// <param name="centreline">The course's centreline, tee to hole, in world X and Z. Null for straight along +X.</param>
-        /// <param name="groundHeight">The height of the ground the view's centre travels on.</param>
-        /// <param name="maxStepBack">
-        /// On a bent course, how much further back than the first stretch's framing the camera may go so that a leg
-        /// running diagonally on screen keeps its whole width in view. 1 keeps the same scale as a straight course.
-        /// </param>
-        public static CourseFrame FitCourse(IReadOnlyList<Vector3> points, IReadOnlyList<Vector2> centreline, in CameraView view, float screenFill, float framedLength, float groundHeight = 0f, float maxStepBack = float.PositiveInfinity)
+        /// <param name="centreline">The course's centreline, tee to hole, in world X and Z. Null, or a single leg, for straight along +X.</param>
+        public static Vector3 FitCourse(IReadOnlyList<Vector3> points, IReadOnlyList<Vector2> centreline, in CameraView view, float screenFill, float framedLength)
         {
             GroundPath path = AxisPath(points, centreline);
 
@@ -148,10 +97,9 @@ namespace IsoGolf.Rendering
                 maxY = Mathf.Max(maxY, point.y);
             }
 
-            float length = maxAlong - minAlong;
-            if (length <= framedLength)
+            if (maxAlong - minAlong <= framedLength)
             {
-                return new CourseFrame(Fit(points, view, screenFill), 0f);
+                return Fit(points, view, screenFill);
             }
 
             // The first stretch, laid along the first leg. On a straight course this is the box along +X it always was.
@@ -169,199 +117,13 @@ namespace IsoGolf.Rendering
                 }
             }
 
-            Vector3 home = Fit(stretch, view, screenFill);
-
-            // The lowest the first stretch reaches on screen: its start, nearest the camera.
-            float bottom = float.MaxValue;
-            float framedHeight = home.y - groundHeight;
-            foreach (Vector3 corner in stretch)
-            {
-                bottom = Mathf.Min(bottom, view.ToViewport(home, corner).y);
-            }
-
-            float first, side, last;
-            var offsets = new float[path.LegCount];
-            for (int pass = 0; ; pass++)
-            {
-                // The view's centre keeps the place beside the centreline it has on the first stretch.
-                Vector3 center = view.OnPlane(home, Vector2.zero, groundHeight);
-                first = path.Project(new Vector2(center.x, center.z), out side);
-                float straightEnd = first + (length - framedLength);
-                for (int i = 0; i < offsets.Length; i++)
-                {
-                    offsets[i] = side;
-                }
-
-                // A straight course travels until its last stretch ends where the course does, as it always has.
-                last = straightEnd;
-                if (path.LegCount < 2)
-                {
-                    break;
-                }
-
-                // A bent one is fitted by measuring its real outline, which a pass or two settles.
-                CentreLaterLegs(points, path, home, first, offsets, view, groundHeight);
-                last = EndOfBentCorridor(points, path, home, first, straightEnd, maxAlong, offsets, framedLength, view, screenFill);
-                float widest = WidestLeg(points, path, home, first, last, offsets, framedLength, view);
-
-                // No further back than the cap allows: past it, a diagonal leg's sides are left off the overview.
-                float height = home.y - groundHeight;
-                float stepBack = Mathf.Min(widest / screenFill, maxStepBack * framedHeight / height);
-                if (widest <= screenFill * WidthSlack || stepBack <= 1f + 1e-4f || pass == BentPasses)
-                {
-                    break;
-                }
-
-                // Further back, around the ground at the bottom of the first view, so the course's start stays low on
-                // screen as on a straight course. Points shrink toward there on screen; the next pass centres the
-                // legs and finds the corridor's end again at the new height.
-                Vector3 anchor = view.OnPlane(home, new Vector2(0f, bottom), groundHeight);
-                home = anchor + ((home - anchor) * stepBack);
-            }
-
-            Vector2[] views = path.OffsetSlice(first, last, offsets);
-            var corridor = new Vector2[views.Length];
-            for (int i = 0; i < views.Length; i++)
-            {
-                corridor[i] = views[i] - views[0];
-            }
-
-            return new CourseFrame(home, corridor);
+            return Fit(stretch, view, screenFill);
         }
 
-        /// <summary>The camera of the fully zoomed out view this far along a bent corridor.</summary>
-        private static Vector3 CameraAlong(GroundPath path, Vector3 home, float first, float along, IReadOnlyList<float> offsets)
+        /// <summary>The fully zoomed out camera for a course framed along +X.</summary>
+        public static Vector3 FitCourse(IReadOnlyList<Vector3> points, in CameraView view, float screenFill, float framedLength)
         {
-            Vector2 move = path.OffsetAt(along, offsets) - path.OffsetAt(first, offsets);
-            return home + new Vector3(move.x, 0f, move.y);
-        }
-
-        /// <summary>
-        /// The island's leftmost and rightmost points on screen, among those close to the middle row of a view.
-        /// Returns false if no point is there.
-        /// </summary>
-        private static bool MiddleRow(IReadOnlyList<Vector3> points, Vector3 camera, in CameraView view, out float left, out float right)
-        {
-            left = float.MaxValue;
-            right = float.MinValue;
-            foreach (Vector3 point in points)
-            {
-                Vector2 viewport = view.ToViewport(camera, point);
-                if (Mathf.Abs(viewport.y) <= MiddleRowHalfHeight)
-                {
-                    left = Mathf.Min(left, viewport.x);
-                    right = Mathf.Max(right, viewport.x);
-                }
-            }
-
-            return left <= right;
-        }
-
-        /// <summary>The middle of a leg, kept inside the corridor.</summary>
-        private static float LegMiddle(GroundPath path, int leg, float first, float last)
-        {
-            return Mathf.Clamp((path.LegStart(leg) + path.LegStart(leg + 1)) * 0.5f, first, Mathf.Max(first, last));
-        }
-
-        /// <summary>
-        /// Moves every leg after the first sideways so that, seen from the middle of that leg, the island sits centred
-        /// across the screen. The first leg keeps the place its framed stretch gives it. A leg that runs diagonally on
-        /// screen needs this: the first leg's offset, measured square to a different direction, would push it aside.
-        /// </summary>
-        private static void CentreLaterLegs(IReadOnlyList<Vector3> points, GroundPath path, Vector3 home, float first, float[] offsets, in CameraView view, float groundHeight)
-        {
-            for (int leg = 1; leg < path.LegCount; leg++)
-            {
-                Vector3 camera = CameraAlong(path, home, first, LegMiddle(path, leg, first, float.MaxValue), offsets);
-                if (!MiddleRow(points, camera, view, out float left, out float right))
-                {
-                    continue;
-                }
-
-                // A sideways step of the camera moves everything on screen by the same amount, at the middle row's depth.
-                Vector3 screenRight = view.OnPlane(camera, Vector2.right, groundHeight) - view.OnPlane(camera, Vector2.zero, groundHeight);
-                Vector2 shift = new Vector2(screenRight.x, screenRight.z) * ((left + right) * 0.5f);
-                offsets[leg] += Vector2.Dot(shift, GroundPath.Normal(path.LegDirection(leg)));
-            }
-        }
-
-        /// <summary>
-        /// The widest the island's middle row reaches on screen along the corridor, from the middle of the screen, 1 at
-        /// its edge. Views near a bend are left out: there a screen row crosses both legs and the corner between them,
-        /// which is no leg's width.
-        /// </summary>
-        private static float WidestLeg(IReadOnlyList<Vector3> points, GroundPath path, Vector3 home, float first, float last, IReadOnlyList<float> offsets, float framedLength, in CameraView view)
-        {
-            float cornerReach = framedLength * CornerShare;
-            float widest = 0f;
-            for (float along = first; along <= last + (WidthSampleStep * 0.5f); along += WidthSampleStep)
-            {
-                float at = Mathf.Min(along, last);
-                bool nearBend = false;
-                for (int vertex = 1; vertex < path.LegCount; vertex++)
-                {
-                    nearBend |= Mathf.Abs(at - path.LegStart(vertex)) < cornerReach;
-                }
-
-                if (nearBend)
-                {
-                    continue;
-                }
-
-                Vector3 camera = CameraAlong(path, home, first, at, offsets);
-                if (MiddleRow(points, camera, view, out float left, out float right))
-                {
-                    widest = Mathf.Max(widest, Mathf.Max(-left, right));
-                }
-            }
-
-            return widest;
-        }
-
-        /// <summary>
-        /// How far along the centreline a bent course's corridor must run for its last view to show the course's end.
-        /// A view sees less of a leg that runs diagonally on screen than of one running up it, since the leg soon
-        /// leaves by a side, so the straight course's rule (travel the length beyond one stretch) stops short there.
-        /// This walks on from that rule's end until every point of the course's last quarter stretch is in view,
-        /// or, if none does, takes the place where they come closest.
-        /// </summary>
-        private static float EndOfBentCorridor(IReadOnlyList<Vector3> points, GroundPath path, Vector3 home, float first, float straightEnd, float maxAlong, IReadOnlyList<float> offsets, float framedLength, in CameraView view, float screenFill)
-        {
-            float capStart = maxAlong - (framedLength * 0.25f);
-            var cap = new List<Vector3>();
-            foreach (Vector3 point in points)
-            {
-                if (path.Project(new Vector2(point.x, point.z), out _) >= capStart)
-                {
-                    cap.Add(point);
-                }
-            }
-
-            float best = straightEnd;
-            float bestOverflow = float.MaxValue;
-            for (float along = straightEnd; along <= maxAlong; along += EndSearchStep)
-            {
-                Vector3 camera = CameraAlong(path, home, first, along, offsets);
-                float overflow = float.MinValue;
-                foreach (Vector3 point in cap)
-                {
-                    Vector2 viewport = view.ToViewport(camera, point);
-                    overflow = Mathf.Max(overflow, Mathf.Max(Mathf.Abs(viewport.x), Mathf.Abs(viewport.y)) - screenFill);
-                }
-
-                if (overflow <= 0f)
-                {
-                    return along;
-                }
-
-                if (overflow < bestOverflow)
-                {
-                    bestOverflow = overflow;
-                    best = along;
-                }
-            }
-
-            return best;
+            return FitCourse(points, null, view, screenFill, framedLength);
         }
 
         /// <summary>The centreline the framing follows: straight along +X unless it really bends.</summary>

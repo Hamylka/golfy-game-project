@@ -4,6 +4,31 @@ All notable progress on Iso Golf. The format follows [Keep a Changelog](https://
 
 ## [Unreleased]
 
+### 2026-11-06: Camera heading and island limits (`feature/m3-camera-yaw`)
+
+#### Added
+
+- `CameraView` takes a yaw as well as the fixed pitch (`CameraView(yaw, …)`, `WithYaw`), never a roll. `IsoCameraConvention.YawFor(heading)` shows any ground heading up the screen with the same slight lean as +X (yaw 80 for +X, 115 for a leg turned 35° right), and `HeadingOf` is its inverse.
+- `CameraHeading`: the automatic heading for a ball at rest. It faces the hole when the hole is within a full-power shot (`ShotReach.FullPowerDistance`, flat fairway, carry and roll, about 30 m), otherwise the direction of the centreline leg the ball is on (+X on a straight course). Slopes and rough are left out, so the heading is one predictable number per level.
+- `CameraFollow` turns the camera only at rest: when the ball stops it picks the heading once, then turns around the ball (which keeps it in place on screen) while easing it to its rest spot. The reset view turns to the same heading. During flight the camera only translates. A twist hook (`SetTwist`, `Twist`, `Heading`) for PR 3d; the next shot and the reset view clear the twist.
+- `CameraNavigator.TurnTo(yaw, pivot)`, `SetPose`, `PositionWith(…, yaw)`, `View`, `Yaw` and `ViewCentre`.
+- `IslandArea`: the view's centre stays over the course's islands, or within 3 m of them or of the centreline, at every zoom and heading. The centreline keeps a way across every gap. The nearest allowed point is exact, so a pan sliding along the limit stays smooth.
+- `CameraRigSettings`: `islandMargin` (3 m), `headingSmoothTime` (0.5 s), `headingMinTurn` (5°: a new heading closer than that to the current one is ignored, so a straight course never turns by a hair), `holeHeadingMinDistance` (0.3 m, just past the hole's capture radius, so a short putt faces the hole too), `holeHeadingMaxTurn` (180°, no cap) and `maxTwist` (45°).
+- `CameraHeadingTests` (35), `IslandAreaTests` (15) and new `CameraPathTests` (15) and `ShadowDistanceTests` (14 plus 4 explicit measurements). EditMode: 453 tests, all passing.
+
+#### Changed
+
+- `holeHeadingMaxTurn` caps how far the heading toward the hole may turn from the ball's leg. It ships at 180°, the decision taken literally, which the director chose after trying a 45° cap: a ball past the green turns the view to face the hole, and the course then runs down the screen. A lower value keeps the course running up it.
+- The zoomed-out view is no longer locked: it pans over the island like any zoom. PR 33's corridor, `doglegMaxStepBack`, `restLookAhead` and `restMaxShift` are gone, since each leg is now seen along its own heading. `CameraFraming.FitCourse` returns the zoomed-out camera, framed facing the first leg; its height is the one scale on every heading.
+- Clouds: `IslandCamera.VisibleGround` covers every zoomed-out view the limits allow, at every heading the camera can take (twist included), so the cloud layer is larger than before.
+- `TerrainView.Edge` and `BallView.Shot` are exposed for the camera; `LevelBootstrap` passes the island's edges, the hole and the full-power reach.
+- `Main` and `Sandbox_LongCourse` keep their framing, their level start and their rest after a shot along the axis, at the convention's exact rotation (pinned).
+
+#### Known issues
+
+- Shadow fade (starts at 56.8 m). Framed stretch at the worst heading, then at the starting heading, on 9:16 / Honor / 9:21: par 3 49.1 / 54.9 / 57.0 and 48.1 / 54.0 / 56.1 m; long course 68.0 / 76.2 / 79.2 and 58.6 / 67.8 / 71.1 m; gap 56.8 / 65.3 / 68.3 and 55.4 / 63.8 / 66.7 m; dogleg 63.6 / 72.3 / 75.5 and 55.8 / 65.0 / 68.4 m. The par 3 is past the fade start only when turned on 9:21 (by 0.2 m). The three sandbox fixtures were already past it at their starting heading before this PR, unchecked until now.
+- With the zoomed-out view free to pan, the par 3 viewed from its tee end shows its far tip 67 m away on 9:21, past the fade start. At the default zoom the farthest island point on screen stays at 55.2 m.
+
 ### 2026-11-06: Camera rotation decisions (`feature/m3-camera-rotation-plan`)
 
 #### Changed

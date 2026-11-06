@@ -17,15 +17,14 @@ namespace IsoGolf.Tests
         }
 
         [Test]
-        public void FitCourse_FramesACourseThatFitsWhole_WithNoCorridor()
+        public void FitCourse_FramesACourseThatFitsWhole()
         {
             CameraView view = View(1280f / 2800f);
             Vector3[] corners = CameraFraming.Corners(Island);
 
-            CourseFrame frame = CameraFraming.FitCourse(corners, view, ScreenFill, 36f);
+            Vector3 home = CameraFraming.FitCourse(corners, view, ScreenFill, 36f);
 
-            Assert.That((frame.Home - CameraFraming.Fit(corners, view, ScreenFill)).magnitude, Is.EqualTo(0f).Within(Tolerance));
-            Assert.That(frame.CorridorLength, Is.EqualTo(0f));
+            Assert.That((home - CameraFraming.Fit(corners, view, ScreenFill)).magnitude, Is.EqualTo(0f).Within(Tolerance));
         }
 
         [Test]
@@ -35,11 +34,10 @@ namespace IsoGolf.Tests
             var longCourse = new Bounds(Vector3.zero, new Vector3(80f, 4f, 10f));
             var firstStretch = new Bounds(new Vector3(-40f + 17f, 0f, 0f), new Vector3(34f, 4f, 10f));
 
-            CourseFrame frame = CameraFraming.FitCourse(CameraFraming.Corners(longCourse), view, ScreenFill, 34f);
+            Vector3 home = CameraFraming.FitCourse(CameraFraming.Corners(longCourse), view, ScreenFill, 34f);
             Vector3 expected = CameraFraming.Fit(CameraFraming.Corners(firstStretch), view, ScreenFill);
 
-            Assert.That((frame.Home - expected).magnitude, Is.EqualTo(0f).Within(Tolerance));
-            Assert.That(frame.CorridorLength, Is.EqualTo(46f).Within(Tolerance));
+            Assert.That((home - expected).magnitude, Is.EqualTo(0f).Within(Tolerance));
         }
 
         [Test]

@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using IsoGolf.Generation;
 using IsoGolf.Rendering;
 using UnityEngine;
@@ -21,7 +22,13 @@ namespace IsoGolf.Gameplay
         private void Start()
         {
             terrain.Build();
-            islandCamera.SetIsland(terrain.Outline, terrain.Layout.Centreline.Points);
+            islandCamera.SetIsland(terrain.Outline, terrain.Layout.Centreline.Points, GroundEdges(terrain.Edge));
+            if (ball != null)
+            {
+                islandCamera.SetHole(terrain.Layout.Hole, ShotReach.FullPowerDistance(ball.Shot));
+            }
+
+            // After the hole, which decides the headings the camera can take, and so the ground the clouds must cover.
             if (clouds != null)
             {
                 clouds.Build(islandCamera.VisibleGround);
@@ -34,6 +41,18 @@ namespace IsoGolf.Gameplay
                 ball.Build(ground);
                 islandCamera.PlaceOn(ball.transform.localPosition);
             }
+        }
+
+        /// <summary>The island's edge on the ground, as the camera reads it.</summary>
+        public static List<GroundSegment> GroundEdges(IReadOnlyList<EdgeSegment> edges)
+        {
+            var ground = new List<GroundSegment>(edges.Count);
+            foreach (EdgeSegment edge in edges)
+            {
+                ground.Add(new GroundSegment(new Vector2(edge.A.x, edge.A.z), new Vector2(edge.B.x, edge.B.z)));
+            }
+
+            return ground;
         }
     }
 }

@@ -13,7 +13,7 @@ Keywords: *low poly, faceted, diorama, scale model, peaceful island, solitude, s
 
 Clean, full-resolution real-time 3D, chosen on the phone from a look test (`feature/lowpoly-look-test`):
 
-- **Perspective camera**, 45° vertical field of view, rotation about (40, 80, 0) on a course heading along +X. The camera sits behind the tee and looks along the course; from M3 its heading turns with the course at rest, and the player can twist it up to ±45°, so the course always runs up the screen. The depth is part of the look: the tee is close and large, the hole small and distant.
+- **Perspective camera**, 45° vertical field of view, rotation about (40, 80, 0) on a course heading along +X. The camera sits behind the tee and looks along the course; from M3 its heading turns with the course at rest, and the player can twist it up to ±45°, so what lies ahead, the course or the hole, runs up the screen. The depth is part of the look: the tee is close and large, the hole small and distant.
 - **Faceted geometry**: flat normals, so each triangle takes one tone. Terrain has gentle triangulated undulations, flat near the shot line and more broken toward the edges.
 - **Clean surface borders**: fairway, green, bunker, water and island edges are cut along their real outlines, never along the triangle grid as sawteeth.
 - **Native resolution** with 4× MSAA, in forced portrait. Render scale may be lowered on weaker phones.
