@@ -13,7 +13,7 @@ Keywords: *low poly, faceted, diorama, scale model, peaceful island, solitude, s
 
 Clean, full-resolution real-time 3D, chosen on the phone from a look test (`feature/lowpoly-look-test`):
 
-- **Perspective camera**, 45° vertical field of view, rotation about (40, 80, 0). The camera sits behind the tee and looks along the course. The depth is part of the look: the tee is close and large, the hole small and distant.
+- **Perspective camera**, 45° vertical field of view, rotation about (40, 80, 0) on a course heading along +X. The camera sits behind the tee and looks along the course; from M3 its heading turns with the course at rest, and the player can twist it up to ±45°, so the course always runs up the screen. The depth is part of the look: the tee is close and large, the hole small and distant.
 - **Faceted geometry**: flat normals, so each triangle takes one tone. Terrain has gentle triangulated undulations, flat near the shot line and more broken toward the edges.
 - **Clean surface borders**: fairway, green, bunker, water and island edges are cut along their real outlines, never along the triangle grid as sawteeth.
 - **Native resolution** with 4× MSAA, in forced portrait. Render scale may be lowered on weaker phones.
@@ -44,7 +44,7 @@ Rules:
 
 ## 4. Lighting and shadows
 
-- A single sun, **top-left of the screen**, warm (`#FFF1D6`), fairly high in the sky: early afternoon.
+- A single sun, **top-left of the screen**, warm (`#FFF1D6`), fairly high in the sky: early afternoon. It is set once per level from the course's overall heading (tee to hole), so it sits top-left on average, and then never moves: shadows never turn. On a dogleg leg or with the twist it drifts from top-left; checked at the extremes (about ±80°) when built. A time of day per level (variants A and C) may come later; a day-night cycle running during play is not planned, since a moving sun makes crisp shadows shimmer.
 - Cast shadows are slightly transparent and cool-tinted (violet / blue-grey), with crisp edges that keep the shape of what casts them. Chosen on the phone in M1.3 over soft blurred shadows and hard jagged ones.
 - Trees cast large shadows on the ground: an important compositional element.
 - Each facet takes a single tone from the light, with plain lighting. A stepped toon ramp was tried on the phone in M1.3 and rejected: it flattens the facets that make slopes readable, and bleaches sand and green.
@@ -91,7 +91,7 @@ No photo textures, no fine normal maps.
 - Aiming: a dotted white arc following the bell-shaped shot curve, with the landing point marked by a small cross or circle on the ground.
 - Putting: on the green there is no arc and no landing marker. The preview stays on the ground: dots along the first part of the putt's true path, about 40%, with no end marker. It never lies, and it leaves the rest of the slope to be read from the facets.
 - Shot gesture: a drag that starts on the ball, pulled back like a slingshot. Its visual feedback is limited to the gauge and the arc.
-- Camera gestures: one-finger drag to move around, which keeps gliding and slows down after release, and pinch to zoom, both within the island. Blocked while aiming, allowed during flight.
+- Camera gestures: one-finger drag to move around, which keeps gliding and slows down after release, pinch to zoom, and a two-finger twist to turn the view up to ±45°, all within the island. Blocked while aiming, allowed during flight.
 - Typography: a small, readable font in a warm dark color (`#3A2E25`) over the sky.
 - Transitions: fade to white between levels, or the next island "dropping" into place.
 
@@ -111,7 +111,7 @@ No photo textures, no fine normal maps.
 - Progression through **procedurally generated levels**, each one an island diorama.
 - Constant play axis: start in the **south-west**, finish in the **north-east**. On screen: the course runs **up the screen with a slight lean to the right**, from bottom-left to top-right.
 - The start is always in the lower part of the island, the green in the upper part: the eye reads the level in the direction of the shot.
-- **Par 3 courses** fit the whole island in one view when fully zoomed out, and every course starts closer than that, at a default zoom. Every par zooms out to the same scale, so the ball and props keep their size. **Longer courses (par 4, par 5)** show mostly whole when fully zoomed out, as an overview for planning a dogleg or a gap, with the far end small. At the default zoom they are only partly visible, which leaves room for more detail on the course: the camera moves along the course during play, always at the same rotation, following its bends. It stays still until the ball reaches the middle of the screen, then glides to keep it between about 40% and 60% of the screen's height and width, and at rest eases until the ball sits low on screen with the course ahead. A finger on the screen during flight pauses this follow, and the camera eases back to the ball once the ball has stopped and the finger has lifted. Between levels, the next island appears to the north-east (camera slide or fade to white).
+- **Par 3 courses** fit the whole island in one view when fully zoomed out, and every course starts closer than that, at a default zoom. Every par zooms out to the same scale, so the ball and props keep their size. **Longer courses (par 4, par 5)** show mostly whole when fully zoomed out, as an overview for planning a dogleg or a gap, with the far end small. At the default zoom they are only partly visible, which leaves room for more detail on the course: the camera moves along the course during play, and only turns at rest: once the ball stops it faces the hole if a full shot can reach it, otherwise the leg ahead. It stays still until the ball reaches the middle of the screen, then glides to keep it between about 40% and 60% of the screen's height and width, and at rest eases until the ball sits low on screen with the course ahead. A finger on the screen during flight pauses this follow, and the camera eases back to the ball once the ball has stopped and the finger has lifted. Between levels, the next island appears to the north-east (camera slide or fade to white).
 
 ### Procedural kit
 
