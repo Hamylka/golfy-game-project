@@ -10,13 +10,13 @@ namespace IsoGolf.Gameplay
         private readonly CourseHeightField _heights;
         private readonly float _waterLevel;
 
-        public BallGround(CourseShapeSettings shape)
+        public BallGround(CourseLayout layout)
         {
-            _fields = new CourseFields(shape);
-            _heights = new CourseHeightField(shape);
-            _waterLevel = shape.WaterLevel;
-            Tee = shape.Tee;
-            Hole = shape.Hole;
+            _fields = new CourseFields(layout);
+            _heights = new CourseHeightField(layout);
+            _waterLevel = layout.WaterLevel;
+            Tee = layout.Tee;
+            Hole = layout.Hole;
         }
 
         public Vector2 Tee { get; }

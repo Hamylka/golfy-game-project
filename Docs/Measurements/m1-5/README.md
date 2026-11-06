@@ -69,6 +69,8 @@ A 20 s capture from a development build, with the profiler adding its own overhe
 
 URP starts fading shadows at 80% of the 70 m shadow distance, which is 56 m. The farthest point of the par 3 island from the framed camera is 45.1 m on a 3:4 tablet, 47.0 m at 9:16, 52.5 m on this phone, 54.5 m at 9:21 and 56.0 m at 9:22. So 70 m stays, with nothing to spare on a screen as tall as 9:22. `ShadowDistanceTests` guards this up to 9:21, and the longer courses of M3 will need a new check.
 
+Update, 2026-11-06 (`refactor/m3-course-layout`): the course noise became `CourseNoise`, which reshaped the par 3's outline and the earth band under its far tip. The farthest point is now 45.1 m at 3:4, 48.1 m at 9:16, 54.0 m on the Honor 500 Pro, 56.1 m at 9:21 and 57.7 m at 9:22, measured in the Editor. The shadow distance went from 70 m to 71 m, so the fade starts at 56.8 m: 9:21 keeps full shadows with 0.7 m to spare, and 9:22 is now 0.9 m into the fade (it sat right at the edge before).
+
 ## Automatic render scale: decision, not built
 
 This phone can't settle the thresholds: at 5.9 ms of GPU in a 16.7 ms frame, it never needs a drop. The recommended design is:

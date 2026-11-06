@@ -18,14 +18,14 @@ namespace IsoGolf.Generation
         private readonly float[,] _heights;
         private readonly float[,] _feltHeights;
 
-        public CourseHeightField(CourseShapeSettings shape)
+        public CourseHeightField(CourseLayout layout)
         {
-            var fields = new CourseFields(shape);
-            _cell = shape.CellSize;
+            var fields = new CourseFields(layout);
+            _cell = layout.Relief.CellSize;
 
             // Two extra rows past the terrain grid, because the curve in a cell reads one row beyond it.
-            int halfX = Mathf.CeilToInt((shape.HalfLength + _cell) / _cell) + 2;
-            int halfZ = Mathf.CeilToInt((shape.HalfWidth + (shape.WidthWobble * 0.5f) + _cell) / _cell) + 2;
+            int halfX = Mathf.CeilToInt((layout.HalfExtent.x + _cell) / _cell) + 2;
+            int halfZ = Mathf.CeilToInt((layout.HalfExtent.y + _cell) / _cell) + 2;
             _originX = -halfX;
             _originZ = -halfZ;
             _heights = new float[(halfX * 2) + 1, (halfZ * 2) + 1];

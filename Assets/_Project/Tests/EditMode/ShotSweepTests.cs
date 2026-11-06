@@ -21,7 +21,7 @@ namespace IsoGolf.Tests
         {
             _settings = AssetDatabase.LoadAssetAtPath<ShotSettings>("Assets/_Project/Settings/ShotSettings.asset");
             _shape = AssetDatabase.LoadAssetAtPath<CourseShapeSettings>("Assets/_Project/Settings/Par3CourseShape.asset");
-            _ground = new BallGround(_shape);
+            _ground = new BallGround(_shape.ToLayout());
         }
 
         [Test]

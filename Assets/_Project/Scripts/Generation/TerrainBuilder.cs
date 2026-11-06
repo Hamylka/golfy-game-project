@@ -7,7 +7,10 @@ namespace IsoGolf.Generation
     /// <summary>Plain vertex data for one mesh. Vertices are never shared, so every triangle is flat shaded.</summary>
     public sealed class TerrainMeshData
     {
-        private const float MinTwiceAreaSquared = 1e-8f;
+        // Twice the area, squared: 1e-12 is a triangle of about half a square millimetre. A border grazing a
+        // grid corner leaves real slivers a few millimetres across, and dropping those opens a crack against
+        // the neighbouring triangles, so only truly flat ones go.
+        private const float MinTwiceAreaSquared = 1e-12f;
 
         public List<Vector3> Positions { get; } = new List<Vector3>();
         public List<Color32> Colors { get; } = new List<Color32>();
@@ -97,7 +100,7 @@ namespace IsoGolf.Generation
         // Halves the error each step: 12 steps across a 1 m cell lands within a quarter of a millimetre.
         private const int CrossingSteps = 12;
 
-        private readonly CourseShapeSettings _shape;
+        private readonly CourseLayout _layout;
         private readonly CourseFields _fields;
         private readonly TerrainResult _result = new TerrainResult();
         private readonly Color32 _rough;
@@ -108,10 +111,10 @@ namespace IsoGolf.Generation
         private readonly Color32 _water;
         private readonly Color32 _earth;
 
-        private TerrainBuilder(CourseShapeSettings shape, PaletteSettings palette)
+        private TerrainBuilder(CourseLayout layout, PaletteSettings palette)
         {
-            _shape = shape;
-            _fields = new CourseFields(shape);
+            _layout = layout;
+            _fields = new CourseFields(layout);
 
             _rough = ToVertexColor(palette.Rough);
             _fairwayLight = ToVertexColor(palette.FairwayLight);
@@ -122,9 +125,9 @@ namespace IsoGolf.Generation
             _earth = ToVertexColor(palette.Earth);
         }
 
-        public static TerrainResult Build(CourseShapeSettings shape, PaletteSettings palette)
+        public static TerrainResult Build(CourseLayout layout, PaletteSettings palette)
         {
-            var builder = new TerrainBuilder(shape, palette);
+            var builder = new TerrainBuilder(layout, palette);
             builder.BuildGrid();
             return builder._result;
         }
@@ -140,9 +143,9 @@ namespace IsoGolf.Generation
 
         private void BuildGrid()
         {
-            float cell = _shape.CellSize;
-            int halfX = Mathf.CeilToInt((_shape.HalfLength + cell) / cell);
-            int halfZ = Mathf.CeilToInt((_shape.HalfWidth + (_shape.WidthWobble * 0.5f) + cell) / cell);
+            float cell = _layout.Relief.CellSize;
+            int halfX = Mathf.CeilToInt((_layout.HalfExtent.x + cell) / cell);
+            int halfZ = Mathf.CeilToInt((_layout.HalfExtent.y + cell) / cell);
 
             for (int ix = -halfX; ix < halfX; ix++)
             {
@@ -170,8 +173,8 @@ namespace IsoGolf.Generation
 
         private Vector3 Corner(int ix, int iz)
         {
-            float x = ix * _shape.CellSize;
-            float z = iz * _shape.CellSize;
+            float x = ix * _layout.Relief.CellSize;
+            float z = iz * _layout.Relief.CellSize;
             return new Vector3(x, _fields.Height(x, z), z);
         }
 
@@ -244,7 +247,7 @@ namespace IsoGolf.Generation
 
             for (int stripe = _fields.Stripe(low); stripe <= _fields.Stripe(high); stripe++)
             {
-                float line = stripe * _shape.StripeWidth;
+                float line = stripe * _layout.Fairway.StripeWidth;
 
                 // Only lines passing through the triangle. One along a grid row needs no cut at all.
                 if (line > low && line < high)
@@ -327,7 +330,7 @@ namespace IsoGolf.Generation
 
         private Vector3 Lower(Vector3 point)
         {
-            return new Vector3(point.x, _shape.WaterLevel, point.z);
+            return new Vector3(point.x, _layout.WaterLevel, point.z);
         }
 
         private static Vector3 Across(Segment segment, Func<Vector3, float> field, bool towardPositive)

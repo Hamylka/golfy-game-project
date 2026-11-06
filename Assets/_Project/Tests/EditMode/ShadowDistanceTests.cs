@@ -31,7 +31,7 @@ namespace IsoGolf.Tests
             var palette = AssetDatabase.LoadAssetAtPath<PaletteSettings>(PalettePath);
             var rig = AssetDatabase.LoadAssetAtPath<CameraRigSettings>(RigPath);
 
-            TerrainResult terrain = TerrainBuilder.Build(shape, palette);
+            TerrainResult terrain = TerrainBuilder.Build(shape.ToLayout(), palette);
             var view = new CameraView(IsoCameraConvention.Rotation, IsoCameraConvention.VerticalFieldOfView, width / height);
             Vector3 camera = CameraFraming.Fit(terrain.Outline, view, rig.ScreenFill);
 

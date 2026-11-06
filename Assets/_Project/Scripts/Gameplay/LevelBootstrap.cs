@@ -29,7 +29,7 @@ namespace IsoGolf.Gameplay
 
             if (ball != null)
             {
-                var ground = new BallGround(terrain.Shape);
+                var ground = new BallGround(terrain.Layout);
                 hole.Build(ground);
                 ball.Build(ground);
                 islandCamera.PlaceOn(ball.transform.localPosition);

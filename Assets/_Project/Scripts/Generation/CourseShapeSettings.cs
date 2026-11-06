@@ -45,7 +45,7 @@ namespace IsoGolf.Generation
 
     /// <summary>
     /// A hand-written course shape, with the X axis running from tee to hole. The defaults are the
-    /// par 3 from the look test. M3's generator will produce these values from a seed.
+    /// par 3 from the look test. It's one source of a <see cref="CourseLayout"/>; M3's generator is the other.
     /// </summary>
     [CreateAssetMenu(fileName = "CourseShape", menuName = "Iso Golf/Course Shape")]
     public sealed class CourseShapeSettings : ScriptableObject
@@ -129,5 +129,28 @@ namespace IsoGolf.Generation
         public float FlatBlend => flatBlend;
         public Vector2 SkirtDepth => skirtDepth;
         public float SkirtNoiseScale => skirtNoiseScale;
+
+        /// <summary>
+        /// This hand-made shape as the plain layout the terrain, the ball and the trees read: one island,
+        /// one green, one bunker, one pond, and a straight centreline from the tee to the hole.
+        /// </summary>
+        public CourseLayout ToLayout()
+        {
+            return new CourseLayout(
+                new[] { new IslandOutline(halfLength, halfWidth, widthWobble, widthNoiseScale) },
+                new CoursePath(new[] { tee, hole }),
+                new FairwayLayout(fairwayStart, fairwayEnd, fairwayHalfWidth, fairwayWobble, stripeWidth),
+                new[] { new GreenLayout(green, greenTilt) },
+                new[] { bunker },
+                new[] { pond },
+                swells ?? Array.Empty<GroundSwell>(),
+                waterLevel,
+                new GroundRelief(cellSize, axisRelief, edgeRelief, reliefDistance, reliefNoiseScale),
+                tee,
+                hole,
+                flatRadius,
+                flatBlend,
+                new EdgeLayout(skirtDepth, skirtNoiseScale));
+        }
     }
 }

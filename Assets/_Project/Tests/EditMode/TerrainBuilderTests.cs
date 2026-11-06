@@ -20,8 +20,8 @@ namespace IsoGolf.Tests
         {
             _shape = ScriptableObject.CreateInstance<CourseShapeSettings>();
             _palette = ScriptableObject.CreateInstance<PaletteSettings>();
-            _fields = new CourseFields(_shape);
-            _result = TerrainBuilder.Build(_shape, _palette);
+            _fields = new CourseFields(_shape.ToLayout());
+            _result = TerrainBuilder.Build(_shape.ToLayout(), _palette);
         }
 
         [TearDown]
@@ -62,7 +62,7 @@ namespace IsoGolf.Tests
         [Test]
         public void SameShape_BuildsExactlyTheSameTerrain()
         {
-            TerrainResult again = TerrainBuilder.Build(_shape, _palette);
+            TerrainResult again = TerrainBuilder.Build(_shape.ToLayout(), _palette);
 
             CollectionAssert.AreEqual(_result.Land.Positions, again.Land.Positions);
             CollectionAssert.AreEqual(_result.Water.Positions, again.Water.Positions);

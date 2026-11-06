@@ -21,8 +21,8 @@ namespace IsoGolf.Tests
         {
             _settings = AssetDatabase.LoadAssetAtPath<ShotSettings>("Assets/_Project/Settings/ShotSettings.asset");
             _shape = AssetDatabase.LoadAssetAtPath<CourseShapeSettings>("Assets/_Project/Settings/Par3CourseShape.asset");
-            _fields = new CourseFields(_shape);
-            _ground = new BallGround(_shape);
+            _fields = new CourseFields(_shape.ToLayout());
+            _ground = new BallGround(_shape.ToLayout());
         }
 
         private void RunUntilSettled(BallSimulation ball, string context)
@@ -40,7 +40,7 @@ namespace IsoGolf.Tests
         public void Surface_MatchesWhatTheTerrainDraws()
         {
             var palette = ScriptableObject.CreateInstance<PaletteSettings>();
-            TerrainResult terrain = TerrainBuilder.Build(_shape, palette);
+            TerrainResult terrain = TerrainBuilder.Build(_shape.ToLayout(), palette);
             Object.DestroyImmediate(palette);
 
             // The mesh cuts each 1 m cell's border as a straight chord across the outline's wobble, so a land
@@ -48,11 +48,13 @@ namespace IsoGolf.Tests
             // the pond's field, or at most 27 cm along the ground. This keeps it from growing unnoticed.
             const float LandPastThePondsOutline = 0.1f;
 
-            // The middle of each piece.
+            // The middle of each piece. The same chords can reach a little way outside the outline on the water
+            // side too: 0.029 of the field on this course since its noise became CourseNoise.
             for (int i = 0; i < terrain.Water.Positions.Count; i += 3)
             {
                 Vector3 center = (terrain.Water.Positions[i] + terrain.Water.Positions[i + 1] + terrain.Water.Positions[i + 2]) / 3f;
-                Assert.That(_ground.Surface(center.x, center.z), Is.EqualTo(CourseSurface.Water), $"water at {center}");
+                Assert.That(_fields.Pond(center), Is.LessThan(LandPastThePondsOutline), $"water at {center}");
+                Assert.That(_ground.Surface(center.x, center.z), Is.Not.EqualTo(CourseSurface.OffIsland), $"water at {center}");
             }
 
             int checkedLand = 0;

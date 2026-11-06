@@ -1,0 +1,207 @@
+using System;
+using System.Collections.Generic;
+using UnityEngine;
+
+namespace IsoGolf.Generation
+{
+    /// <summary>
+    /// One island's outline: a long oval along X whose width wobbles with noise. An island is centred on
+    /// the course origin for now; separate islands and the edge pieces they're cut into come with gaps.
+    /// </summary>
+    public readonly struct IslandOutline
+    {
+        public IslandOutline(float halfLength, float halfWidth, float widthWobble, float widthNoiseScale)
+        {
+            HalfLength = halfLength;
+            HalfWidth = halfWidth;
+            WidthWobble = widthWobble;
+            WidthNoiseScale = widthNoiseScale;
+        }
+
+        public float HalfLength { get; }
+        public float HalfWidth { get; }
+        public float WidthWobble { get; }
+        public float WidthNoiseScale { get; }
+
+        /// <summary>How far the island can reach from the origin along X and across Z, wobble included.</summary>
+        public Vector2 HalfExtent => new Vector2(HalfLength, HalfWidth + (WidthWobble * 0.5f));
+    }
+
+    /// <summary>
+    /// The course's centreline, tee to hole, as a polyline. Straight for now; doglegs bend it, and the
+    /// camera's zoomed-out path will follow it.
+    /// </summary>
+    public sealed class CoursePath
+    {
+        private readonly Vector2[] _points;
+
+        public CoursePath(IEnumerable<Vector2> points)
+        {
+            _points = new List<Vector2>(points).ToArray();
+            if (_points.Length < 2)
+            {
+                throw new ArgumentException("A path needs at least two points.", nameof(points));
+            }
+
+            for (int i = 1; i < _points.Length; i++)
+            {
+                Length += Vector2.Distance(_points[i - 1], _points[i]);
+            }
+        }
+
+        public IReadOnlyList<Vector2> Points => _points;
+
+        /// <summary>The path's length in metres, along every leg.</summary>
+        public float Length { get; }
+
+        public Vector2 Start => _points[0];
+
+        public Vector2 End => _points[_points.Length - 1];
+    }
+
+    /// <summary>The mown strip from the tee toward the green. It still runs along X; PR 4 makes it follow the centreline.</summary>
+    public readonly struct FairwayLayout
+    {
+        public FairwayLayout(float start, float end, float halfWidth, float wobble, float stripeWidth)
+        {
+            Start = start;
+            End = end;
+            HalfWidth = halfWidth;
+            Wobble = wobble;
+            StripeWidth = stripeWidth;
+        }
+
+        public float Start { get; }
+        public float End { get; }
+        public float HalfWidth { get; }
+        public float Wobble { get; }
+        public float StripeWidth { get; }
+    }
+
+    /// <summary>A green: its outline and its tilt, the rise per metre along X and along Z, measured from the hole.</summary>
+    public readonly struct GreenLayout
+    {
+        public GreenLayout(EllipseShape outline, Vector2 tilt)
+        {
+            Outline = outline;
+            Tilt = tilt;
+        }
+
+        public EllipseShape Outline { get; }
+        public Vector2 Tilt { get; }
+    }
+
+    /// <summary>The small facets on the ground: grid size and how broken the ground is, calm on the axis and rougher toward the edges.</summary>
+    public readonly struct GroundRelief
+    {
+        public GroundRelief(float cellSize, float axisRelief, float edgeRelief, float reliefDistance, float noiseScale)
+        {
+            CellSize = cellSize;
+            AxisRelief = axisRelief;
+            EdgeRelief = edgeRelief;
+            ReliefDistance = reliefDistance;
+            NoiseScale = noiseScale;
+        }
+
+        public float CellSize { get; }
+        public float AxisRelief { get; }
+        public float EdgeRelief { get; }
+        public float ReliefDistance { get; }
+        public float NoiseScale { get; }
+    }
+
+    /// <summary>The earth band under the island edge.</summary>
+    public readonly struct EdgeLayout
+    {
+        public EdgeLayout(Vector2 skirtDepth, float skirtNoiseScale)
+        {
+            SkirtDepth = skirtDepth;
+            SkirtNoiseScale = skirtNoiseScale;
+        }
+
+        /// <summary>Shortest and longest depth below the edge, in metres.</summary>
+        public Vector2 SkirtDepth { get; }
+        public float SkirtNoiseScale { get; }
+    }
+
+    /// <summary>
+    /// Everything that describes one course, in the course's local space with X running from tee to hole.
+    /// It's plain data, read-only once built: the hand-made <see cref="CourseShapeSettings"/> produce one,
+    /// and the M3 generator will too, so the terrain, the ball's ground and the trees never need to know
+    /// where a course came from. Surfaces are lists, so a course can have several greens, bunkers or ponds,
+    /// or none.
+    /// </summary>
+    public sealed class CourseLayout
+    {
+        private readonly IslandOutline[] _islands;
+        private readonly GreenLayout[] _greens;
+        private readonly EllipseShape[] _bunkers;
+        private readonly EllipseShape[] _ponds;
+        private readonly GroundSwell[] _swells;
+
+        public CourseLayout(
+            IEnumerable<IslandOutline> islands,
+            CoursePath centreline,
+            FairwayLayout fairway,
+            IEnumerable<GreenLayout> greens,
+            IEnumerable<EllipseShape> bunkers,
+            IEnumerable<EllipseShape> ponds,
+            IEnumerable<GroundSwell> swells,
+            float waterLevel,
+            GroundRelief relief,
+            Vector2 tee,
+            Vector2 hole,
+            float flatRadius,
+            float flatBlend,
+            EdgeLayout edge)
+        {
+            _islands = new List<IslandOutline>(islands).ToArray();
+            if (_islands.Length == 0)
+            {
+                throw new ArgumentException("A course needs at least one island.", nameof(islands));
+            }
+
+            Centreline = centreline ?? throw new ArgumentNullException(nameof(centreline));
+            Fairway = fairway;
+            _greens = new List<GreenLayout>(greens).ToArray();
+            _bunkers = new List<EllipseShape>(bunkers).ToArray();
+            _ponds = new List<EllipseShape>(ponds).ToArray();
+            _swells = new List<GroundSwell>(swells).ToArray();
+            WaterLevel = waterLevel;
+            Relief = relief;
+            Tee = tee;
+            Hole = hole;
+            FlatRadius = flatRadius;
+            FlatBlend = flatBlend;
+            Edge = edge;
+
+            foreach (IslandOutline island in _islands)
+            {
+                HalfExtent = Vector2.Max(HalfExtent, island.HalfExtent);
+            }
+        }
+
+        public IReadOnlyList<IslandOutline> Islands => _islands;
+        public CoursePath Centreline { get; }
+        public FairwayLayout Fairway { get; }
+        public IReadOnlyList<GreenLayout> Greens => _greens;
+        public IReadOnlyList<EllipseShape> Bunkers => _bunkers;
+        public IReadOnlyList<EllipseShape> Ponds => _ponds;
+        public IReadOnlyList<GroundSwell> Swells => _swells;
+        public float WaterLevel { get; }
+        public GroundRelief Relief { get; }
+        public Vector2 Tee { get; }
+        public Vector2 Hole { get; }
+
+        /// <summary>The ground is flat this far around the tee and the hole, in metres.</summary>
+        public float FlatRadius { get; }
+
+        /// <summary>How far the ground then takes to return to its full slope, in metres.</summary>
+        public float FlatBlend { get; }
+
+        public EdgeLayout Edge { get; }
+
+        /// <summary>How far land can reach from the origin along X and across Z, over every island. The terrain grid covers this.</summary>
+        public Vector2 HalfExtent { get; }
+    }
+}
