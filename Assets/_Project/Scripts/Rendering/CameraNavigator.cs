@@ -52,12 +52,17 @@ namespace IsoGolf.Rendering
         public Vector3 ViewCentre => View.OnPlane(Position, Vector2.zero, _groundHeight);
 
         /// <summary>
-        /// Applies one step of a two-finger gesture. Positions are viewport coordinates from -1 to 1.
+        /// Applies one step of a two-finger gesture: pan and zoom. Positions are viewport coordinates from -1 to 1.
+        /// Returns by how many degrees the yaw would have to change for the ground under the fingers to turn with them,
+        /// which the caller applies (or not) through <see cref="CameraFollow"/>, since the heading is its business.
         /// </summary>
-        public void ApplyGesture(Vector2 previousA, Vector2 previousB, Vector2 currentA, Vector2 currentB)
+        public float ApplyGesture(Vector2 previousA, Vector2 previousB, Vector2 currentA, Vector2 currentB)
         {
             Vector2 previousMiddle = (previousA + previousB) * 0.5f;
             Vector2 currentMiddle = (currentA + currentB) * 0.5f;
+
+            // The fingers' line on the ground, before anything moves.
+            Vector3 previousLine = GroundUnder(previousB) - GroundUnder(previousA);
 
             Pan(previousMiddle, currentMiddle);
 
@@ -69,6 +74,28 @@ namespace IsoGolf.Rendering
             {
                 ZoomAround(currentMiddle, previousSpread / currentSpread);
             }
+
+            // Pan and zoom keep the yaw, so the two lines are comparable. A camera yaw of +d turns what a fixed screen
+            // direction shows by +d, so this brings the current line back onto the previous one.
+            Vector3 currentLine = GroundUnder(currentB) - GroundUnder(currentA);
+            if (previousLine.sqrMagnitude < 1e-8f || currentLine.sqrMagnitude < 1e-8f)
+            {
+                return 0f;
+            }
+
+            return Mathf.DeltaAngle(CompassAngle(currentLine), CompassAngle(previousLine));
+        }
+
+        /// <summary>The ground under a viewport point.</summary>
+        public Vector3 GroundUnder(Vector2 viewport)
+        {
+            return View.OnPlane(Position, viewport, _groundHeight);
+        }
+
+        // Degrees clockwise from +Z seen from above, which is the way a positive yaw turns.
+        private static float CompassAngle(Vector3 ground)
+        {
+            return Mathf.Atan2(ground.x, ground.z) * Mathf.Rad2Deg;
         }
 
         /// <summary>
