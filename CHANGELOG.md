@@ -4,6 +4,22 @@ All notable progress on Iso Golf. The format follows [Keep a Changelog](https://
 
 ## [Unreleased]
 
+### 2026-11-06: M3 island generator decisions (`feature/m3-plan`)
+
+#### Changed
+
+- Lengths, tee to hole: par 3 18–26 m, par 4 40–55 m, par 5 65–85 m. A par 3 never sits within 3 m of the full-power distance (about 30 m on flat fairway).
+- Doglegs: par 3 stays straight; about half of par 4s and 5s turn once by up to 35°, and a par 5 may bend twice. The others get soft bends. A course always keeps heading toward +X. The camera's zoomed-out view will travel along the course's centreline instead of a straight line along +X.
+- Long-course scale: every par zooms out to the same width-set scale. Fully zoomed out, a long course shows mostly whole as an overview; at the default zoom it's partly visible. `CLAUDE.md` and `ART_DIRECTION.md` no longer say long courses are only partly visible.
+- Gaps: about one par 4 or 5 in three has one gap, 4–10 m wide, never right in front of the tee; now and then a par 3 has an island green. A ball in a gap returns to where the shot was played, like one off the island. A lay-up spot always clears the gap with 70% power or less. This closes the open question in `ART_DIRECTION.md`.
+- Elevation, moderate: fairway rises and dips up to about ±1.2 m with slopes up to about 10%, the green up to 1.5 m above or below the tee and tilted 2–6%, under 1% across at least 1.5 m around the hole, and a flat tee.
+- Strategy, risk and reward: hazards guard the direct line at the green, at a dogleg's corner and across a gap, and a safe route always exists. Holes in one: under 1% of the `ShotSweep` on every generated par 3, about 0.5% on average over seeds, never at full power.
+- Determinism: same seed, same course in the Editor and on the phone. The generator gets its own C# noise instead of `Mathf.PerlinNoise`, and makes every choice from integers. Seeds may change with generator updates until release.
+- Hand-made courses: the generator outputs a plain `CourseLayout`. `CourseShapeSettings` stays as one source of it, and the par 3 stays as a fixed test course. `Main` plays a generated course. `Sandbox_LongCourse` and `Par5SandboxCourseShape` are removed once a generated par 5 replaces them.
+- Left room for: M4 props and ball collisions (shot corridor, prop zones), no tufts where water meets the edge and a waterfall (edge segments tagged by surface), M5 level flow (the course's +X end; M5 picks the par per seed).
+- Open: on a dogleg, whether the mowing stripes follow each leg, to judge on a capture.
+- Planned PR order: course layout refactor, multiple islands, camera path, outline generator, elevation, surfaces and hazards, course checks, generated `Main`, phone checks.
+
 ### 2026-11-06: M2 phone checks (`feature/m2-phone-checks`)
 
 #### Added
