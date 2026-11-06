@@ -5,26 +5,35 @@ using UnityEngine;
 namespace IsoGolf.Generation
 {
     /// <summary>
-    /// One island's outline: a long oval along X whose width wobbles with noise. An island is centred on
-    /// the course origin for now; separate islands and the edge pieces they're cut into come with gaps.
+    /// One island's outline: a long oval along X whose width wobbles with noise, centred on
+    /// <see cref="CenterX"/> and on z = 0. Several islands with open sky between them make a course with gaps.
     /// </summary>
     public readonly struct IslandOutline
     {
-        public IslandOutline(float halfLength, float halfWidth, float widthWobble, float widthNoiseScale)
+        public IslandOutline(float halfLength, float halfWidth, float widthWobble, float widthNoiseScale, float centerX = 0f)
         {
             HalfLength = halfLength;
             HalfWidth = halfWidth;
             WidthWobble = widthWobble;
             WidthNoiseScale = widthNoiseScale;
+            CenterX = centerX;
         }
 
+        public float CenterX { get; }
         public float HalfLength { get; }
         public float HalfWidth { get; }
         public float WidthWobble { get; }
         public float WidthNoiseScale { get; }
 
-        /// <summary>How far the island can reach from the origin along X and across Z, wobble included.</summary>
-        public Vector2 HalfExtent => new Vector2(HalfLength, HalfWidth + (WidthWobble * 0.5f));
+        /// <summary>How far the island can reach from the course origin along X and across Z, wobble included.</summary>
+        public Vector2 HalfExtent => new Vector2(Mathf.Abs(CenterX) + HalfLength, HalfWidth + (WidthWobble * 0.5f));
+    }
+
+    /// <summary>What lies just inside a piece of the island edge. Tufts skip water; a waterfall could fall from it later.</summary>
+    public enum EdgeSurface
+    {
+        Land,
+        Water,
     }
 
     /// <summary>

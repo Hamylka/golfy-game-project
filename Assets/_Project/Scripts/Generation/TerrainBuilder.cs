@@ -72,23 +72,30 @@ namespace IsoGolf.Generation
         /// <summary>Points along the island edge, top and bottom. Enough to frame the island tightly.</summary>
         public List<Vector3> Outline { get; } = new List<Vector3>();
 
-        /// <summary>Each piece of the island edge on dry ground, in no particular order. Grass tufts grow along these.</summary>
+        /// <summary>
+        /// Each piece of every island's edge, in no particular order, tagged with the surface just inside it.
+        /// Grass tufts grow along the land pieces; a pond that reaches the edge gives water pieces, at the water level.
+        /// </summary>
         public List<EdgeSegment> Edge { get; } = new List<EdgeSegment>();
     }
 
-    /// <summary>A straight piece of the island edge, on the ground.</summary>
+    /// <summary>A straight piece of an island's edge, with the surface just inside it.</summary>
     public readonly struct EdgeSegment
     {
-        public EdgeSegment(Vector3 a, Vector3 b, Vector3 outward)
+        public EdgeSegment(Vector3 a, Vector3 b, Vector3 outward, EdgeSurface inner = EdgeSurface.Land)
         {
             A = a;
             B = b;
             Outward = outward;
+            Inner = inner;
         }
 
         public Vector3 A { get; }
         public Vector3 B { get; }
         public Vector3 Outward { get; }
+
+        /// <summary>What lies on the inner side: land, or water where a pond reaches the edge.</summary>
+        public EdgeSurface Inner { get; }
     }
 
     /// <summary>
@@ -224,7 +231,9 @@ namespace IsoGolf.Generation
 
                 foreach (Segment segment in edge)
                 {
-                    AddSkirt(segment, new Segment(Lower(segment.A), Lower(segment.B)));
+                    var top = new Segment(Lower(segment.A), Lower(segment.B));
+                    AddSkirt(segment, top);
+                    _result.Edge.Add(new EdgeSegment(top.A, top.B, Across(segment, _fields.Island, true), EdgeSurface.Water));
                 }
 
                 foreach (Triangle water in inside)

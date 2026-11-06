@@ -7,6 +7,7 @@ namespace IsoGolf.Generation
     /// Describes each surface as a field over the ground: negative inside, positive outside, zero exactly
     /// on the border. Height is ignored, so a border is the same line whatever the terrain does. A surface
     /// with several pieces (two bunkers, say) is the nearest piece's field, so the union of them all.
+    /// The island is the union of every island's outline, so a point in a gap between two islands is off the island.
     /// </summary>
     public sealed class CourseFields
     {
@@ -216,7 +217,16 @@ namespace IsoGolf.Generation
 
         private static float Island(Vector3 p, IslandOutline island)
         {
-            float along = Mathf.Clamp01(1f - ((p.x / island.HalfLength) * (p.x / island.HalfLength)));
+            float local = (p.x - island.CenterX) / island.HalfLength;
+            float along = 1f - (local * local);
+            if (along < 0f)
+            {
+                // Past the island's tip. The field must stay strictly positive here, also on the axis: a
+                // zero would let the terrain cut treat a grid corner out in the gap as lying on the border,
+                // and a thin spike of ground would reach into the gap.
+                return Mathf.Abs(p.z) + ((Mathf.Abs(local) - 1f) * island.HalfLength);
+            }
+
             float wobble = (CourseNoise.Value01((p.x * island.WidthNoiseScale) + 11f, 3.1f) - 0.5f) * island.WidthWobble;
             return Mathf.Abs(p.z) - ((island.HalfWidth + wobble) * Mathf.Sqrt(along));
         }

@@ -4,6 +4,21 @@ All notable progress on Iso Golf. The format follows [Keep a Changelog](https://
 
 ## [Unreleased]
 
+### 2026-11-06: Several islands in one course (`feature/m3-multi-island`)
+
+#### Added
+
+- A `CourseLayout` can hold several islands with open sky between them. `IslandOutline` has a `CenterX`; the island field is the union of every outline, so a point in a gap is `CourseSurface.OffIsland`, and a ball landing or rolling into it is lost and returns to where the shot was played through the existing `BallSimulation` path (unchanged).
+- Terrain, earth band and tufts already follow the island field, so each island gets its own outline, fringe and band, with no face or tuft across a gap.
+- `EdgeSegment.Inner` (`EdgeSurface.Land` or `Water`) tags each edge piece with the surface just inside it. Where a pond reaches the island edge the builder now also emits water pieces, at the water level. `TuftBuilder` skips them, so the tufts don't change; a later PR can use the tag for a waterfall.
+- `CourseShapeSettings`: `CenterX` and `ExtraIslands` for hand-made courses with a gap. Empty by default, so the par 3 and the long course are unchanged.
+- Test fixture `GapCourseShape` (two islands, 4.5 m of gap at the tips, a pond reaching the first island's edge, the green on the second) and `Sandbox_Gap` scene (Main's setup, no trees, which would hover over the gap).
+- `MultiIslandTests` (12) and `Par3PinTests` (4). The pins fix the Main par 3's land, water, earth band and tufts, so this PR is shown not to move them. EditMode: 367 tests, all passing.
+
+#### Fixed
+
+- `CourseFields.Island` was exactly 0 on the axis past an island's tip, so a grid corner out in the gap counted as lying on the border and a thin spike of ground reached into the gap. It is now positive there. The par 3 is unaffected (its tips fall on grid corners; pinned).
+
 ### 2026-11-06: Course layout and course noise (`refactor/m3-course-layout`)
 
 #### Added
