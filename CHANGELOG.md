@@ -4,6 +4,18 @@ All notable progress on Iso Golf. The format follows [Keep a Changelog](https://
 
 ## [Unreleased]
 
+### 2026-11-06: Camera rotation decisions (`feature/m3-camera-rotation-plan`)
+
+#### Changed
+
+- The camera may now turn, which `CLAUDE.md` and `ART_DIRECTION.md` used to forbid. Its pitch stays about 40° and it never rolls.
+- Automatic heading: the camera turns itself only at rest, while it eases onto a stopped ball, and on the reset view. It faces the hole when a full-power shot can reach it (from `ShotSettings`), otherwise the heading of the leg the ball is on. During flight it only translates.
+- Twist: a two-finger twist turns the view up to ±45° around the automatic heading, next to the pinch zoom. It lasts until the next shot or the reset view.
+- Limits: the view's centre stays above the island, with about 3 m of margin, at every zoom and heading. This replaces PR 33's zoomed-out corridor and the axis-aligned rectangle. Fully zoomed out keeps one width-set scale on every course.
+- Sun: set once per level from the course's tee-to-hole heading, so it sits top-left of the screen on average, then never moves. To check at the extremes (about ±80°) when built. A time of day per level (variants A and C) may come later; a day-night cycle during play is not planned, because a moving sun makes crisp shadows shimmer.
+- Consequence for the outline generator (PR 4): with each leg seen along its own heading, PR 33's limit of about 12 m width for legs turning right goes away. The shadow fade check (the farthest framed point within the 56.8 m fade start up to 9:21) now applies along each heading.
+- Planned PRs before the generator: camera heading and island limits (`feature/m3-camera-yaw`), twist gesture (`feature/m3-camera-twist`), sun per level (`feature/m3-sun-per-level`).
+
 ### 2026-11-06: Camera along the course's centreline (`feature/m3-camera-path`)
 
 #### Added
