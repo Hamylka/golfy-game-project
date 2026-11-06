@@ -16,8 +16,8 @@ namespace IsoGolf.Tests
         {
             // The real asset, not code defaults: this is the ground that ships, and the two can drift apart.
             _shape = AssetDatabase.LoadAssetAtPath<CourseShapeSettings>("Assets/_Project/Settings/Par3CourseShape.asset");
-            _fields = new CourseFields(_shape);
-            _field = new CourseHeightField(_shape);
+            _fields = new CourseFields(_shape.ToLayout());
+            _field = new CourseHeightField(_shape.ToLayout());
         }
 
         [Test]
@@ -36,7 +36,7 @@ namespace IsoGolf.Tests
         public void FacetHeight_MatchesTheVisibleTriangles()
         {
             var palette = ScriptableObject.CreateInstance<PaletteSettings>();
-            TerrainMeshData land = TerrainBuilder.Build(_shape, palette).Land;
+            TerrainMeshData land = TerrainBuilder.Build(_shape.ToLayout(), palette).Land;
             Object.DestroyImmediate(palette);
 
             int checkedFacets = 0;
@@ -176,7 +176,7 @@ namespace IsoGolf.Tests
         [Test]
         public void Field_IsTheSameEveryTime()
         {
-            var again = new CourseHeightField(_shape);
+            var again = new CourseHeightField(_shape.ToLayout());
 
             Assert.That(again.Height(3.3f, 1.7f), Is.EqualTo(_field.Height(3.3f, 1.7f)));
             Assert.That(again.Slope(-7.1f, 2.2f), Is.EqualTo(_field.Slope(-7.1f, 2.2f)));

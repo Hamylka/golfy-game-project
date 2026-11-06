@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace IsoGolf.Generation
 {
-    /// <summary>Turns a course shape into meshes in the scene.</summary>
+    /// <summary>Turns a course into meshes in the scene. The course comes from a hand-made shape until M3's generator feeds it.</summary>
     public sealed class TerrainView : MonoBehaviour
     {
         [SerializeField] private CourseShapeSettings shape;
@@ -18,7 +18,8 @@ namespace IsoGolf.Generation
 
         private readonly List<Mesh> _meshes = new List<Mesh>();
 
-        public CourseShapeSettings Shape => shape;
+        /// <summary>The course this view built, read from the hand-made shape at each <see cref="Build"/>.</summary>
+        public CourseLayout Layout { get; private set; }
 
         /// <summary>Points along the island edge, for framing it.</summary>
         public IReadOnlyList<Vector3> Outline { get; private set; }
@@ -26,12 +27,13 @@ namespace IsoGolf.Generation
         public void Build()
         {
             Clear();
-            TerrainResult result = TerrainBuilder.Build(shape, palette);
+            Layout = shape.ToLayout();
+            TerrainResult result = TerrainBuilder.Build(Layout, palette);
             AddMesh("Land", result.Land, landMaterial);
             AddMesh("Water", result.Water, waterMaterial);
             if (trees != null)
             {
-                AddMesh("Trees", TreeBuilder.Build(trees, palette, shape), landMaterial);
+                AddMesh("Trees", TreeBuilder.Build(trees, palette, Layout), landMaterial);
             }
 
             if (tufts != null)

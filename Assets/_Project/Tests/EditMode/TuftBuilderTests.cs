@@ -29,8 +29,8 @@ namespace IsoGolf.Tests
             _shape = ScriptableObject.CreateInstance<CourseShapeSettings>();
             _palette = ScriptableObject.CreateInstance<PaletteSettings>();
             _tufts = ScriptableObject.CreateInstance<TuftSettings>();
-            _fields = new CourseFields(_shape);
-            _terrain = TerrainBuilder.Build(_shape, _palette);
+            _fields = new CourseFields(_shape.ToLayout());
+            _terrain = TerrainBuilder.Build(_shape.ToLayout(), _palette);
         }
 
         [TearDown]
@@ -255,7 +255,7 @@ namespace IsoGolf.Tests
             Assert.That(savedShape, Is.Not.Null);
             Assert.That(savedTufts, Is.Not.Null);
 
-            TerrainResult terrain = TerrainBuilder.Build(savedShape, _palette);
+            TerrainResult terrain = TerrainBuilder.Build(savedShape.ToLayout(), _palette);
             TerrainMeshData mesh = TuftBuilder.Build(savedTufts, _palette, terrain.Edge);
             TestContext.WriteLine($"tuft triangles: {mesh.TriangleCount}");
 

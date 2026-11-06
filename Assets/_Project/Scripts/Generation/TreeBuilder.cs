@@ -49,10 +49,10 @@ namespace IsoGolf.Generation
         }
 
         /// <summary>Builds every placed tree, standing on the course's ground.</summary>
-        public static TerrainMeshData Build(TreeSettings settings, PaletteSettings palette, CourseShapeSettings shape)
+        public static TerrainMeshData Build(TreeSettings settings, PaletteSettings palette, CourseLayout layout)
         {
             var builder = new TreeBuilder(settings, palette);
-            var fields = new CourseFields(shape);
+            var fields = new CourseFields(layout);
 
             for (int i = 0; i < settings.Placements.Length; i++)
             {

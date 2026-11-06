@@ -50,8 +50,8 @@ namespace IsoGolf.Tests
         public void SameSeedBuildsTheSameTree(TreeKind kind)
         {
             Place(5, kind);
-            TerrainMeshData first = TreeBuilder.Build(_trees, _palette, _shape);
-            TerrainMeshData second = TreeBuilder.Build(_trees, _palette, _shape);
+            TerrainMeshData first = TreeBuilder.Build(_trees, _palette, _shape.ToLayout());
+            TerrainMeshData second = TreeBuilder.Build(_trees, _palette, _shape.ToLayout());
 
             CollectionAssert.AreEqual(first.Positions, second.Positions);
             CollectionAssert.AreEqual(first.Colors, second.Colors);
@@ -62,9 +62,9 @@ namespace IsoGolf.Tests
         public void DifferentSeedBuildsADifferentTree(TreeKind kind)
         {
             Place(5, kind);
-            List<Vector3> first = TreeBuilder.Build(_trees, _palette, _shape).Positions;
+            List<Vector3> first = TreeBuilder.Build(_trees, _palette, _shape.ToLayout()).Positions;
             Place(6, kind);
-            List<Vector3> second = TreeBuilder.Build(_trees, _palette, _shape).Positions;
+            List<Vector3> second = TreeBuilder.Build(_trees, _palette, _shape.ToLayout()).Positions;
 
             CollectionAssert.AreNotEqual(first, second);
         }
@@ -74,8 +74,8 @@ namespace IsoGolf.Tests
         public void TreeStandsOnTheGround(TreeKind kind)
         {
             Place(5, kind);
-            TerrainMeshData mesh = TreeBuilder.Build(_trees, _palette, _shape);
-            float ground = new CourseFields(_shape).Height(-8f, 4f);
+            TerrainMeshData mesh = TreeBuilder.Build(_trees, _palette, _shape.ToLayout());
+            float ground = new CourseFields(_shape.ToLayout()).Height(-8f, 4f);
 
             float lowest = float.MaxValue;
             foreach (Vector3 position in mesh.Positions)
@@ -92,7 +92,7 @@ namespace IsoGolf.Tests
         public void TreeUsesOnlyTreeColors(TreeKind kind)
         {
             Place(5, kind);
-            TerrainMeshData mesh = TreeBuilder.Build(_trees, _palette, _shape);
+            TerrainMeshData mesh = TreeBuilder.Build(_trees, _palette, _shape.ToLayout());
             var allowed = new[]
             {
                 TerrainBuilder.ToVertexColor(_palette.FoliageLight),
@@ -115,7 +115,7 @@ namespace IsoGolf.Tests
             Assert.That(trees, Is.Not.Null);
             Assert.That(shape, Is.Not.Null);
             Assert.That(trees.Placements, Is.Not.Empty);
-            var fields = new CourseFields(shape);
+            var fields = new CourseFields(shape.ToLayout());
 
             foreach (TreePlacement placement in trees.Placements)
             {

@@ -4,6 +4,24 @@ All notable progress on Iso Golf. The format follows [Keep a Changelog](https://
 
 ## [Unreleased]
 
+### 2026-11-06: Course layout and course noise (`refactor/m3-course-layout`)
+
+#### Added
+
+- `CourseLayout` (`IsoGolf.Generation`): plain, read-only course data, the shape M3's generator will output. It holds a list of islands (`IslandOutline`), a centreline from tee to hole (`CoursePath`, straight for now), the fairway, greens with their own tilt, bunkers, ponds and swells as lists, the ground relief, the water level, tee, hole, flat areas and the edge band.
+- `CourseNoise`: a smooth 2D gradient noise in plain C#, with an integer hash and an optional seed, so a course is the same in the Editor and on Android. Its values run from 0 to 1, 0.5 on whole numbers.
+- `CourseNoiseTests` (pinned values, range, smoothness, seed) and `CourseLayoutTests` (layout from the hand-made shape, lists of surfaces, no ponds or bunkers). EditMode: 351 tests, all passing.
+
+#### Changed
+
+- `CourseShapeSettings.ToLayout()` turns the hand-made shape into a `CourseLayout`. `CourseFields`, `CourseHeightField`, `TerrainBuilder`, `TreeBuilder` and `BallGround` read the layout, and `TerrainView.Layout` replaces `TerrainView.Shape`. Neither course asset changed.
+- `CourseFields` uses `CourseNoise` instead of `Mathf.PerlinNoise`, so the par 3's and the long course's edges have a new wobble of the same size. On the par 3 the island's half-width moved 0.32 m on average (1.09 m at most) and the fairway's edges 0.38 m (0.82 m at most). Clouds keep their own noise.
+- Hole-in-one sweep on the par 3, before and after: unchanged. The fine sweep holes 61 of 6171 (0.99%) at powers 0.87 to 0.93, the grid 0 of 1331, and full power never holes.
+- `SandboxTrees`: two trees by the tee moved 0.5 to 0.7 m inward, from z ±4.2 and 4.0 to ±3.5, as the island's waist there is now narrower.
+- `TerrainMeshData` keeps slivers down to about 0.5 mm². The par 3's bunker tip now grazes a grid corner, and dropping its slivers opened a crack of about 1 cm.
+- `BallOnCourseTests`: water pieces may sit 0.1 field units past the pond's outline, as land pieces already could (one sits at 0.029).
+- URP shadow distance 70 m to 71 m (approved by the human). The par 3's far tip moved, and the framed camera is now 56.1 m from it on a 9:21 screen, past the old 56 m fade start. Figures for each screen are in `Docs/Measurements/m1-5/README.md`.
+
 ### 2026-11-06: M3 island generator decisions (`feature/m3-plan`)
 
 #### Changed

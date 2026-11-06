@@ -123,7 +123,7 @@ namespace IsoGolf.Tests
         {
             var shape = AssetDatabase.LoadAssetAtPath<CourseShapeSettings>("Assets/_Project/Settings/Par3CourseShape.asset");
             var pieces = AssetDatabase.LoadAssetAtPath<PlayPieceSettings>("Assets/_Project/Settings/PlayPieces.asset");
-            var ground = new BallGround(shape);
+            var ground = new BallGround(shape.ToLayout());
             var disc = new GroundDisc(pieces.ShadowRadius, pieces.DiscRings, pieces.DiscSegments, ground.DrawnHeight, ground.IsOnIsland);
 
             float worst = float.MaxValue;
