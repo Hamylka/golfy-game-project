@@ -4,6 +4,15 @@ All notable progress on Iso Golf. The format follows [Keep a Changelog](https://
 
 ## [Unreleased]
 
+### 2026-11-06: Horizontal camera follow (`feature/m2-camera-follow-horizontal`)
+
+#### Changed
+
+- `CameraFollow`: a flying ball is now also held between about 40% and 60% of the screen's width, on top of the vertical band. Like the lower edge of the vertical band, the side edges only count once the ball has been inside them, so a ball resting off-centre after a pan doesn't make the camera jump at launch. Until then a wide backstop (0.85) applies, so it can't leave the screen.
+- `CameraRigSettings.followZoneSide` 0.8 to 0.2 (default and asset). The camera's limits are unchanged: a framed par 3 fully zoomed out stays locked, a long course zoomed out only travels along +X, and from the default zoom inward the camera follows sideways. On a corridor-limited view the two bands can't both be met, so the camera settles on a compromise.
+- Measured in Play Mode on `Sandbox_LongCourse` (1080x2400, default zoom, one full-power pull along +X from the tee, camera follow at 60+ fps): the ball peaked at x +0.23 (band edge 0.2) and y +0.28 (edge 0.2), came back to x 0.00 and rested at y -0.40. One run; not yet checked on the phone.
+- Tests: three new `CameraFollowTests` (side band, no jerk at launch, side backstop); the long-course past-the-zone test now allows 0.05 of compromise.
+
 ### 2026-11-05: M2 tuning (`feature/m2-tuning`)
 
 #### Added

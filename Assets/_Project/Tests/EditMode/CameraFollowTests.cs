@@ -20,7 +20,7 @@ namespace IsoGolf.Tests
         private const float FollowTime = 0.08f;
         private const float ReturnTime = 0.6f;
 
-        private static readonly Rect Zone = Rect.MinMaxRect(-0.8f, -0.2f, 0.8f, 0.2f);
+        private static readonly Rect Zone = Rect.MinMaxRect(-0.2f, -0.2f, 0.2f, 0.2f);
         private const float Backstop = -0.85f;
         private static readonly Vector2 Rest = new Vector2(0f, -0.4f);
         private static readonly Vector3 Tee = new Vector3(-37f, BallHeight, 0f);
@@ -168,7 +168,9 @@ namespace IsoGolf.Tests
 
             Run(ball, FollowedBallState.Moving, 3f);
 
-            Assert.That(OnScreen(ball).y, Is.EqualTo(Zone.yMax).Within(ViewportTolerance));
+            // On a long course the view only travels along X, which also moves the ball sideways on screen. The
+            // camera then settles on a compromise between the two bands, so the ball ends just past the top edge.
+            Assert.That(OnScreen(ball).y, Is.EqualTo(Zone.yMax).Within(0.05f));
         }
 
         [Test]
@@ -406,6 +408,53 @@ namespace IsoGolf.Tests
 
             Assert.That(OnScreen(ball).y, Is.EqualTo(Zone.yMax).Within(ViewportTolerance));
             Assert.That(_navigator.Position.y, Is.EqualTo(height).Within(Tolerance));
+        }
+
+        // A zoomed-in par 3: the camera has room to move sideways, which a zoomed-out view does not.
+        private void ZoomedInPar3()
+        {
+            UseCourse(new Bounds(Vector3.zero, new Vector3(34f, 4f, 10f)));
+            _navigator.ZoomAround(Vector2.zero, 0.5f);
+        }
+
+        [Test]
+        public void ZoomedIn_BallDriftingSideways_AfterBeingInTheBand_IsBroughtBackToItsEdge()
+        {
+            ZoomedInPar3();
+            Vector3 centre = _view.OnPlane(_navigator.Position, Vector2.zero, BallHeight);
+            _follow.PlaceOn(centre);
+            Run(centre, FollowedBallState.Moving, 0.1f);
+
+            Vector3 right = _view.OnPlane(_navigator.Position, new Vector2(0.6f, 0f), BallHeight);
+            Run(right, FollowedBallState.Moving, 3f);
+
+            Assert.That(OnScreen(right).x, Is.EqualTo(Zone.xMax).Within(ViewportTolerance));
+        }
+
+        [Test]
+        public void ZoomedIn_BallStartingOffCentre_DoesNotJerkTheCameraSidewaysAtLaunch()
+        {
+            ZoomedInPar3();
+            Vector3 offCentre = _view.OnPlane(_navigator.Position, new Vector2(0.6f, 0f), BallHeight);
+            Vector3 before = _navigator.Position;
+
+            Run(offCentre, FollowedBallState.Moving, 1f);
+
+            Assert.That((_navigator.Position - before).magnitude, Is.EqualTo(0f).Within(Tolerance));
+        }
+
+        [Test]
+        public void ZoomedIn_BallStartingOffCentre_StopsAtTheSideBackstop()
+        {
+            ZoomedInPar3();
+            Vector3 start = _view.OnPlane(_navigator.Position, new Vector2(0.6f, 0f), BallHeight);
+            _follow.PlaceOn(start);
+            Run(start, FollowedBallState.Moving, 0.1f);
+
+            Vector3 far = _view.OnPlane(_navigator.Position, new Vector2(0.98f, 0f), BallHeight);
+            Run(far, FollowedBallState.Moving, 3f);
+
+            Assert.That(OnScreen(far).x, Is.LessThanOrEqualTo(0.85f + ViewportTolerance));
         }
 
         [Test]

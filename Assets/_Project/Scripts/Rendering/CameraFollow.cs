@@ -29,6 +29,9 @@ namespace IsoGolf.Rendering
         private const float ArrivalDistance = 0.01f;
         private const float ArrivalSpeed = 0.05f;
 
+        // How far to either side a ball that hasn't reached the side band may go before the camera moves.
+        private const float SideBackstop = 0.85f;
+
         private enum Phase
         {
             Idle,
@@ -48,6 +51,7 @@ namespace IsoGolf.Rendering
         private Phase _phase = Phase.Idle;
         private Vector3 _velocity;
         private bool _reachedBand;
+        private bool _reachedSides;
         private readonly float _defaultZoom;
         private readonly float _resetSeconds;
         private Vector3 _resetFrom;
@@ -159,6 +163,7 @@ namespace IsoGolf.Rendering
                 {
                     _phase = Phase.Following;
                     _reachedBand = false;
+                    _reachedSides = false;
                 }
 
                 if (_phase == Phase.Following && fingerDown)
@@ -210,7 +215,13 @@ namespace IsoGolf.Rendering
             // would pull the camera backward at launch, so the band's lower edge only counts once the ball has been in.
             _reachedBand |= now.y >= _zone.yMin;
             float lowest = _reachedBand ? _zone.yMin : _backstop;
-            var inZone = new Vector2(Mathf.Clamp(now.x, _zone.xMin, _zone.xMax), Mathf.Clamp(now.y, lowest, _zone.yMax));
+
+            // Sideways too: a ball resting off-centre, after a pan, must not make the camera jump at launch. The side
+            // edges only count once the ball has been between them, and until then a wide backstop applies.
+            _reachedSides |= now.x >= _zone.xMin && now.x <= _zone.xMax;
+            float left = _reachedSides ? _zone.xMin : Mathf.Min(_zone.xMin, -SideBackstop);
+            float right = _reachedSides ? _zone.xMax : Mathf.Max(_zone.xMax, SideBackstop);
+            var inZone = new Vector2(Mathf.Clamp(now.x, left, right), Mathf.Clamp(now.y, lowest, _zone.yMax));
             return inZone == now ? Vector3.zero : BringTo(ball, inZone);
         }
 
