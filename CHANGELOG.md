@@ -16,7 +16,7 @@ All notable progress on Iso Golf. The format follows [Keep a Changelog](https://
 #### Changed
 
 - `CameraFollow.SetTwist` no longer ends the follow during a shot (it used to put the follow back to idle, so the next frame took the shot for a new one and cleared the twist). It still ends the camera's own eases (rest ease, reset view), so nothing fights the fingers. The twist lasts until the next shot or the reset view, as decided in PR 34; a twist made during flight is kept at rest.
-- No glide after releasing a twist: it is bounded, and a view still turning after the fingers lift is hard to stop on the angle wanted. To validate on the phone.
+- No glide after releasing a twist: it is bounded, and a view still turning after the fingers lift is hard to stop on the angle wanted.
 - Same blocking as the other camera gestures: blocked while aiming, allowed during flight.
 
 ### 2026-11-06: Camera heading and island limits (`feature/m3-camera-yaw`)
