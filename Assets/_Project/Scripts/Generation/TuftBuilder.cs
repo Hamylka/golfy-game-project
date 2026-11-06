@@ -78,6 +78,12 @@ namespace IsoGolf.Generation
             var candidates = new List<TuftSpot>();
             foreach (EdgeSegment segment in edge)
             {
+                // No fringe where water meets the edge (ART_DIRECTION.md §6).
+                if (segment.Inner == EdgeSurface.Water)
+                {
+                    continue;
+                }
+
                 float length = Vector3.Distance(segment.A, segment.B);
                 Vector3 outward = new Vector3(segment.Outward.x, 0f, segment.Outward.z);
                 if (length < MinSegmentLength || outward.sqrMagnitude < MinSegmentLength)

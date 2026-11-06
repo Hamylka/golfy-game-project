@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace IsoGolf.Generation
@@ -43,6 +44,29 @@ namespace IsoGolf.Generation
         public float Height => height;
     }
 
+    /// <summary>Another island of the same course, beside the main one along X. It shares the main island's width noise scale.</summary>
+    [Serializable]
+    public struct ExtraIsland
+    {
+        [SerializeField] private float centerX;
+        [SerializeField, Min(1f)] private float halfLength;
+        [SerializeField, Min(0.5f)] private float halfWidth;
+        [SerializeField, Min(0f)] private float widthWobble;
+
+        public ExtraIsland(float centerX, float halfLength, float halfWidth, float widthWobble)
+        {
+            this.centerX = centerX;
+            this.halfLength = halfLength;
+            this.halfWidth = halfWidth;
+            this.widthWobble = widthWobble;
+        }
+
+        public float CenterX => centerX;
+        public float HalfLength => halfLength;
+        public float HalfWidth => halfWidth;
+        public float WidthWobble => widthWobble;
+    }
+
     /// <summary>
     /// A hand-written course shape, with the X axis running from tee to hole. The defaults are the
     /// par 3 from the look test. It's one source of a <see cref="CourseLayout"/>; M3's generator is the other.
@@ -55,6 +79,13 @@ namespace IsoGolf.Generation
         [SerializeField, Min(0.5f)] private float halfWidth = 5.2f;
         [SerializeField, Min(0f)] private float widthWobble = 3.2f;
         [SerializeField, Min(0f)] private float widthNoiseScale = 0.18f;
+
+        [Header("Gaps")]
+        [Tooltip("Where the main island is centred along X. Leave 0 for a single island on the origin.")]
+        [SerializeField] private float centerX;
+
+        [Tooltip("More islands of the same course, with open sky between them. Empty for a course with no gap.")]
+        [SerializeField] private ExtraIsland[] extraIslands = Array.Empty<ExtraIsland>();
 
         [Header("Fairway")]
         [SerializeField] private float fairwayStart = -15.5f;
@@ -103,6 +134,8 @@ namespace IsoGolf.Generation
         [SerializeField] private Vector2 skirtDepth = new Vector2(0.9f, 1.8f);
         [SerializeField, Min(0f)] private float skirtNoiseScale = 0.7f;
 
+        public float CenterX => centerX;
+        public IReadOnlyList<ExtraIsland> ExtraIslands => extraIslands;
         public float HalfLength => halfLength;
         public float HalfWidth => halfWidth;
         public float WidthWobble => widthWobble;
@@ -136,8 +169,14 @@ namespace IsoGolf.Generation
         /// </summary>
         public CourseLayout ToLayout()
         {
+            var islands = new List<IslandOutline> { new IslandOutline(halfLength, halfWidth, widthWobble, widthNoiseScale, centerX) };
+            foreach (ExtraIsland extra in extraIslands ?? Array.Empty<ExtraIsland>())
+            {
+                islands.Add(new IslandOutline(extra.HalfLength, extra.HalfWidth, extra.WidthWobble, widthNoiseScale, extra.CenterX));
+            }
+
             return new CourseLayout(
-                new[] { new IslandOutline(halfLength, halfWidth, widthWobble, widthNoiseScale) },
+                islands,
                 new CoursePath(new[] { tee, hole }),
                 new FairwayLayout(fairwayStart, fairwayEnd, fairwayHalfWidth, fairwayWobble, stripeWidth),
                 new[] { new GreenLayout(green, greenTilt) },

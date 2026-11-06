@@ -1,0 +1,61 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: aaddb8cb5730cd4459353fc86ecbe878, type: 3}
+  m_Name: GapCourseShape
+  m_EditorClassIdentifier: IsoGolf.Generation::IsoGolf.Generation.CourseShapeSettings
+  halfLength: 10
+  halfWidth: 5.2
+  widthWobble: 3.2
+  widthNoiseScale: 0.18
+  centerX: -9
+  extraIslands:
+  - centerX: 14
+    halfLength: 8.5
+    halfWidth: 5
+    widthWobble: 2.5
+  fairwayStart: -15.5
+  fairwayEnd: 10.5
+  fairwayHalfWidth: 2.5
+  fairwayWobble: 1.6
+  stripeWidth: 1
+  green:
+    center: {x: 12.8, y: 0.2}
+    radius: {x: 3, y: 2.7}
+    wobble: 0.12
+  bunker:
+    center: {x: 9.4, y: -2.9}
+    radius: {x: 1.8, y: 1.1}
+    wobble: 0.2
+  pond:
+    center: {x: -6, y: 3.4}
+    radius: {x: 3.2, y: 1.6}
+    wobble: 0.25
+  waterLevel: -0.22
+  cellSize: 1
+  axisRelief: 0.05
+  edgeRelief: 0.4
+  reliefDistance: 5
+  reliefNoiseScale: 0.55
+  swells:
+  - center: {x: -6, y: 0.5}
+    radius: 4
+    height: 0.45
+  - center: {x: 10, y: -0.5}
+    radius: 3
+    height: -0.25
+  greenTilt: {x: 0.03, y: 0.04}
+  tee: {x: -14, y: 0}
+  hole: {x: 14.2, y: 0.4}
+  flatRadius: 1.2
+  flatBlend: 0.8
+  skirtDepth: {x: 0.9, y: 1.8}
+  skirtNoiseScale: 0.7
