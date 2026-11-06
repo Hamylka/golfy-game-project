@@ -4,6 +4,21 @@ All notable progress on Iso Golf. The format follows [Keep a Changelog](https://
 
 ## [Unreleased]
 
+### 2026-11-06: M2 phone checks (`feature/m2-phone-checks`)
+
+#### Added
+
+- `Docs/Measurements/m2/`: phone measurements on the Honor 500 Pro (development build, 60 fps cap) and the player's answers to the by-eye checks. Raw per-frame data in `dev-build.csv`.
+- `PhoneMeasurement` (`IsoGolf.Measurement`), compiled only with the scripting define `ISOGOLF_MEASURE`, so no normal build contains it. It plays shots through synthetic touches and writes a CSV of frame timings and the prediction's cost.
+- A `ProfilerMarker` around `AimPreview.Predict` (no cost in release builds).
+
+#### Measured
+
+- Aim prediction on the phone: arcs p50 0.075 ms, p95 0.09 ms, p99 0.19 ms, worst frame 1.0 ms (about 2,800 predictions per scene). Putts: one 3 s aim, p50 0.235 ms, max 0.49 ms. The longest putt wasn't reached, so its cost on the phone is still unmeasured.
+- Frames during shots with camera follow at the default zoom: 60 fps with no frame over 16.54 ms in about 19,300 frames; CPU main thread p50 3.6 to 4.4 ms, GPU p50 8.2 to 9.0 ms (development build).
+- By eye, the player passed slopes (for the current soft ones), the ball's offset from facets in the rough, the surface border differences, the camera follow, the default zoom and reset button, the sky near the island's edge, and the tuned shot values.
+- M2 is ready to close. Left over: render scale (needs a low-end phone), the longest putt's cost, and rechecking slopes once M3 steepens them.
+
 ### 2026-11-06: Horizontal camera follow (`feature/m2-camera-follow-horizontal`)
 
 #### Changed
