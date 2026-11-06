@@ -57,6 +57,11 @@ namespace IsoGolf.Rendering
         private Vector3 _resetFrom;
         private Vector3 _resetTo;
         private float _resetProgress;
+        private readonly float _lookAhead;
+        private readonly float _maxRestShift;
+
+        // Below this turn, in degrees, the course counts as heading straight along +X and the rest spot stays put.
+        private const float MinTurn = 0.5f;
 
         /// <param name="navigator">Moves the camera, and applies its limits.</param>
         /// <param name="view">The camera's fixed rotation and lens.</param>
@@ -67,8 +72,12 @@ namespace IsoGolf.Rendering
         /// <param name="returnSmoothTime">How slowly the camera eases to a stopped ball, in seconds.</param>
         /// <param name="defaultZoom">The zoom a reset view eases to.</param>
         /// <param name="resetSeconds">How long a reset view takes.</param>
-        public CameraFollow(CameraNavigator navigator, in CameraView view, Rect zone, float backstop, Vector2 rest, float followSmoothTime, float returnSmoothTime, float defaultZoom = 0.5f, float resetSeconds = 0.35f)
+        /// <param name="lookAhead">How far ahead along the course the rest spot looks for the course's heading, in metres. 0 turns it off.</param>
+        /// <param name="maxRestShift">How far to the side a bend in the course may move the rest spot, in viewport units.</param>
+        public CameraFollow(CameraNavigator navigator, in CameraView view, Rect zone, float backstop, Vector2 rest, float followSmoothTime, float returnSmoothTime, float defaultZoom = 0.5f, float resetSeconds = 0.35f, float lookAhead = 0f, float maxRestShift = 0f)
         {
+            _lookAhead = lookAhead;
+            _maxRestShift = maxRestShift;
             _defaultZoom = defaultZoom;
             _resetSeconds = resetSeconds;
             _navigator = navigator;
@@ -94,7 +103,10 @@ namespace IsoGolf.Rendering
         {
             EnterPhase(Phase.Resetting);
             _resetFrom = _navigator.Position;
-            _resetTo = _navigator.PositionWith(_defaultZoom, ball, _rest);
+
+            // The rest spot depends on the zoom, so it's worked out at the default zoom the reset ends on.
+            Vector3 there = _navigator.PositionWith(_defaultZoom, ball, _rest);
+            _resetTo = _navigator.PositionWith(_defaultZoom, ball, RestSpot(ball, there));
             _resetProgress = 0f;
         }
 
@@ -125,7 +137,7 @@ namespace IsoGolf.Rendering
             }
             else if (_phase == Phase.Returning)
             {
-                float left = EaseBy(BringTo(ball, _rest), _returnSmoothTime, deltaTime);
+                float left = EaseBy(BringTo(ball, RestSpot(ball, _navigator.Position)), _returnSmoothTime, deltaTime);
                 if (left < ArrivalDistance && _velocity.magnitude < ArrivalSpeed)
                 {
                     EnterPhase(Phase.Idle);
@@ -137,7 +149,41 @@ namespace IsoGolf.Rendering
         public void PlaceOn(Vector3 ball)
         {
             EnterPhase(Phase.Idle);
-            _navigator.Move(BringTo(ball, _rest));
+            _navigator.Move(BringTo(ball, RestSpot(ball, _navigator.Position)));
+        }
+
+        /// <summary>
+        /// Where a stopped ball sits on screen, for a camera at this height. On a straight course, the rest spot itself.
+        /// Where the course turns, the view looks along the new heading as it looks along +X on a straight course: the
+        /// ground between the ball and the view's middle turns with the course, which moves the ball to the side the
+        /// course turns away from, so the course ahead crosses the view. Only sideways, and limited, so the ball keeps
+        /// its height on screen and room for a full pull.
+        /// </summary>
+        private Vector2 RestSpot(Vector3 ball, Vector3 cameraPosition)
+        {
+            if (_lookAhead <= 0f || _maxRestShift <= 0f)
+            {
+                return _rest;
+            }
+
+            float turn = Vector2.SignedAngle(Vector2.right, _navigator.CourseHeading(ball, _lookAhead));
+            if (Mathf.Abs(turn) < MinTurn)
+            {
+                return _rest;
+            }
+
+            // Moving the camera sideways moves every ground point under the screen by the same amount, so only the
+            // camera's height matters here, not where it is.
+            Vector3 restGround = _view.OnPlane(cameraPosition, _rest, ball.y);
+            Vector3 middle = _view.OnPlane(cameraPosition, Vector2.zero, ball.y);
+            Vector2 toMiddle = new Vector2(middle.x - restGround.x, middle.z - restGround.z);
+            float radians = turn * Mathf.Deg2Rad;
+            float cos = Mathf.Cos(radians), sin = Mathf.Sin(radians);
+            var turned = new Vector2((toMiddle.x * cos) - (toMiddle.y * sin), (toMiddle.x * sin) + (toMiddle.y * cos));
+
+            Vector3 camera = cameraPosition + new Vector3(ball.x + turned.x - middle.x, 0f, ball.z + turned.y - middle.z);
+            float x = _view.ToViewport(camera, ball).x;
+            return new Vector2(Mathf.Clamp(x, _rest.x - _maxRestShift, _rest.x + _maxRestShift), _rest.y);
         }
 
         private void UpdatePhase(FollowedBallState state, bool fingerDown)

@@ -34,6 +34,9 @@ namespace IsoGolf.Rendering
         [Tooltip("The most course one view shows along X, in metres. A longer course is framed in stretches this long.")]
         [SerializeField, Min(1f)] private float framedLength = 36f;
 
+        [Tooltip("On a dogleg, how much further back the zoomed-out view may go so a leg running diagonally on screen keeps its whole width in view. 1 keeps every course at the same scale, and lets such a leg's sides leave the overview.")]
+        [SerializeField, Range(1f, 2f)] private float doglegMaxStepBack = 1f;
+
         [Header("Following a shot")]
         [Tooltip("The top of the band a flying ball stays in. -1 is the bottom edge of the screen, 1 the top, so 0.2 is 60% up.")]
         [SerializeField, Range(0f, 1f)] private float followZoneTop = 0.2f;
@@ -54,6 +57,12 @@ namespace IsoGolf.Rendering
         [Tooltip("Where a stopped ball ends up on screen, from -1 to 1. Must leave room below it for a full pull.")]
         [SerializeField] private Vector2 restBallViewport = new Vector2(0f, -0.4f);
 
+        [Tooltip("On a course that bends, how far ahead of a stopped ball the camera reads the course's heading, in metres. 0 keeps the rest spot fixed.")]
+        [SerializeField, Min(0f)] private float restLookAhead = 10f;
+
+        [Tooltip("How far a bend may move the stopped ball to the side on screen, so the course ahead crosses the view. 1 is half the screen's width.")]
+        [SerializeField, Range(0f, 0.5f)] private float restMaxShift = 0.25f;
+
         [Tooltip("How slowly the camera eases to a stopped ball, in seconds.")]
         [SerializeField, Range(0.01f, 3f)] private float returnSmoothTime = 0.6f;
 
@@ -70,10 +79,13 @@ namespace IsoGolf.Rendering
         public float GlideMinReleaseSpeed => glideMinReleaseSpeed;
         public float GlideStopSpeed => glideStopSpeed;
         public float FramedLength => framedLength;
+        public float DoglegMaxStepBack => doglegMaxStepBack;
         public Rect FollowZone => Rect.MinMaxRect(-followZoneSide, followZoneBottom, followZoneSide, followZoneTop);
         public float FollowBackstop => followBackstop;
         public float FollowSmoothTime => followSmoothTime;
         public Vector2 RestBallViewport => restBallViewport;
+        public float RestLookAhead => restLookAhead;
+        public float RestMaxShift => restMaxShift;
         public float ReturnSmoothTime => returnSmoothTime;
     }
 }

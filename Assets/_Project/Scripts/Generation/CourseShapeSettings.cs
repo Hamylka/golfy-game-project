@@ -53,15 +53,25 @@ namespace IsoGolf.Generation
         [SerializeField, Min(0.5f)] private float halfWidth;
         [SerializeField, Min(0f)] private float widthWobble;
 
-        public ExtraIsland(float centerX, float halfLength, float halfWidth, float widthWobble)
+        [Tooltip("Leave 0 for an island on the play axis. A dogleg's leg sits off to the side.")]
+        [SerializeField] private float centerZ;
+
+        [Tooltip("The island's long axis, in degrees from +X, positive toward +Z. 0 runs along the play axis.")]
+        [SerializeField, Range(-45f, 45f)] private float heading;
+
+        public ExtraIsland(float centerX, float halfLength, float halfWidth, float widthWobble, float centerZ = 0f, float heading = 0f)
         {
             this.centerX = centerX;
             this.halfLength = halfLength;
             this.halfWidth = halfWidth;
             this.widthWobble = widthWobble;
+            this.centerZ = centerZ;
+            this.heading = heading;
         }
 
         public float CenterX => centerX;
+        public float CenterZ => centerZ;
+        public float Heading => heading;
         public float HalfLength => halfLength;
         public float HalfWidth => halfWidth;
         public float WidthWobble => widthWobble;
@@ -124,6 +134,8 @@ namespace IsoGolf.Generation
         [Header("Play")]
         [SerializeField] private Vector2 tee = new Vector2(-14f, 0f);
         [SerializeField] private Vector2 hole = new Vector2(14.2f, 0.4f);
+        [Tooltip("Where the centreline turns between the tee and the hole, for a dogleg. Empty for a straight course.")]
+        [SerializeField] private Vector2[] centrelineBends = Array.Empty<Vector2>();
         [Tooltip("The ground is flat this far around the tee and the hole, in metres.")]
         [SerializeField, Min(0f)] private float flatRadius = 1.2f;
         [Tooltip("How far the ground then takes to return to its full slope, in metres.")]
@@ -158,6 +170,7 @@ namespace IsoGolf.Generation
         public Vector2 GreenTilt => greenTilt;
         public Vector2 Tee => tee;
         public Vector2 Hole => hole;
+        public IReadOnlyList<Vector2> CentrelineBends => centrelineBends;
         public float FlatRadius => flatRadius;
         public float FlatBlend => flatBlend;
         public Vector2 SkirtDepth => skirtDepth;
@@ -172,12 +185,16 @@ namespace IsoGolf.Generation
             var islands = new List<IslandOutline> { new IslandOutline(halfLength, halfWidth, widthWobble, widthNoiseScale, centerX) };
             foreach (ExtraIsland extra in extraIslands ?? Array.Empty<ExtraIsland>())
             {
-                islands.Add(new IslandOutline(extra.HalfLength, extra.HalfWidth, extra.WidthWobble, widthNoiseScale, extra.CenterX));
+                islands.Add(new IslandOutline(extra.HalfLength, extra.HalfWidth, extra.WidthWobble, widthNoiseScale, extra.CenterX, extra.CenterZ, extra.Heading));
             }
+
+            var centreline = new List<Vector2> { tee };
+            centreline.AddRange(centrelineBends ?? Array.Empty<Vector2>());
+            centreline.Add(hole);
 
             return new CourseLayout(
                 islands,
-                new CoursePath(new[] { tee, hole }),
+                new CoursePath(centreline),
                 new FairwayLayout(fairwayStart, fairwayEnd, fairwayHalfWidth, fairwayWobble, stripeWidth),
                 new[] { new GreenLayout(green, greenTilt) },
                 new[] { bunker },

@@ -4,6 +4,24 @@ All notable progress on Iso Golf. The format follows [Keep a Changelog](https://
 
 ## [Unreleased]
 
+### 2026-11-06: Camera along the course's centreline (`feature/m3-camera-path`)
+
+#### Added
+
+- `GroundPath` (`IsoGolf.Rendering`): a polyline on the ground whose end legs run on, with projection (distance along, offset across), points along it and sideways offsets with mitred or per-leg corners.
+- `CameraFraming.FitCourse(points, centreline, …)` frames a course along its centreline. `CourseFrame.Corridor` is the polyline the zoomed-out view travels, as moves from `Home`; `CorridorLength` is its length. On a bent course the first stretch is laid along the first leg, every later leg is centred on screen by measuring the outline, and the corridor runs on until the course's last quarter stretch is in view.
+- `CameraNavigator` takes that corridor. Zoomed out, the view's centre stays on it; zooming in, the allowed area is every blend of a corridor point and a ground-limit point, which only grows with the zoom and still lands zoomed-out views on the corridor. The nearest allowed point is found exactly, with no search.
+- `CameraFollow`: on a course that bends, the rest spot (and the reset view) moves the ball sideways, toward the side the course turns away from, so the course ahead crosses the view. `CameraRigSettings.restLookAhead` (10 m) and `restMaxShift` (0.25) tune it. A straight course keeps the rest spot exactly.
+- `CameraRigSettings.doglegMaxStepBack` (1): how much further back the zoomed-out view may go so a leg running diagonally on screen keeps its whole width. At 1, every course keeps the same scale, as `CLAUDE.md` asks; on the dogleg fixture the second leg's sides then reach up to 1.08–1.21 of the half-screen at the overview's middle row. At 1.5 everything fits, 1.32–1.38× further back, which also shrinks the ball at every zoom on that course. The director picks by playtest.
+- Turned islands: `IslandOutline.CenterZ` and `Heading`, and the same on `ExtraIsland`. An island on the axis is measured untouched. `CourseShapeSettings.centrelineBends` adds bends between tee and hole.
+- Test fixture `DoglegCourseShape` (55 m par 4, a leg along +X, then 35 degrees toward −Z, i.e. right on screen) and `Sandbox_Dogleg` scene (`Sandbox_LongCourse`'s setup on the fixture). Its relief, fairway and stripes still run along X until PR 4.
+- `GroundPathTests` (6), `CameraPathTests` (28 cases) and `DoglegFixtureTests` (5). The pins hold `Main`'s par 3 and `Sandbox_LongCourse` at their framing from before this PR on 9:16, 9:21 and 1280×2800, and the straight corridor equals the old rectangle limits over 300 random moves. EditMode: 406 tests, all passing.
+
+#### Changed
+
+- A centreline with a single leg (every straight course) frames along +X exactly as before, whatever its hole's small offset to the side.
+- `IslandCamera.SetIsland(points, centreline)`, `VisibleGround` covers the whole corridor's footprint, and `LevelBootstrap` passes the layout's centreline.
+
 ### 2026-11-06: Several islands in one course (`feature/m3-multi-island`)
 
 #### Added

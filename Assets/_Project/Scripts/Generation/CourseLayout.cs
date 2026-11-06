@@ -5,28 +5,74 @@ using UnityEngine;
 namespace IsoGolf.Generation
 {
     /// <summary>
-    /// One island's outline: a long oval along X whose width wobbles with noise, centred on
-    /// <see cref="CenterX"/> and on z = 0. Several islands with open sky between them make a course with gaps.
+    /// One island's outline: a long oval whose width wobbles with noise, centred on (<see cref="CenterX"/>,
+    /// <see cref="CenterZ"/>) and running along X, or turned by <see cref="Heading"/> for a dogleg's leg. Several
+    /// islands with open sky between them make a course with gaps; overlapping ones make one island that bends.
     /// </summary>
     public readonly struct IslandOutline
     {
-        public IslandOutline(float halfLength, float halfWidth, float widthWobble, float widthNoiseScale, float centerX = 0f)
+        public IslandOutline(float halfLength, float halfWidth, float widthWobble, float widthNoiseScale, float centerX = 0f, float centerZ = 0f, float heading = 0f)
         {
             HalfLength = halfLength;
             HalfWidth = halfWidth;
             WidthWobble = widthWobble;
             WidthNoiseScale = widthNoiseScale;
             CenterX = centerX;
+            CenterZ = centerZ;
+            Heading = heading;
         }
 
         public float CenterX { get; }
+        public float CenterZ { get; }
+
+        /// <summary>The direction of the island's long axis, in degrees from +X, positive toward +Z.</summary>
+        public float Heading { get; }
+
         public float HalfLength { get; }
         public float HalfWidth { get; }
         public float WidthWobble { get; }
         public float WidthNoiseScale { get; }
 
+        /// <summary>True for an island along X on z = 0, which every course had before doglegs.</summary>
+        public bool IsOnAxis => Heading == 0f && CenterZ == 0f;
+
         /// <summary>How far the island can reach from the course origin along X and across Z, wobble included.</summary>
-        public Vector2 HalfExtent => new Vector2(Mathf.Abs(CenterX) + HalfLength, HalfWidth + (WidthWobble * 0.5f));
+        public Vector2 HalfExtent
+        {
+            get
+            {
+                float width = HalfWidth + (WidthWobble * 0.5f);
+                if (IsOnAxis)
+                {
+                    return new Vector2(Mathf.Abs(CenterX) + HalfLength, width);
+                }
+
+                // The bounding box of the turned oval.
+                float radians = Heading * Mathf.Deg2Rad;
+                float cos = Mathf.Cos(radians), sin = Mathf.Sin(radians);
+                float alongX = Mathf.Sqrt((HalfLength * cos * HalfLength * cos) + (width * sin * width * sin));
+                float alongZ = Mathf.Sqrt((HalfLength * sin * HalfLength * sin) + (width * cos * width * cos));
+                return new Vector2(Mathf.Abs(CenterX) + alongX, Mathf.Abs(CenterZ) + alongZ);
+            }
+        }
+
+        /// <summary>
+        /// A ground point in the island's own frame, where it runs along X on z = 0 around <see cref="CenterX"/>. The
+        /// point itself, untouched, for an island on the axis, so courses without doglegs keep every vertex.
+        /// </summary>
+        public Vector3 ToOwnFrame(Vector3 p)
+        {
+            if (IsOnAxis)
+            {
+                return p;
+            }
+
+            float radians = Heading * Mathf.Deg2Rad;
+            float cos = Mathf.Cos(radians), sin = Mathf.Sin(radians);
+            float dx = p.x - CenterX;
+            float dz = p.z - CenterZ;
+            return new Vector3(CenterX + (dx * cos) + (dz * sin), p.y, (dz * cos) - (dx * sin));
+        }
     }
 
     /// <summary>What lies just inside a piece of the island edge. Tufts skip water; a waterfall could fall from it later.</summary>
