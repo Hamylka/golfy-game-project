@@ -21,6 +21,7 @@ All notable progress on Iso Golf. The format follows [Keep a Changelog](https://
 - `TerrainMeshData` keeps slivers down to about 0.5 mm². The par 3's bunker tip now grazes a grid corner, and dropping its slivers opened a crack of about 1 cm.
 - `BallOnCourseTests`: water pieces may sit 0.1 field units past the pond's outline, as land pieces already could (one sits at 0.029).
 - URP shadow distance 70 m to 71 m (approved by the human). The par 3's far tip moved, and the framed camera is now 56.1 m from it on a 9:21 screen, past the old 56 m fade start. Figures for each screen are in `Docs/Measurements/m1-5/README.md`.
+- Follow-up for the outline generator (PR 4): a generated course, framed fully zoomed out, must keep its farthest point, the earth band under its tips included, within the shadow fade start (56.8 m) up to 9:21. Check it in a test rather than by raising the shadow distance again.
 
 ### 2026-11-06: M3 island generator decisions (`feature/m3-plan`)
 
