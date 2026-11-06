@@ -44,8 +44,8 @@ namespace IsoGolf.Rendering
         [Tooltip("How low a ball that hasn't reached the band may go before the camera moves, for a shot played backward.")]
         [SerializeField, Range(-1f, 0f)] private float followBackstop = -0.85f;
 
-        [Tooltip("The camera moves once the ball is this far to either side. 1 is the screen edge.")]
-        [SerializeField, Range(0f, 1f)] private float followZoneSide = 0.8f;
+        [Tooltip("The camera moves once the ball is this far to either side, after it has been inside. 1 is the screen edge, 0.2 is 40% to 60% of the width.")]
+        [SerializeField, Range(0f, 1f)] private float followZoneSide = 0.2f;
 
         [Tooltip("How closely the camera trails a moving ball, in seconds. Lower is closer.")]
         [SerializeField, Range(0.01f, 2f)] private float followSmoothTime = 0.08f;
