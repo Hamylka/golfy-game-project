@@ -215,8 +215,10 @@ namespace IsoGolf.Generation
             return Mathf.FloorToInt(z / _layout.Fairway.StripeWidth);
         }
 
-        private static float Island(Vector3 p, IslandOutline island)
+        private static float Island(Vector3 point, IslandOutline island)
         {
+            // A turned island is measured in its own frame. That keeps distances, so the field stays a distance.
+            Vector3 p = island.ToOwnFrame(point);
             float local = (p.x - island.CenterX) / island.HalfLength;
             float along = 1f - (local * local);
             if (along < 0f)

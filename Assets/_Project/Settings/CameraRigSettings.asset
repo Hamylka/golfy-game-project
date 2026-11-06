@@ -21,11 +21,14 @@ MonoBehaviour:
   glideMinReleaseSpeed: 0.2
   glideStopSpeed: 0.03
   framedLength: 36
+  doglegMaxStepBack: 1
   followZoneTop: 0.2
   followZoneBottom: -0.2
   followBackstop: -0.85
   followZoneSide: 0.2
   followSmoothTime: 0.08
   restBallViewport: {x: 0, y: -0.4}
+  restLookAhead: 10
+  restMaxShift: 0.25
   returnSmoothTime: 0.6
   resetSeconds: 0.35

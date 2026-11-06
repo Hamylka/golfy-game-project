@@ -26,7 +26,8 @@ namespace IsoGolf.Rendering
         private Vector2Int _screenSize;
         private IReadOnlyList<Vector3> _framePoints;
         private Vector3 _home;
-        private float _corridorLength;
+        private IReadOnlyList<Vector2> _corridor;
+        private IReadOnlyList<Vector2> _centreline;
         private CameraView _view;
         private CameraFollow _follow;
         private bool _fingerDown;
@@ -90,17 +91,17 @@ namespace IsoGolf.Rendering
             _screenSize = new Vector2Int(Screen.width, Screen.height);
             _view = new CameraView(IsoCameraConvention.Rotation, IsoCameraConvention.VerticalFieldOfView, _screenSize.x / (float)_screenSize.y);
             IReadOnlyList<Vector3> points = _framePoints ?? CameraFraming.Corners(island);
-            CourseFrame frame = CameraFraming.FitCourse(points, _view, settings.ScreenFill, settings.FramedLength);
+            CourseFrame frame = CameraFraming.FitCourse(points, _centreline, _view, settings.ScreenFill, settings.FramedLength, groundHeight, settings.DoglegMaxStepBack);
             _home = frame.Home;
-            _corridorLength = frame.CorridorLength;
+            _corridor = frame.Corridor;
             Rect limits = GroundLimits(points);
 
             // From the default zoom on, so the follow can rest the ball at its spot along the whole course.
             float fullLimitsZoom = settings.DefaultZoom > 0f ? settings.DefaultZoom : 1f;
-            _navigator = new CameraNavigator(_home, _view, limits, groundHeight, settings.ClosestZoom, _corridorLength, fullLimitsZoom);
+            _navigator = new CameraNavigator(_home, _view, limits, groundHeight, settings.ClosestZoom, _corridor, fullLimitsZoom);
             var momentum = new PanMomentum(settings.GlideTimeConstant, settings.GlideVelocityWindow, settings.GlideMinReleaseSpeed, settings.GlideStopSpeed);
             _router = new CameraGestureRouter(_navigator, momentum);
-            _follow = new CameraFollow(_navigator, _view, settings.FollowZone, settings.FollowBackstop, settings.RestBallViewport, settings.FollowSmoothTime, settings.ReturnSmoothTime, settings.DefaultZoom, settings.ResetSeconds);
+            _follow = new CameraFollow(_navigator, _view, settings.FollowZone, settings.FollowBackstop, settings.RestBallViewport, settings.FollowSmoothTime, settings.ReturnSmoothTime, settings.DefaultZoom, settings.ResetSeconds, settings.RestLookAhead, settings.RestMaxShift);
             if (_placedOn.HasValue)
             {
                 StartViewOn(_placedOn.Value);
@@ -109,10 +110,14 @@ namespace IsoGolf.Rendering
             transform.position = _navigator.Position;
         }
 
-        /// <summary>Frames these points instead of the box, for a tighter fit around a real island shape.</summary>
-        public void SetIsland(IReadOnlyList<Vector3> points)
+        /// <summary>
+        /// Frames these points instead of the box, for a tighter fit around a real island shape, along the course's
+        /// centreline (world X and Z, tee to hole). Without a centreline, or with a straight one, along +X.
+        /// </summary>
+        public void SetIsland(IReadOnlyList<Vector3> points, IReadOnlyList<Vector2> centreline = null)
         {
             _framePoints = points;
+            _centreline = centreline;
             Rebuild();
         }
 
@@ -171,9 +176,19 @@ namespace IsoGolf.Rendering
         /// <summary>The rectangle a horizontal plane shows across the framed views, the widest the player can see.</summary>
         public Rect VisibleGround(float height)
         {
+            // Every framed view is the first one moved along the corridor, so together they cover its footprint
+            // widened by the corridor's extent.
             Rect first = CameraFraming.GroundFootprint(_home, _view, height);
-            first.xMax += _corridorLength;
-            return first;
+            float minX = 0f, maxX = 0f, minZ = 0f, maxZ = 0f;
+            foreach (Vector2 move in _corridor)
+            {
+                minX = Mathf.Min(minX, move.x);
+                maxX = Mathf.Max(maxX, move.x);
+                minZ = Mathf.Min(minZ, move.y);
+                maxZ = Mathf.Max(maxZ, move.y);
+            }
+
+            return Rect.MinMaxRect(first.xMin + minX, first.yMin + minZ, first.xMax + maxX, first.yMax + maxZ);
         }
 
         private static Rect GroundLimits(IReadOnlyList<Vector3> points)

@@ -21,7 +21,7 @@ namespace IsoGolf.Gameplay
         private void Start()
         {
             terrain.Build();
-            islandCamera.SetIsland(terrain.Outline);
+            islandCamera.SetIsland(terrain.Outline, terrain.Layout.Centreline.Points);
             if (clouds != null)
             {
                 clouds.Build(islandCamera.VisibleGround);
