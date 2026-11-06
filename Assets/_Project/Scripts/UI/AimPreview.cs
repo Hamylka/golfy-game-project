@@ -93,7 +93,18 @@ namespace IsoGolf.UI
             _renderer.enabled = true;
         }
 
+        // Lets a device capture time the prediction with the profiler. It costs nothing in a release build.
+        private static readonly Unity.Profiling.ProfilerMarker PredictMarker = new Unity.Profiling.ProfilerMarker(Unity.Profiling.ProfilerCategory.Scripts, "AimPreview.Predict");
+
         private void Predict(BallSimulation simulation, Vector2 direction, float power)
+        {
+            using (PredictMarker.Auto())
+            {
+                PredictInner(simulation, direction, power);
+            }
+        }
+
+        private void PredictInner(BallSimulation simulation, Vector2 direction, float power)
         {
             if (simulation.IsPutt)
             {

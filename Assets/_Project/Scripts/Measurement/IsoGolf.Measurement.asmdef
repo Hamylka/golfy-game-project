@@ -1,0 +1,9 @@
+{
+    "name": "IsoGolf.Measurement",
+    "rootNamespace": "IsoGolf.Measurement",
+    "references": [
+        "IsoGolf.Gameplay",
+        "IsoGolf.Rendering",
+        "Unity.InputSystem"
+    ]
+}
