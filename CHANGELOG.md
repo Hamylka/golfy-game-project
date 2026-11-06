@@ -4,6 +4,21 @@ All notable progress on Iso Golf. The format follows [Keep a Changelog](https://
 
 ## [Unreleased]
 
+### 2026-11-06: Two-finger twist (`feature/m3-camera-twist`)
+
+#### Added
+
+- A two-finger twist turns the view up to ±`maxTwist` (45°) around the automatic heading, alongside the pinch zoom and the two-finger pan, and they can happen together. The angle comes from the line between the fingers on the ground (not on screen, where perspective distorts it), and the view turns around the ground between the fingers, so the ground under both fingers stays under them.
+- `TwistFilter`: a dead zone (`CameraRigSettings.twistDeadZone`, 4°) so a plain pinch never wobbles the heading; only the part past it counts, so the view doesn't jump as it engages. Fingers closer than `twistMinSpread` (0.1 viewport units) are ignored, since their angle is noise.
+- `CameraNavigator.ApplyGesture` now returns the angle the fingers turned, and `GroundUnder(viewport)` is public. `CameraFollow.TwistBy(degrees, pivot)` turns from the view's real yaw, within the limit.
+- `CameraTwistTests` (26). EditMode: 479 tests, all passing.
+
+#### Changed
+
+- `CameraFollow.SetTwist` no longer ends the follow during a shot (it used to put the follow back to idle, so the next frame took the shot for a new one and cleared the twist). It still ends the camera's own eases (rest ease, reset view), so nothing fights the fingers. The twist lasts until the next shot or the reset view, as decided in PR 34; a twist made during flight is kept at rest.
+- No glide after releasing a twist: it is bounded, and a view still turning after the fingers lift is hard to stop on the angle wanted. To validate on the phone.
+- Same blocking as the other camera gestures: blocked while aiming, allowed during flight.
+
 ### 2026-11-06: Camera heading and island limits (`feature/m3-camera-yaw`)
 
 #### Added

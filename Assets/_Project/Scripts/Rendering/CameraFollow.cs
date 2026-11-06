@@ -130,9 +130,25 @@ namespace IsoGolf.Rendering
         /// </summary>
         public void SetTwist(float degrees, Vector3 pivot)
         {
-            EnterPhase(Phase.Idle);
+            // Only an ease of the camera's own is ended. A twist during a shot leaves the follow alone, or the
+            // follow would take the next frame for a new shot and clear the twist.
+            if (_phase == Phase.Returning || _phase == Phase.Resetting)
+            {
+                EnterPhase(Phase.Idle);
+            }
+
             Twist = Mathf.Clamp(degrees, -_ease.MaxTwist, _ease.MaxTwist);
             _navigator.TurnTo(Heading + Twist, pivot);
+        }
+
+        /// <summary>
+        /// Turns the view by a number of degrees from where it is now, around a ground point that stays put on screen,
+        /// within ±<see cref="HeadingEase.MaxTwist"/> of the automatic heading. Counted from the view's real yaw, which
+        /// can differ from the heading plus the twist (a new shot clears the twist before the view turns back).
+        /// </summary>
+        public void TwistBy(float degrees, Vector3 pivot)
+        {
+            SetTwist(Mathf.DeltaAngle(Heading, _navigator.Yaw) + degrees, pivot);
         }
 
         /// <summary>

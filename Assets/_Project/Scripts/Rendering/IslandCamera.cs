@@ -7,7 +7,7 @@ using UnityEngine.InputSystem.Controls;
 namespace IsoGolf.Rendering
 {
     /// <summary>
-    /// Frames the island and applies the player's camera gestures: drag to move around, pinch to zoom. Turns the view
+    /// Frames the island and applies the player's camera gestures: drag to move around, pinch to zoom, twist to turn. Turns the view
     /// to the automatic heading when a ball comes to rest and on the reset view.
     /// </summary>
     [DisallowMultipleComponent]
@@ -67,7 +67,7 @@ namespace IsoGolf.Rendering
 
         public CameraNavigator Navigator => _navigator;
 
-        /// <summary>The follow, for the twist gesture to come (it turns the view through <see cref="CameraFollow.SetTwist"/>).</summary>
+        /// <summary>The follow, which owns the heading and the player's twist.</summary>
         public CameraFollow Follower => _follow;
 
         private void OnEnable()
@@ -122,12 +122,15 @@ namespace IsoGolf.Rendering
                 : IslandArea.FromRect(GroundLimits(points), settings.IslandMargin);
             _navigator = new CameraNavigator(_home, _view, _area, groundHeight, settings.ClosestZoom);
             var momentum = new PanMomentum(settings.GlideTimeConstant, settings.GlideVelocityWindow, settings.GlideMinReleaseSpeed, settings.GlideStopSpeed);
-            _router = new CameraGestureRouter(_navigator, momentum);
             var ease = new HeadingEase(settings.HeadingSmoothTime, settings.HeadingMinTurn, settings.MaxTwist);
             _follow = new CameraFollow(_navigator, settings.FollowZone, settings.FollowBackstop, settings.RestBallViewport, settings.FollowSmoothTime, settings.ReturnSmoothTime, settings.DefaultZoom, settings.ResetSeconds, ease)
             {
                 Rule = _rule,
             };
+
+            // The twist has no glide after release: it is bounded, and a view still turning after the fingers lift
+            // would be hard to stop on the angle wanted.
+            _router = new CameraGestureRouter(_navigator, momentum, new TwistFilter(settings.TwistDeadZone, settings.TwistMinSpread), _follow.TwistBy);
 
             if (_placedOn.HasValue)
             {

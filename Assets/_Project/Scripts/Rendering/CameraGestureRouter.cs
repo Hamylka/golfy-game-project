@@ -22,11 +22,17 @@ namespace IsoGolf.Rendering
         private State _state = State.Idle;
         private Vector2 _previousA;
         private Vector2 _previousB;
+        private readonly TwistFilter _twistFilter;
+        private readonly Action<float, Vector3> _twist;
 
-        public CameraGestureRouter(CameraNavigator navigator, PanMomentum momentum)
+        /// <param name="twistFilter">Lets a twist through past a dead zone. Without it and <paramref name="twist"/>, two fingers never turn the view.</param>
+        /// <param name="twist">Turns the view by some degrees around a ground point. Called only for a real twist.</param>
+        public CameraGestureRouter(CameraNavigator navigator, PanMomentum momentum, TwistFilter twistFilter = null, Action<float, Vector3> twist = null)
         {
             _navigator = navigator;
             _momentum = momentum;
+            _twistFilter = twistFilter;
+            _twist = twist;
         }
 
         /// <summary>
@@ -124,7 +130,20 @@ namespace IsoGolf.Rendering
         {
             if (_state == State.Pinching)
             {
-                _navigator.ApplyGesture(_previousA, _previousB, a, b);
+                float fingerTurn = _navigator.ApplyGesture(_previousA, _previousB, a, b);
+                if (_twistFilter != null && _twist != null)
+                {
+                    float turn = _twistFilter.Step(fingerTurn, (a - b).magnitude);
+                    if (turn != 0f)
+                    {
+                        // Around the ground between the fingers, which the pan has just put under them.
+                        _twist(turn, _navigator.GroundUnder((a + b) * 0.5f));
+                    }
+                }
+            }
+            else
+            {
+                _twistFilter?.Reset();
             }
 
             // Coming from one finger, the first frame only records positions, so the view doesn't jump.
