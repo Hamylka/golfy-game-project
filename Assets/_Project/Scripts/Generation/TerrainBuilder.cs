@@ -251,8 +251,12 @@ namespace IsoGolf.Generation
         private List<Triangle> SplitAlongStripes(Triangle triangle)
         {
             var pieces = new List<Triangle> { triangle };
-            float low = Mathf.Min(triangle.A.z, triangle.B.z, triangle.C.z);
-            float high = Mathf.Max(triangle.A.z, triangle.B.z, triangle.C.z);
+
+            // Stripes are lines at whole multiples of the stripe width across the play axis: lines of constant Z on a
+            // hand-made course, lines parallel to each leg on a generated one (rounding off around the outside of a bend).
+            float a = _fields.Across(triangle.A), b = _fields.Across(triangle.B), c = _fields.Across(triangle.C);
+            float low = Mathf.Min(a, b, c);
+            float high = Mathf.Max(a, b, c);
 
             for (int stripe = _fields.Stripe(low); stripe <= _fields.Stripe(high); stripe++)
             {
@@ -261,7 +265,9 @@ namespace IsoGolf.Generation
                 // Only lines passing through the triangle. One along a grid row needs no cut at all.
                 if (line > low && line < high)
                 {
-                    pieces = SplitAll(pieces, p => p.z - line);
+                    pieces = _layout.AlongCentreline
+                        ? SplitAll(pieces, p => _fields.Across(p) - line)
+                        : SplitAll(pieces, p => p.z - line);
                 }
             }
 
@@ -293,7 +299,7 @@ namespace IsoGolf.Generation
 
             if (_fields.Fairway(point) < 0f)
             {
-                return Mathf.Abs(_fields.Stripe(point.z)) % 2 == 0 ? _fairwayLight : _fairwayDark;
+                return Mathf.Abs(_fields.Stripe(_fields.Across(point))) % 2 == 0 ? _fairwayLight : _fairwayDark;
             }
 
             return _rough;

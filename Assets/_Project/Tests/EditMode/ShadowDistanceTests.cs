@@ -50,7 +50,7 @@ namespace IsoGolf.Tests
         /// PR 3d, is not in): the course's last stretch along each heading, framed at the one zoomed-out scale, as the
         /// par 3 is framed whole above. Earth band included.
         /// </summary>
-        private static float WorstFramedStretch(CameraCourse course, out float atYaw)
+        public static float WorstFramedStretch(CameraCourse course, out float atYaw)
         {
             float farthest = 0f;
             atYaw = course.StartYaw;
@@ -80,7 +80,9 @@ namespace IsoGolf.Tests
         // Measured when the camera got headings (feature/m3-camera-yaw), in metres: the worst heading, then the starting
         // heading alone (as before headings). The fade starts at 56.8 m. Past it: the par 3 turned at 9:21 by 0.2 m,
         // and the three sandbox fixtures on Honor and 9:21 screens, already at their starting heading. Their framing
-        // was never checked before this PR; the outline generator (PR 4) is to bring generated courses within it.
+        // was never checked before this PR. PR 4 moved the dogleg by up to 0.17 m: its fairway and the calm band of its relief
+        // now follow the centreline, which changes its earth band a little. Generated par 4s and 5s reach past the fade start
+        // too, by design (GeneratedShadowTests).
         [TestCase(CameraCourse.Par3Path, 9f, 16f, 49.07f, 48.13f)]
         [TestCase(CameraCourse.Par3Path, 1280f, 2800f, 54.93f, 53.95f)]
         [TestCase(CameraCourse.Par3Path, 9f, 21f, 57.00f, 56.06f)]
@@ -90,9 +92,9 @@ namespace IsoGolf.Tests
         [TestCase(CameraCourse.GapPath, 9f, 16f, 56.80f, 55.44f)]
         [TestCase(CameraCourse.GapPath, 1280f, 2800f, 65.30f, 63.75f)]
         [TestCase(CameraCourse.GapPath, 9f, 21f, 68.33f, 66.73f)]
-        [TestCase(CameraCourse.DoglegPath, 9f, 16f, 63.60f, 55.77f)]
-        [TestCase(CameraCourse.DoglegPath, 1280f, 2800f, 72.31f, 65.03f)]
-        [TestCase(CameraCourse.DoglegPath, 9f, 21f, 75.46f, 68.35f)]
+        [TestCase(CameraCourse.DoglegPath, 9f, 16f, 63.68f, 55.95f)]
+        [TestCase(CameraCourse.DoglegPath, 1280f, 2800f, 72.33f, 65.20f)]
+        [TestCase(CameraCourse.DoglegPath, 9f, 21f, 75.49f, 68.52f)]
         public void EveryHeading_FramedStretch_StaysAtItsMeasuredDistance(string path, float width, float height, float worst, float atStart)
         {
             var pipeline = AssetDatabase.LoadAssetAtPath<UniversalRenderPipelineAsset>(PipelinePath);

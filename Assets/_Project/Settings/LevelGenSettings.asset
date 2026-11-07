@@ -1,0 +1,76 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 680795940076dca489a13508dbd6e5bf, type: 3}
+  m_Name: LevelGenSettings
+  m_EditorClassIdentifier: IsoGolf.Generation::IsoGolf.Generation.LevelGenSettings
+  par3:
+    length: {x: 18, y: 26}
+    doglegChance: 0
+    secondDoglegChance: 0
+    softBends: 0
+    gapChance: 0
+    islandGreenChance: 15
+  par4:
+    length: {x: 40, y: 55}
+    doglegChance: 50
+    secondDoglegChance: 0
+    softBends: 1
+    gapChance: 60
+    islandGreenChance: 0
+  par5:
+    length: {x: 65, y: 85}
+    doglegChance: 50
+    secondDoglegChance: 50
+    softBends: 2
+    gapChance: 33
+    islandGreenChance: 0
+  doglegTurn: {x: 15, y: 35}
+  softTurn: {x: 3, y: 8}
+  maxHeading: 35
+  firstLegHeading: 4
+  singleBendPlace: {x: 0.45, y: 0.65}
+  firstOfTwoBendsPlace: {x: 0.3, y: 0.42}
+  secondOfTwoBendsPlace: {x: 0.62, y: 0.75}
+  islandHalfWidth: {x: 4.6, y: 5.2}
+  islandWobble: {x: 2.2, y: 3.2}
+  widthNoiseScale: 0.18
+  bendOverlap: 5
+  behindTee: 3.5
+  pastHole: 4.5
+  gapWidth: {x: 4, y: 10}
+  islandGreenGapWidth: {x: 4, y: 7}
+  gapFromTee: 15
+  gapFromHole: 10
+  gapFromBend: 8
+  gapFromSoftBend: 1
+  islandGreenBeforeHole: 5.5
+  islandGreenHalfWidth: {x: 4.2, y: 4.8}
+  islandGreenWobble: {x: 1, y: 1.6}
+  islandGreenFromTee: 10
+  fairwayBehindTee: 2
+  fairwayShortOfHole: 3.7
+  fairwayHalfWidth: 2.5
+  fairwayWobble: 1.6
+  stripeWidth: 1
+  greenRadius: {x: 3, y: 2.7}
+  greenWobble: 0.12
+  greenCentreShortOfHole: 1.4
+  cellSize: 1
+  axisRelief: 0.05
+  edgeRelief: 0.4
+  reliefDistance: 5
+  reliefNoiseScale: 0.55
+  waterLevel: -0.22
+  flatRadius: 1.2
+  flatBlend: 0.8
+  skirtDepth: {x: 0.9, y: 1.8}
+  skirtNoiseScale: 0.7

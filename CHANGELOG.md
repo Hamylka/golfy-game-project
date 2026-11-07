@@ -4,6 +4,31 @@ All notable progress on Iso Golf. The format follows [Keep a Changelog](https://
 
 ## [Unreleased]
 
+### 2026-11-07: Outline generator (`feature/m3-outline-generator`)
+
+#### Added
+
+- `CourseGenerator.Generate(seed, par, settings, variant = 0)`: a seeded course as a plain `CourseLayout`. Steps, in a fixed order on one `SeededRandom`: length, centreline (par 3 straight along +X; par 4 and 5 a dogleg of 15–35° half the time, a par 5 dogleg turning twice half of those; the others soft bends of 3–8°; no leg ever beyond 35° of +X), stretches of land (one gap of 4–10 m on about one par 4 or 5 in three, at least 15 m past the tee and 10 m before the hole; an island green on about 15% of par 3s), one turned oval island per leg piece (running on 5 m past a bend so the legs join), then the fairway along the centreline and a plain green at the hole. The course is centred on the origin. Ground stays flat as on the hand-made courses; elevation (PR 5), hazards and the tee and hole strategy (PR 6) and the checks (PR 7, which use `variant`) plug in after these steps.
+- `SeededRandom`: a seeded `System.Random` drawn from in whole numbers only (percent, centimetres, whole degrees), so a seed gives the same course in the Editor and on the phone. Seeds go through `CourseNoise.Hash(seed, par, variant)`.
+- `LevelGenSettings` (and `Settings/LevelGenSettings.asset`): every range above, per par. Par 4s get a 60% gap chance: a par 4 dogleg rarely has room for a gap 8 m clear of its corner, so this keeps about one in three overall (146 of 400 seeds on par 4, 128 on par 5).
+- `CoursePath.Project` (distance along and signed distance across, end legs running on) and `PointAt`.
+- `TerrainView` can generate its course: set its `generator` settings, `seed` and `par`, otherwise it reads the hand-made shape as before.
+- `Sandbox_Generated` scene (`Sandbox_Dogleg`'s set-up, via MCP), seed and par on the `Terrain` object, read at Play.
+- `CourseGeneratorTests` (27) and `GeneratedShadowTests` (5, plus 3 explicit measurements). EditMode: 553 tests, 546 passing, 7 explicit measurements skipped.
+- Captures in `Docs/Screenshots/m3-outline-generator/`: straight and island-green par 3s, a dogleg each way, a gap par 4, a par 5 dogleg with a gap, a par 5 turning twice with a gap, each at the default zoom and fully zoomed out.
+
+#### Changed
+
+- `CourseLayout.AlongCentreline`: on generated courses (and now the dogleg fixture) the fairway, its mowing stripes and the calm band of the ground relief follow the centreline instead of X. Stripes run along each leg and bend at the corner: a proposal for the open question in `ART_DIRECTION.md`, which stays open until the director judges the captures. Hand-made courses keep the old code path exactly; `Par3PinTests` hold.
+- Noise offsets on `IslandOutline`, `FairwayLayout` and `GroundRelief`, so generated islands of one size don't share a wobble. 0 on hand-made courses.
+- `DoglegCourseShape`: its fairway now follows both legs (it ran along X and left the second leg bare). Its shadow-fade pins moved by up to 0.17 m.
+
+#### Known issues
+
+- Shadow fade, decided with the director: generated par 4s and 5s reach past the fade start (56.8 m) by design. Over 40 seeds on 9:21, the framed stretch at the worst heading is 66–73 m on par 4 and 72–82 m on par 5, and even at the default zoom the top of the screen shows ground about 67 m away, because a 40° pitch looks far ahead and a long island fills the top of the screen. Narrower islands and a shorter framing didn't bring it under (par 5 still 67 m). Par 3s stay within it (53.8 m at worst on 9:21, tested). Shadows simply fade on the far ground; whether it shows, especially once M4's trees cast shadows, is judged on the Honor in PR 9. The long-course test only stops it from growing.
+- A course turning right leaves the screen on the right when fully zoomed out from the tee (the overview faces the first leg); the player pans, and at rest the camera turns with the leg.
+- Short stretches (an island-green par 3's main island, a first island before a gap) read as wide ovals rather than long narrow islands; to tune with the widths once elevation and hazards are in.
+
 ### 2026-11-07: Sun per level (`feature/m3-sun-per-level`)
 
 #### Added
@@ -132,6 +157,7 @@ All notable progress on Iso Golf. The format follows [Keep a Changelog](https://
 - `TerrainMeshData` keeps slivers down to about 0.5 mm². The par 3's bunker tip now grazes a grid corner, and dropping its slivers opened a crack of about 1 cm.
 - `BallOnCourseTests`: water pieces may sit 0.1 field units past the pond's outline, as land pieces already could (one sits at 0.029).
 - URP shadow distance 70 m to 71 m (approved by the human). The par 3's far tip moved, and the framed camera is now 56.1 m from it on a 9:21 screen, past the old 56 m fade start. Figures for each screen are in `Docs/Measurements/m1-5/README.md`.
+- Follow-up for the outline generator (PR 4): a generated course, framed fully zoomed out, must keep its farthest point, the earth band under its tips included, within the shadow fade start (56.8 m) up to 9:21. Check it in a test rather than by raising the shadow distance again. (Written after the merge in d33d2dd and left on the branch; restored here by PR 4, which settles it.)
 
 ### 2026-11-06: M3 island generator decisions (`feature/m3-plan`)
 

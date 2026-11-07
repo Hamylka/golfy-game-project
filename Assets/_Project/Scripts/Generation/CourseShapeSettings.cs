@@ -98,6 +98,8 @@ namespace IsoGolf.Generation
         [SerializeField] private ExtraIsland[] extraIslands = Array.Empty<ExtraIsland>();
 
         [Header("Fairway")]
+        [Tooltip("When set, the fairway, its stripes and the calm band of the relief follow the centreline, and the fairway's start and end are distances along it from the tee. Off, they run along X (the par 3, pinned).")]
+        [SerializeField] private bool alongCentreline;
         [SerializeField] private float fairwayStart = -15.5f;
         [SerializeField] private float fairwayEnd = 10.5f;
         [SerializeField, Min(0.5f)] private float fairwayHalfWidth = 2.5f;
@@ -206,7 +208,8 @@ namespace IsoGolf.Generation
                 hole,
                 flatRadius,
                 flatBlend,
-                new EdgeLayout(skirtDepth, skirtNoiseScale));
+                new EdgeLayout(skirtDepth, skirtNoiseScale),
+                alongCentreline);
         }
     }
 }
