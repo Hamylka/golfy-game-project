@@ -24,14 +24,25 @@ namespace IsoGolf.Generation
         [Tooltip("Chance that the green sits on its own island, in percent.")]
         [SerializeField, Range(0, 100)] private int islandGreenChance;
 
+        [Header("Elevation")]
+        [Tooltip("The fairway rises and dips this far from the tee height at most, in metres. A knot is drawn within it.")]
+        [SerializeField, Min(0f)] private float fairwayRelief = 0.5f;
+        [Tooltip("The green sits this far above (positive) or below the tee, in metres, from the shortest to the longest. Capped by what the slope limit allows.")]
+        [SerializeField] private Vector2 greenHeight = new Vector2(-0.6f, 0.6f);
+        [Tooltip("About how far apart the height knots sit along the centreline, in metres. At least one interval.")]
+        [SerializeField, Min(1f)] private float knotSpacing = 6f;
+
         public Vector2 Length => length;
         public int DoglegChance => doglegChance;
         public int SecondDoglegChance => secondDoglegChance;
         public int SoftBends => softBends;
         public int GapChance => gapChance;
         public int IslandGreenChance => islandGreenChance;
+        public float FairwayRelief => fairwayRelief;
+        public Vector2 GreenHeight => greenHeight;
+        public float KnotSpacing => knotSpacing;
 
-        public static ParRules Create(Vector2 length, int doglegChance, int secondDoglegChance, int softBends, int gapChance, int islandGreenChance)
+        public static ParRules Create(Vector2 length, int doglegChance, int secondDoglegChance, int softBends, int gapChance, int islandGreenChance, float fairwayRelief = 0.5f, Vector2 greenHeight = default, float knotSpacing = 6f)
         {
             return new ParRules
             {
@@ -41,6 +52,9 @@ namespace IsoGolf.Generation
                 softBends = softBends,
                 gapChance = gapChance,
                 islandGreenChance = islandGreenChance,
+                fairwayRelief = fairwayRelief,
+                greenHeight = greenHeight == default ? new Vector2(-0.6f, 0.6f) : greenHeight,
+                knotSpacing = knotSpacing,
             };
         }
     }
@@ -54,9 +68,9 @@ namespace IsoGolf.Generation
     public sealed class LevelGenSettings : ScriptableObject
     {
         [Header("Pars")]
-        [SerializeField] private ParRules par3 = ParRules.Create(new Vector2(18f, 26f), 0, 0, 0, 0, 15);
-        [SerializeField] private ParRules par4 = ParRules.Create(new Vector2(40f, 55f), 50, 0, 1, 60, 0);
-        [SerializeField] private ParRules par5 = ParRules.Create(new Vector2(65f, 85f), 50, 50, 2, 33, 0);
+        [SerializeField] private ParRules par3 = ParRules.Create(new Vector2(18f, 26f), 0, 0, 0, 0, 15, 0.5f, new Vector2(-0.6f, 0.6f), 6f);
+        [SerializeField] private ParRules par4 = ParRules.Create(new Vector2(40f, 55f), 50, 0, 1, 60, 0, 1f, new Vector2(-1.2f, 1.2f), 8f);
+        [SerializeField] private ParRules par5 = ParRules.Create(new Vector2(65f, 85f), 50, 50, 2, 33, 0, 1.2f, new Vector2(-1.5f, 1.5f), 9f);
 
         [Header("Bends")]
         [Tooltip("How far a dogleg turns, in degrees.")]
@@ -123,7 +137,7 @@ namespace IsoGolf.Generation
         [Tooltip("How far the green's centre sits short of the hole, along the centreline, in metres.")]
         [SerializeField] private float greenCentreShortOfHole = 1.4f;
 
-        [Header("Ground (flat for now; PR 5 adds the elevation)")]
+        [Header("Ground")]
         [SerializeField, Min(0.25f)] private float cellSize = 1f;
         [SerializeField, Min(0f)] private float axisRelief = 0.05f;
         [SerializeField, Min(0f)] private float edgeRelief = 0.4f;
@@ -132,6 +146,20 @@ namespace IsoGolf.Generation
         [SerializeField] private float waterLevel = -0.22f;
         [SerializeField, Min(0f)] private float flatRadius = 1.2f;
         [SerializeField, Min(0.01f)] private float flatBlend = 0.8f;
+
+        [Header("Elevation")]
+        [Tooltip("The steepest slope along the centreline, as a fraction (0.09 is 9%). Knots are drawn so the profile never exceeds it.")]
+        [SerializeField, Range(0.01f, 0.2f)] private float maxAlongSlope = 0.09f;
+        [Tooltip("The steepest side slope, in whole percent.")]
+        [SerializeField, Range(0, 10)] private int maxCamber = 4;
+        [Tooltip("The most the side slope may change from one knot to the next, in whole percent. It adds to the slope along the centreline off the centreline, so it keeps the fairway near 10%.")]
+        [SerializeField, Range(1, 10)] private int maxCamberStep = 2;
+        [Tooltip("The green's tilt, from the gentlest to the steepest, in whole percent.")]
+        [SerializeField] private Vector2 greenTilt = new Vector2(2f, 6f);
+        [Tooltip("The profile stays flat this far beyond the tee's and the green's flat areas, in metres, so they sit on level ground.")]
+        [SerializeField, Min(0f)] private float plateauMargin = 1f;
+        [Tooltip("Around a bend the profile is read from every leg this close (in metres) to the nearest one and blended, so it has no step.")]
+        [SerializeField, Min(0.1f)] private float legBlend = 4f;
 
         [Header("Edge")]
         [SerializeField] private Vector2 skirtDepth = new Vector2(0.9f, 1.8f);
@@ -188,6 +216,12 @@ namespace IsoGolf.Generation
         public float WaterLevel => waterLevel;
         public float FlatRadius => flatRadius;
         public float FlatBlend => flatBlend;
+        public float MaxAlongSlope => maxAlongSlope;
+        public int MaxCamber => maxCamber;
+        public int MaxCamberStep => maxCamberStep;
+        public Vector2 GreenTilt => greenTilt;
+        public float PlateauMargin => plateauMargin;
+        public float LegBlend => legBlend;
         public Vector2 SkirtDepth => skirtDepth;
         public float SkirtNoiseScale => skirtNoiseScale;
     }

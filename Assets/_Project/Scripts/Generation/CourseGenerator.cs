@@ -7,9 +7,8 @@ namespace IsoGolf.Generation
     /// Builds a course from a seed and a par: centreline, then the stretches of land along it (cut by a gap or an island
     /// green), then one island per leg of each stretch, then the fairway along the centreline and the green at the hole.
     /// Plain C# with one seeded <see cref="SeededRandom"/> passed down every step in a fixed order, so the same (seed,
-    /// par, variant) always gives the same course. Elevation (PR 5), hazards and the tee and hole strategy (PR 6) and
-    /// the course checks (PR 7, which move a failing seed on to its next <c>variant</c>) plug in after these steps;
-    /// for now the ground is flat as on the hand-made courses.
+    /// par, variant) always gives the same course. Elevation comes last of the draws, so it left every outline as it was. Hazards and the tee and hole strategy (PR 6) and
+    /// the course checks (PR 7, which move a failing seed on to its next <c>variant</c>) plug in after these steps.
     /// </summary>
     public static class CourseGenerator
     {
@@ -59,22 +58,100 @@ namespace IsoGolf.Generation
             Vector2 hole = path.End;
             Vector2 greenCentre = path.PointAt(length - settings.GreenCentreShortOfHole);
 
+            // The noise offsets keep their place in the order; the elevation draws come after them, so adding elevation left
+            // every outline of the earlier steps as it was.
+            int fairwayOffset = random.Int(0, 999);
+            int reliefOffset = random.Int(0, 999);
+            ElevationProfile elevation = Elevation(random, rules, settings, length);
+            Vector2 tilt = GreenTilt(random, settings);
+
             return new CourseLayout(
                 islands,
                 path,
-                new FairwayLayout(-settings.FairwayBehindTee, length - settings.FairwayShortOfHole, settings.FairwayHalfWidth, settings.FairwayWobble, settings.StripeWidth, random.Int(0, 999)),
-                new[] { new GreenLayout(new EllipseShape(greenCentre, settings.GreenRadius, settings.GreenWobble), Vector2.zero) },
+                new FairwayLayout(-settings.FairwayBehindTee, length - settings.FairwayShortOfHole, settings.FairwayHalfWidth, settings.FairwayWobble, settings.StripeWidth, fairwayOffset),
+                new[] { new GreenLayout(new EllipseShape(greenCentre, settings.GreenRadius, settings.GreenWobble), tilt) },
                 new EllipseShape[0],
                 new EllipseShape[0],
                 new GroundSwell[0],
                 settings.WaterLevel,
-                new GroundRelief(settings.CellSize, settings.AxisRelief, settings.EdgeRelief, settings.ReliefDistance, settings.ReliefNoiseScale, random.Int(0, 999)),
+                new GroundRelief(settings.CellSize, settings.AxisRelief, settings.EdgeRelief, settings.ReliefDistance, settings.ReliefNoiseScale, reliefOffset),
                 tee,
                 hole,
                 settings.FlatRadius,
                 settings.FlatBlend,
                 new EdgeLayout(settings.SkirtDepth, settings.SkirtNoiseScale),
-                alongCentreline: true);
+                alongCentreline: true,
+                elevation: elevation);
+        }
+
+        /// <summary>
+        /// The ground's height along the centreline, as knots joined by <see cref="ElevationProfile"/>'s curves. The first
+        /// knot (the tee, height 0) and the last (the green) are plateaus, so the tee and the green sit on level ground
+        /// and the green's slope is only its tilt. Knots between are evenly spaced, which is what lets the curve's slope be
+        /// bounded: with evenly spaced knots it never exceeds twice a step's rise over its run, so a step of at most
+        /// <c>maxSlope * run / 2</c> keeps the profile under <c>maxSlope</c>. Heights are drawn in whole centimetres and
+        /// every draw is allowed only where the green is still reachable from it within that step, so no range ever
+        /// comes out empty. Draws, in order: the green's height, the inner knots' heights, then their side slopes in
+        /// whole percent (0 at the tee and green knots).
+        /// </summary>
+        private static ElevationProfile Elevation(SeededRandom random, ParRules rules, LevelGenSettings settings, float length)
+        {
+            float teePlateau = settings.FlatRadius + settings.FlatBlend + settings.PlateauMargin;
+            float greenPlateau = settings.GreenCentreShortOfHole + settings.GreenRadius.x + settings.PlateauMargin;
+            float first = teePlateau;
+            float last = length - greenPlateau;
+            int intervals = Mathf.Max(1, Mathf.RoundToInt((last - first) / rules.KnotSpacing));
+            float spacing = (last - first) / intervals;
+
+            // The most one step may rise or fall, in whole centimetres.
+            int step = Mathf.FloorToInt(settings.MaxAlongSlope * spacing * 0.5f * 100f);
+            int reach = step * intervals;
+
+            int green = Mathf.RoundToInt(random.Centimetres(rules.GreenHeight) * 100f);
+            green = Mathf.Clamp(green, -reach, reach);
+
+            // The box the inner knots stay in, wide enough to hold the green's own height.
+            int relief = Mathf.Max(Mathf.RoundToInt(rules.FairwayRelief * 100f), Mathf.Abs(green));
+
+            var heights = new int[intervals + 1];
+            heights[intervals] = green;
+            for (int k = 1; k < intervals; k++)
+            {
+                int previous = heights[k - 1];
+                int remaining = intervals - k;
+                int low = Mathf.Max(-relief, Mathf.Max(previous - step, green - (step * remaining)));
+                int high = Mathf.Min(relief, Mathf.Min(previous + step, green + (step * remaining)));
+                heights[k] = random.Int(low, high);
+            }
+
+            // Level at both plateaus; a side slope in between, changing by at most a step from knot to knot and reaching 0 again
+            // at the green. The same reachability as the heights keeps every range non-empty.
+            var cambers = new int[intervals + 1];
+            for (int k = 1; k < intervals; k++)
+            {
+                int remaining = (intervals - k) * settings.MaxCamberStep;
+                int limit = Mathf.Min(settings.MaxCamber, remaining);
+                cambers[k] = random.Int(Mathf.Max(-limit, cambers[k - 1] - settings.MaxCamberStep), Mathf.Min(limit, cambers[k - 1] + settings.MaxCamberStep));
+            }
+
+            var knots = new List<ElevationKnot>();
+            for (int k = 0; k <= intervals; k++)
+            {
+                knots.Add(new ElevationKnot(first + (spacing * k), heights[k] * 0.01f, cambers[k] * 0.01f));
+            }
+
+            return new ElevationProfile(knots, settings.LegBlend);
+        }
+
+        /// <summary>
+        /// The green's tilt, the rise per metre along X and along Z, measured from the hole. A steepness in whole percent
+        /// and a direction in whole degrees; the terrain already fades it in over the flat area around the hole.
+        /// </summary>
+        private static Vector2 GreenTilt(SeededRandom random, LevelGenSettings settings)
+        {
+            float steepness = random.Int(Mathf.RoundToInt(settings.GreenTilt.x), Mathf.RoundToInt(settings.GreenTilt.y)) * 0.01f;
+            float radians = random.Int(0, 359) * Mathf.Deg2Rad;
+            return new Vector2(Mathf.Cos(radians), Mathf.Sin(radians)) * steepness;
         }
 
         /// <summary>

@@ -19,6 +19,9 @@ MonoBehaviour:
     softBends: 0
     gapChance: 0
     islandGreenChance: 15
+    fairwayRelief: 0.5
+    greenHeight: {x: -0.6, y: 0.6}
+    knotSpacing: 6
   par4:
     length: {x: 40, y: 55}
     doglegChance: 50
@@ -26,6 +29,9 @@ MonoBehaviour:
     softBends: 1
     gapChance: 60
     islandGreenChance: 0
+    fairwayRelief: 1
+    greenHeight: {x: -1.2, y: 1.2}
+    knotSpacing: 8
   par5:
     length: {x: 65, y: 85}
     doglegChance: 50
@@ -33,6 +39,9 @@ MonoBehaviour:
     softBends: 2
     gapChance: 33
     islandGreenChance: 0
+    fairwayRelief: 1.2
+    greenHeight: {x: -1.5, y: 1.5}
+    knotSpacing: 9
   doglegTurn: {x: 15, y: 35}
   softTurn: {x: 3, y: 8}
   maxHeading: 35
@@ -70,7 +79,13 @@ MonoBehaviour:
   reliefDistance: 5
   reliefNoiseScale: 0.55
   waterLevel: -0.22
-  flatRadius: 1.2
+  flatRadius: 1.35
   flatBlend: 0.8
+  maxAlongSlope: 0.09
+  maxCamber: 4
+  maxCamberStep: 2
+  greenTilt: {x: 2, y: 6}
+  plateauMargin: 1
+  legBlend: 4
   skirtDepth: {x: 0.9, y: 1.8}
   skirtNoiseScale: 0.7
