@@ -4,6 +4,18 @@ All notable progress on Iso Golf. The format follows [Keep a Changelog](https://
 
 ## [Unreleased]
 
+### 2026-11-07: Sun per level (`feature/m3-sun-per-level`)
+
+#### Added
+
+- `SunHeading` (plain C#): the sun's yaw for a course heading. It is the scene's authored yaw (215° on every scene, right for +X) plus the camera's yaw offset from +X, so the sun keeps the same place on screen as the camera's starting heading and sits top-left on average. Pitch (52°) is unchanged. `CourseHeading` is tee to hole on a bent course and +X on a straight one, like `CameraHeading`, so `Main` keeps its sun exactly (its hole is 0.4 m off the axis).
+- `LevelSun` (thin MonoBehaviour): captures the authored rotation and applies the yaw once. `LevelBootstrap` calls it at level start, before the clouds, which bake their tones from the sun's direction. Nothing turns it afterwards, so shadows never move. Wired on `Main` and the four sandbox courses; scenes without the field keep their sun.
+- `SunHeadingTests` (12). EditMode: 518 tests, 514 passing, 4 explicit measurements skipped.
+
+#### Notes
+
+- Captures at −80°, 0° and +80° are in `Docs/Screenshots/m3-sun-per-level/`. They turn the camera and the sun around `Main`'s +X island in Play Mode (not saved), so the island is seen side-on and the clouds keep the tones baked for 0°. The sun stays top-left of the screen at all three by construction; the shadow fade (56.8 m) is unchanged.
+
 ### 2026-11-06: Approach framing (`feature/m3-approach-framing`)
 
 #### Added
