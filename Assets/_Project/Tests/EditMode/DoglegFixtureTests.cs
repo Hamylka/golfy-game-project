@@ -107,7 +107,7 @@ namespace IsoGolf.Tests
                 new FairwayLayout(0f, 0f, 1f, 0f, 1f),
                 new GreenLayout[0],
                 new EllipseShape[0],
-                new EllipseShape[0],
+                new PondLayout[0],
                 new GroundSwell[0],
                 -0.2f,
                 new GroundRelief(1f, 0f, 0f, 1f, 1f),

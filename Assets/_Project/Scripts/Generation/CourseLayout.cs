@@ -272,6 +272,24 @@ namespace IsoGolf.Generation
         public Vector2 Tilt { get; }
     }
 
+    /// <summary>
+    /// A pond: its outline and the height of its water. Each pond has its own level, because on ground with relief a
+    /// shared one would leave a tall bank on a rise and put the water above the ground in a dip.
+    /// </summary>
+    public readonly struct PondLayout
+    {
+        public PondLayout(EllipseShape outline, float waterLevel)
+        {
+            Outline = outline;
+            WaterLevel = waterLevel;
+        }
+
+        public EllipseShape Outline { get; }
+
+        /// <summary>The height of the water surface, in the course's local space.</summary>
+        public float WaterLevel { get; }
+    }
+
     /// <summary>The small facets on the ground: grid size and how broken the ground is, calm on the axis and rougher toward the edges.</summary>
     public readonly struct GroundRelief
     {
@@ -321,7 +339,7 @@ namespace IsoGolf.Generation
         private readonly IslandOutline[] _islands;
         private readonly GreenLayout[] _greens;
         private readonly EllipseShape[] _bunkers;
-        private readonly EllipseShape[] _ponds;
+        private readonly PondLayout[] _ponds;
         private readonly GroundSwell[] _swells;
 
         public CourseLayout(
@@ -330,7 +348,7 @@ namespace IsoGolf.Generation
             FairwayLayout fairway,
             IEnumerable<GreenLayout> greens,
             IEnumerable<EllipseShape> bunkers,
-            IEnumerable<EllipseShape> ponds,
+            IEnumerable<PondLayout> ponds,
             IEnumerable<GroundSwell> swells,
             float waterLevel,
             GroundRelief relief,
@@ -354,7 +372,7 @@ namespace IsoGolf.Generation
             Fairway = fairway;
             _greens = new List<GreenLayout>(greens).ToArray();
             _bunkers = new List<EllipseShape>(bunkers).ToArray();
-            _ponds = new List<EllipseShape>(ponds).ToArray();
+            _ponds = new List<PondLayout>(ponds).ToArray();
             _swells = new List<GroundSwell>(swells).ToArray();
             WaterLevel = waterLevel;
             Relief = relief;
@@ -375,8 +393,10 @@ namespace IsoGolf.Generation
         public FairwayLayout Fairway { get; }
         public IReadOnlyList<GreenLayout> Greens => _greens;
         public IReadOnlyList<EllipseShape> Bunkers => _bunkers;
-        public IReadOnlyList<EllipseShape> Ponds => _ponds;
+        public IReadOnlyList<PondLayout> Ponds => _ponds;
         public IReadOnlyList<GroundSwell> Swells => _swells;
+
+        /// <summary>The default water level: the hand-made courses' ponds, and the value away from any pond. Each pond has its own, see <see cref="PondLayout"/>.</summary>
         public float WaterLevel { get; }
         public GroundRelief Relief { get; }
         public Vector2 Tee { get; }

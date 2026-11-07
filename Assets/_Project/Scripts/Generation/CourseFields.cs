@@ -39,6 +39,27 @@ namespace IsoGolf.Generation
 
         public float Bunker(Vector3 p) => Nearest(p, _layout.Bunkers);
 
+        /// <summary>
+        /// The water level at a point: that of the pond whose field is lowest there (the one the point is in, or the nearest),
+        /// or the layout's default level when there is no pond. Ponds never overlap, so wherever water is drawn this is unambiguous.
+        /// </summary>
+        public float WaterLevelAt(Vector3 p)
+        {
+            float lowest = Nowhere;
+            float level = _layout.WaterLevel;
+            foreach (PondLayout pond in _layout.Ponds)
+            {
+                float field = Ellipse(p, pond.Outline);
+                if (field < lowest)
+                {
+                    lowest = field;
+                    level = pond.WaterLevel;
+                }
+            }
+
+            return level;
+        }
+
         public float Green(Vector3 p)
         {
             float field = Nowhere;
@@ -123,7 +144,36 @@ namespace IsoGolf.Generation
         /// </summary>
         public float Height(float x, float z)
         {
-            return Ground(x, z, Noise(x, z));
+            return Ground(x, z, Noise(x, z) * (1f - BunkerCalm(x, z)));
+        }
+
+        /// <summary>
+        /// The ground without the facet noise: swells, the green's tilt and the elevation, with the same terms and masks as
+        /// <see cref="Height"/>. What a calm surface (a bunker's sand, the green) settles to.
+        /// </summary>
+        public float BroadHeight(float x, float z) => Ground(x, z, 0f);
+
+        /// <summary>The slope of <see cref="BroadHeight"/>, rise per metre along X and along Z, by central differences over 0.25 m.</summary>
+        public Vector2 BroadSlope(float x, float z)
+        {
+            const float Step = 0.25f;
+            return new Vector2(
+                (BroadHeight(x + Step, z) - BroadHeight(x - Step, z)) / (2f * Step),
+                (BroadHeight(x, z + Step) - BroadHeight(x, z - Step)) / (2f * Step));
+        }
+
+        /// <summary>
+        /// 1 inside a generated course's bunker, fading to 0 over 0.4 m outside its border: sand is smooth, while the rough
+        /// around it carries up to the edge relief. Always 0 on hand-made courses, which keep their exact heights.
+        /// </summary>
+        private float BunkerCalm(float x, float z)
+        {
+            if (!_layout.AlongCentreline || _layout.Bunkers.Count == 0)
+            {
+                return 0f;
+            }
+
+            return Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(0.4f, 0f, Bunker(new Vector3(x, 0f, z))));
         }
 
         /// <summary>
@@ -139,7 +189,7 @@ namespace IsoGolf.Generation
             // in a cell reads vertices a metre beyond that cell.
             float fairway = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(1f, 0f, Fairway(point)));
             float green = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(0.4f, 0f, Green(point)));
-            return Ground(x, z, Noise(x, z) * (1f - Mathf.Max(fairway, green)));
+            return Ground(x, z, Noise(x, z) * (1f - Mathf.Max(fairway, green)) * (1f - BunkerCalm(x, z)));
         }
 
         private float Ground(float x, float z, float noise)
@@ -289,6 +339,17 @@ namespace IsoGolf.Generation
             return Mathf.Abs(p.z) - ((island.HalfWidth + wobble) * Mathf.Sqrt(along));
         }
 
+        private static float Nearest(Vector3 p, IReadOnlyList<PondLayout> ponds)
+        {
+            float field = Nowhere;
+            foreach (PondLayout pond in ponds)
+            {
+                field = Mathf.Min(field, Ellipse(p, pond.Outline));
+            }
+
+            return field;
+        }
+
         private static float Nearest(Vector3 p, IReadOnlyList<EllipseShape> shapes)
         {
             float field = Nowhere;
@@ -304,6 +365,19 @@ namespace IsoGolf.Generation
         {
             float dx = (p.x - shape.Center.x) / shape.Radius.x;
             float dz = (p.z - shape.Center.y) / shape.Radius.y;
+            if (shape.Heading != 0f)
+            {
+                // Turned: measure in the ellipse's own frame. Heading 0 skips this, so the hand-made shapes keep their exact numbers.
+                float radians = shape.Heading * Mathf.Deg2Rad;
+                float cos = Mathf.Cos(radians);
+                float sin = Mathf.Sin(radians);
+                float ox = p.x - shape.Center.x;
+                float oz = p.z - shape.Center.y;
+                dx = ((ox * cos) + (oz * sin)) / shape.Radius.x;
+                dz = ((oz * cos) - (ox * sin)) / shape.Radius.y;
+            }
+
+            // The wobble keeps world coordinates: it is noise, its frame doesn't matter.
             float noise = CourseNoise.Value01((p.x * 0.8f) + shape.Center.x + 30f, (p.z * 0.8f) + shape.Center.y + 30f) - 0.5f;
             return Mathf.Sqrt((dx * dx) + (dz * dz)) - 1f + (noise * shape.Wobble * 2f);
         }

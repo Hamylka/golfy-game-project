@@ -12,16 +12,25 @@ namespace IsoGolf.Generation
         [SerializeField] private Vector2 radius;
         [SerializeField] private float wobble;
 
-        public EllipseShape(Vector2 center, Vector2 radius, float wobble)
+        // Degrees from +X, positive toward +Z, like IslandOutline.Heading. Assets saved before it existed load as 0.
+        [SerializeField] private float heading;
+
+        public EllipseShape(Vector2 center, Vector2 radius, float wobble, float heading = 0f)
         {
             this.center = center;
             this.radius = radius;
             this.wobble = wobble;
+            this.heading = heading;
         }
 
         public Vector2 Center => center;
+
+        /// <summary>The half-axes: <c>x</c> along the heading, <c>y</c> across it.</summary>
         public Vector2 Radius => radius;
         public float Wobble => wobble;
+
+        /// <summary>Which way the first radius points, in degrees from +X toward +Z. 0 is the axis-aligned ellipse.</summary>
+        public float Heading => heading;
     }
 
     /// <summary>A broad rise, or a dip when its height is negative.</summary>
@@ -200,7 +209,7 @@ namespace IsoGolf.Generation
                 new FairwayLayout(fairwayStart, fairwayEnd, fairwayHalfWidth, fairwayWobble, stripeWidth),
                 new[] { new GreenLayout(green, greenTilt) },
                 new[] { bunker },
-                new[] { pond },
+                new[] { new PondLayout(pond, waterLevel) },
                 swells ?? Array.Empty<GroundSwell>(),
                 waterLevel,
                 new GroundRelief(cellSize, axisRelief, edgeRelief, reliefDistance, reliefNoiseScale),
