@@ -144,6 +144,72 @@ namespace IsoGolf.Tests
             Assert.That(hole.x, Is.InRange(0.05f, 0.5f), "above the ball, leaning right");
         }
 
+        // A ground that steps to this height under the hole and stays at 0 under the ball: a green above or below it.
+        private static ApproachFraming ApproachOver(CameraCourse course, float holeRise)
+        {
+            CameraRigSettings rig = course.Rig;
+            Vector2 at = course.Layout.Hole;
+            return new ApproachFraming(at, course.Reach, rig.ApproachHoleViewportY, rig.DefaultZoom, rig.ApproachClosestZoom, (x, z) => (new Vector2(x, z) - at).sqrMagnitude < 1e-6f ? holeRise : 0f);
+        }
+
+        [TestCase(1.5f)]
+        [TestCase(-1.5f)]
+        [TestCase(0.6f)]
+        [TestCase(-0.6f)]
+        public void ARaisedOrLoweredGreen_StillPutsTheHoleAtItsHeight(float rise)
+        {
+            var course = new CameraCourse(CameraCourse.Par3Path, Aspect);
+            CameraNavigator navigator = course.Navigator();
+            Vector3 ball = BallBefore(course, 6f);
+            float yaw = YawAt(course, ball);
+
+            float zoom = ApproachOver(course, rise).ZoomFor(navigator, ball, course.Rig.RestBallViewport, yaw);
+            Vector3 camera = navigator.FreePositionWith(zoom, ball, course.Rig.RestBallViewport, yaw, out CameraView view);
+            Vector2 hole = view.ToViewport(camera, new Vector3(course.Layout.Hole.x, ball.y + rise, course.Layout.Hole.y));
+
+            if (zoom >= course.Rig.ApproachClosestZoom)
+            {
+                // A hole far below the ball can need more than the closest zoom: it then sits a little lower, never higher.
+                Assert.That(hole.y, Is.LessThanOrEqualTo(course.Rig.ApproachHoleViewportY));
+                Assert.That(hole.y, Is.GreaterThan(0f), "still above the ball's rest spot");
+                return;
+            }
+
+            Assert.That(hole.y, Is.EqualTo(course.Rig.ApproachHoleViewportY).Within(1e-3f));
+        }
+
+        [Test]
+        public void AGreenAboveTheBall_NeedsLessZoom_ThanOneBelowIt()
+        {
+            // A raised hole already shows higher up the screen, so the camera has less to close in.
+            var course = new CameraCourse(CameraCourse.Par3Path, Aspect);
+            CameraNavigator navigator = course.Navigator();
+            Vector3 ball = BallBefore(course, 6f);
+            float yaw = YawAt(course, ball);
+
+            float above = ApproachOver(course, 1f).ZoomFor(navigator, ball, course.Rig.RestBallViewport, yaw);
+            float level = ApproachOver(course, 0f).ZoomFor(navigator, ball, course.Rig.RestBallViewport, yaw);
+            float below = ApproachOver(course, -1f).ZoomFor(navigator, ball, course.Rig.RestBallViewport, yaw);
+
+            Assert.That(above, Is.LessThan(level));
+            Assert.That(level, Is.LessThan(below));
+        }
+
+        [Test]
+        public void AFlatGround_FramesExactlyAsWithoutOne()
+        {
+            var course = new CameraCourse(CameraCourse.Par3Path, Aspect);
+            CameraNavigator navigator = course.Navigator();
+            CameraRigSettings rig = course.Rig;
+            var flat = new ApproachFraming(course.Layout.Hole, course.Reach, rig.ApproachHoleViewportY, rig.DefaultZoom, rig.ApproachClosestZoom, (x, z) => 0.3f);
+            for (float metres = 1f; metres <= 12f; metres += 1f)
+            {
+                Vector3 ball = BallBefore(course, metres);
+                float yaw = YawAt(course, ball);
+                Assert.That(flat.ZoomFor(navigator, ball, rig.RestBallViewport, yaw), Is.EqualTo(Approach(course).ZoomFor(navigator, ball, rig.RestBallViewport, yaw)), $"at {metres} m");
+            }
+        }
+
         [Test]
         public void TheContinuousRange_RunsFromAboutTenMetresToAboutFour_OnMain()
         {

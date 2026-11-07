@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 
 namespace IsoGolf.Rendering
@@ -17,6 +18,7 @@ namespace IsoGolf.Rendering
         private readonly float _holeViewportY;
         private readonly float _defaultZoom;
         private readonly float _closestZoom;
+        private readonly Func<float, float, float> _ground;
 
         /// <param name="hole">The hole on the ground (x is world X, y is world Z).</param>
         /// <param name="reach">
@@ -26,8 +28,14 @@ namespace IsoGolf.Rendering
         /// <param name="holeViewportY">How high on screen the hole should sit, from -1 (bottom) to 1 (top).</param>
         /// <param name="defaultZoom">The furthest this framing goes: the default zoom.</param>
         /// <param name="closestZoom">The closest it goes, on the navigator's scale (1 is the closest the player can zoom).</param>
-        public ApproachFraming(Vector2 hole, float reach, float holeViewportY, float defaultZoom, float closestZoom)
+        /// <param name="ground">
+        /// The ground's height at a point (x, z), in the ball's space. With it, the hole is framed at its own height, so a
+        /// green above or below the ball still puts the hole where it should be on screen. Without it, the ground is taken
+        /// as flat and the hole sits at the ball's height.
+        /// </param>
+        public ApproachFraming(Vector2 hole, float reach, float holeViewportY, float defaultZoom, float closestZoom, Func<float, float, float> ground = null)
         {
+            _ground = ground;
             _hole = hole;
             _reach = reach;
             _holeViewportY = holeViewportY;
@@ -48,8 +56,10 @@ namespace IsoGolf.Rendering
                 return _defaultZoom;
             }
 
-            // Read at the ball's height: the green near the hole is at about the same height as the ball on it.
-            var hole = new Vector3(_hole.x, ball.y, _hole.y);
+            // The hole's rise over the ground under the ball, added to the ball's height: whatever the ball's height carries
+            // beyond the ground (its radius, say) cancels out, so on flat ground this is exactly the ball's height.
+            float rise = _ground == null ? 0f : _ground(_hole.x, _hole.y) - _ground(ball.x, ball.z);
+            var hole = new Vector3(_hole.x, ball.y + rise, _hole.y);
 
             // A closer camera, with the ball held at its spot, shows what lies ahead higher up the screen: the height
             // of the hole only rises with the zoom, so halving the range finds the zoom that puts it where it should be.

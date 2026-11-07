@@ -16,6 +16,9 @@ namespace IsoGolf.Generation
 
         private readonly CourseLayout _layout;
 
+        // The profile's height read as a delegate, made once so a grid of heights doesn't allocate one per point.
+        private System.Func<float, float, float> _elevationAt;
+
         public CourseFields(CourseLayout layout)
         {
             _layout = layout;
@@ -141,7 +144,28 @@ namespace IsoGolf.Generation
 
         private float Ground(float x, float z, float noise)
         {
-            return ((noise + Swells(x, z)) * FlatMask(x, z, _layout.Tee) * FlatMask(x, z, _layout.Hole)) + GreenTilts(x, z);
+            float local = ((noise + Swells(x, z)) * FlatMask(x, z, _layout.Tee) * FlatMask(x, z, _layout.Hole)) + GreenTilts(x, z);
+
+            // The broad rises and dips carry no mask: they are already flat at the tee and the hole, and both heights
+            // (the drawn one and the felt one) include them so the ball feels every slope. Nothing at all on hand-made courses.
+            return _layout.Elevation.IsEmpty ? local : local + Elevation(x, z);
+        }
+
+        /// <summary>
+        /// The broad height of the ground at a point: the profile along the centreline plus its side slope across it. 0
+        /// where the course has no profile. Read from every leg near a bend and blended (<see cref="CoursePath.Blend"/>),
+        /// so it has no step on the inside of a bend.
+        /// </summary>
+        public float Elevation(float x, float z)
+        {
+            ElevationProfile profile = _layout.Elevation;
+            if (profile.IsEmpty)
+            {
+                return 0f;
+            }
+
+            _elevationAt ??= profile.At;
+            return _layout.Centreline.Blend(new Vector2(x, z), profile.LegBlend, _elevationAt);
         }
 
         private float Noise(float x, float z)
@@ -227,12 +251,15 @@ namespace IsoGolf.Generation
             return Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(_layout.FlatRadius, _layout.FlatRadius + _layout.FlatBlend, distance));
         }
 
-        /// <summary>How far the earth band reaches below the island edge, at a point on the edge.</summary>
+        /// <summary>
+        /// Where the earth band ends below the island edge, at a point on the edge: its depth under the course's broad
+        /// height there, so a raised or lowered stretch keeps the same band. The old absolute value on a flat course.
+        /// </summary>
         public float SkirtBottom(Vector3 p)
         {
             EdgeLayout edge = _layout.Edge;
             float noise = CourseNoise.Value01((p.x * edge.SkirtNoiseScale) + 5f, (p.z * edge.SkirtNoiseScale) + 5f);
-            return -Mathf.Lerp(edge.SkirtDepth.x, edge.SkirtDepth.y, noise);
+            return Elevation(p.x, p.z) - Mathf.Lerp(edge.SkirtDepth.x, edge.SkirtDepth.y, noise);
         }
 
         /// <summary>

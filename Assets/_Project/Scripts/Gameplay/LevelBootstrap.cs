@@ -27,7 +27,9 @@ namespace IsoGolf.Gameplay
             islandCamera.SetIsland(terrain.Outline, terrain.Layout.Centreline.Points, GroundEdges(terrain.Edge));
             if (ball != null)
             {
-                islandCamera.SetHole(terrain.Layout.Hole, ShotReach.FullPowerDistance(ball.Shot));
+                // The visible ground, which the ball sits on, so the approach zoom frames a raised or lowered green right.
+                var fields = new CourseFields(terrain.Layout);
+                islandCamera.SetHole(terrain.Layout.Hole, ShotReach.FullPowerDistance(ball.Shot), fields.Height);
             }
 
             // Before the clouds, which bake their tones from the sun's direction.

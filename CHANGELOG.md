@@ -4,6 +4,29 @@ All notable progress on Iso Golf. The format follows [Keep a Changelog](https://
 
 ## [Unreleased]
 
+### 2026-11-07: Seeded elevation (`feature/m3-elevation`)
+
+#### Added
+
+- `ElevationProfile` (plain C#): knots along the centreline (distance, height, side slope), joined by monotone cubic Hermite curves with Fritsch-Butland tangents. Flat before the first knot (the tee) and after the last (the green), so both sit on level ground. With evenly spaced knots the slope never exceeds twice a step's rise over its run. `CourseLayout.Elevation` carries it; hand-made courses get `Empty`, which adds exactly 0 (`Par3PinTests` hold).
+- `CoursePath.Blend`: reads a value that depends on distance along and across the path leg by leg, blended with weights that fade over `legBlend` (4 m) from the nearest leg. `Project` alone jumps by about 5 m on the inside of a 35 degree bend; the blend doesn't, and is exactly one leg's value away from bends.
+- `CourseFields.Elevation`, and `Height` and `FeltHeight` include it (the ball feels every slope). `SkirtBottom` is the profile height minus the depth, so a raised or lowered stretch keeps its earth band.
+- `CourseGenerator`: after the earlier draws (outlines are unchanged), the green's height, the inner knots' heights, their side slopes, then the green's tilt (2-6%, whole degrees). Heights are whole centimetres, every draw stays where the green is still reachable within the slope limit, camber changes at most 2% per knot.
+- `LevelGenSettings` (and its asset): per par `fairwayRelief` (0.5 / 1.0 / 1.2 m), `greenHeight` (+-0.6 / 1.2 / 1.5 m), `knotSpacing` (6 / 8 / 9 m); shared `maxAlongSlope` (9%), `maxCamber` (4%), `maxCamberStep` (2%), `greenTilt` (2-6%), `plateauMargin` (1 m), `legBlend` (4 m).
+- `ElevationTests` (21): the curve (flat ends, no overshoot, slope bound, no terraces), the blend, determinism, ranges, flat tee, under 1% across 1.5 m around the hole, green tilt, gradient limits, no step at bends, the skirt, and the ball on a 9% climb, a camber, a tilted green and the ground's second differences. EditMode: 580 tests, 573 passing, 7 explicit measurements skipped.
+- Captures in `Docs/Screenshots/m3-elevation/`.
+
+#### Changed
+
+- `LevelGenSettings.flatRadius` 1.2 -> 1.35 m: the green tilt reached 1% at 1.41 m from the hole on a 6% tilt, short of the 1.5 m decided in M3. This also widens the flat ground at the tee and its noise mask a little.
+- The approach zoom frames the hole at its own height (`60cb654`), so a raised or lowered green still sits about 62% up the screen.
+
+#### Notes
+
+- Measured over 60 seeds per par, steepest felt gradient on the fairway: 7.7% (par 3), 10.1% (par 4), 10.2% (par 5); on the green: 6.4%, 7.4%, 6.0%. The green tilt's fade ring into the rough reaches 13%; the slope anywhere on a bent island, 11.9%.
+- A par 3 is only 18-26 m long, so the slope limit lets its green sit at most about 0.6 m from the tee. The 1.5 m range is reachable on par 4s and 5s.
+- Ponds don't exist on generated courses yet. In PR 6 a pond's level (`Lower()`, `BallGround._waterLevel`) has to become relative to the profile at the pond.
+
 ### 2026-11-07: Outline generator (`feature/m3-outline-generator`)
 
 #### Added
