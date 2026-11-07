@@ -154,6 +154,64 @@ namespace IsoGolf.Generation
             return along;
         }
 
+        /// <summary>
+        /// A value that depends on the distance along the path and across it (the ground's elevation, say), read leg by
+        /// leg and blended. <see cref="Project"/> picks the nearest leg, so on the inside of a bend its distance along
+        /// jumps from one leg to the next; a value built on it would step. Here every leg gives its own unclamped
+        /// distance along and across (measured on the line of the leg, the end legs running on), and the values are
+        /// averaged with weights that fade from 1 for the nearest leg to 0 for a leg <paramref name="band"/> metres
+        /// farther away than it. Away from bends only one leg has weight, so the result is that leg's value exactly.
+        /// </summary>
+        public float Blend(Vector2 p, float band, Func<float, float, float> valueAt)
+        {
+            int legs = _points.Length - 1;
+            if (legs == 1)
+            {
+                Vector2 only = (_points[1] - _points[0]).normalized;
+                Vector2 from = p - _points[0];
+                return valueAt(Vector2.Dot(from, only), (only.x * from.y) - (only.y * from.x));
+            }
+
+            float nearest = float.MaxValue;
+            for (int i = 0; i < legs; i++)
+            {
+                nearest = Mathf.Min(nearest, LegDistance(p, i));
+            }
+
+            float total = 0f;
+            float sum = 0f;
+            float legStart = 0f;
+            for (int i = 0; i < legs; i++)
+            {
+                Vector2 a = _points[i];
+                Vector2 leg = _points[i + 1] - a;
+                float length = leg.magnitude;
+                float weight = 1f - Mathf.SmoothStep(0f, 1f, (LegDistance(p, i) - nearest) / band);
+                if (weight > 0f)
+                {
+                    Vector2 direction = leg / length;
+                    Vector2 offset = p - a;
+                    total += weight;
+                    sum += weight * valueAt(legStart + Vector2.Dot(offset, direction), (direction.x * offset.y) - (direction.y * offset.x));
+                }
+
+                legStart += length;
+            }
+
+            return sum / total;
+        }
+
+        /// <summary>How far a point is from one leg, the end legs running on past both ends like in <see cref="Project"/>.</summary>
+        private float LegDistance(Vector2 p, int leg)
+        {
+            Vector2 a = _points[leg];
+            Vector2 vector = _points[leg + 1] - a;
+            float length = vector.magnitude;
+            float t = Vector2.Dot(p - a, vector / length);
+            float clamped = Mathf.Clamp(t, leg == 0 ? float.MinValue : 0f, leg == _points.Length - 2 ? float.MaxValue : length);
+            return (p - (a + (vector / length * clamped))).magnitude;
+        }
+
         /// <summary>The point this far along the path; the end legs run on past both ends.</summary>
         public Vector2 PointAt(float along)
         {
@@ -281,9 +339,11 @@ namespace IsoGolf.Generation
             float flatRadius,
             float flatBlend,
             EdgeLayout edge,
-            bool alongCentreline = false)
+            bool alongCentreline = false,
+            ElevationProfile elevation = null)
         {
             AlongCentreline = alongCentreline;
+            Elevation = elevation ?? ElevationProfile.Empty;
             _islands = new List<IslandOutline>(islands).ToArray();
             if (_islands.Length == 0)
             {
@@ -329,6 +389,9 @@ namespace IsoGolf.Generation
         public float FlatBlend { get; }
 
         public EdgeLayout Edge { get; }
+
+        /// <summary>The broad rises, dips and side slopes along the centreline. Empty (adding exactly 0) on hand-made courses.</summary>
+        public ElevationProfile Elevation { get; }
 
         /// <summary>
         /// True when the fairway, its mowing stripes and the calm band of the ground relief follow the centreline, as on
