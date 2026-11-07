@@ -209,6 +209,35 @@ namespace IsoGolf.Rendering
             return target;
         }
 
+        /// <summary>
+        /// Where the camera would be at this zoom and yaw with a point at a given viewport spot, ignoring the limits:
+        /// the framing itself, for maths that must not depend on where the island's edge happens to be.
+        /// </summary>
+        public Vector3 FreePositionWith(float zoom, Vector3 point, Vector2 viewport, float yaw, out CameraView view)
+        {
+            view = SameYaw(yaw) ? View : View.WithYaw(yaw);
+            var camera = new Vector3(point.x, _groundHeight + HeightAt(Mathf.Clamp01(zoom)), point.z);
+
+            // Moving the camera sideways moves the point under a viewport spot by the same amount.
+            return camera + (point - view.OnPlane(camera, viewport, point.y));
+        }
+
+        /// <summary>
+        /// Zooms to a level around a world point, which stays where it is on screen: the camera's distance to it
+        /// scales. 0 is fully zoomed out, 1 the closest. Limits apply afterwards.
+        /// </summary>
+        public void ZoomAbout(Vector3 point, float zoom)
+        {
+            float height = Position.y - point.y;
+            if (height <= Mathf.Epsilon)
+            {
+                return;
+            }
+
+            float wanted = _groundHeight + HeightAt(Mathf.Clamp01(zoom));
+            Position = Clamp(point + ((Position - point) * ((wanted - point.y) / height)));
+        }
+
         private float HeightAt(float zoom)
         {
             return Mathf.Lerp(_homeHeight, _closestHeight, zoom) - _groundHeight;

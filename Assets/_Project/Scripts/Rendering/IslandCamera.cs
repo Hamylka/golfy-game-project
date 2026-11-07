@@ -37,6 +37,7 @@ namespace IsoGolf.Rendering
         private IReadOnlyList<GroundSegment> _edges;
         private IslandArea _area;
         private CameraHeading _rule;
+        private ApproachFraming _approach;
         private CameraView _view;
         private CameraFollow _follow;
         private bool _fingerDown;
@@ -126,6 +127,7 @@ namespace IsoGolf.Rendering
             _follow = new CameraFollow(_navigator, settings.FollowZone, settings.FollowBackstop, settings.RestBallViewport, settings.FollowSmoothTime, settings.ReturnSmoothTime, settings.DefaultZoom, settings.ResetSeconds, ease)
             {
                 Rule = _rule,
+                Approach = _approach,
             };
 
             // The twist has no glide after release: it is bounded, and a view still turning after the fingers lift
@@ -156,15 +158,18 @@ namespace IsoGolf.Rendering
 
         /// <summary>
         /// Gives the camera the hole and how far a full-power shot goes on flat fairway, so a ball at rest within that
-        /// reach turns the view to face the hole. Without it, the view follows the leg the ball is on.
+        /// reach turns the view to face the hole, and comes closer near it. Without it, the view follows the leg the
+        /// ball is on, at the player's zoom.
         /// </summary>
         public void SetHole(Vector2 hole, float fullPowerReach)
         {
             _rule = new CameraHeading(_centreline, hole, fullPowerReach, settings.HoleHeadingMinDistance, settings.HoleHeadingMaxTurn);
+            _approach = new ApproachFraming(hole, fullPowerReach, settings.ApproachHoleViewportY, settings.DefaultZoom, settings.ApproachClosestZoom);
             _follow.Rule = _rule;
+            _follow.Approach = _approach;
         }
 
-        /// <summary>Starts the level's view on this spot, for the ball on its tee, at the default zoom.</summary>
+        /// <summary>Starts the level's view on this spot, for the ball on its tee, at the default zoom (closer if the tee is near the hole).</summary>
         public void PlaceOn(Vector3 ball)
         {
             _placedOn = ball;
@@ -175,6 +180,7 @@ namespace IsoGolf.Rendering
         private void StartViewOn(Vector3 ball)
         {
             _follow.Rule = _rule;
+            _follow.Approach = _approach;
             _navigator.ZoomTo(settings.DefaultZoom);
             _follow.PlaceOn(ball);
         }

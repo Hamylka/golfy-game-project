@@ -36,7 +36,7 @@ namespace IsoGolf.Rendering
     /// <summary>
     /// Moves the camera along the ground for the shot in play, at the player's zoom. It stays still until the ball
     /// reaches a band across the middle of the screen, then glides to keep it there. When the ball comes to rest,
-    /// it eases until the ball sits low on screen with the course ahead, and turns to the automatic heading.
+    /// it eases until the ball sits low on screen with the course ahead, turns to the automatic heading, and zooms to the approach zoom (closer near the hole).
     ///
     /// A finger during a shot hands the camera to the player until the ball has stopped and the finger has lifted.
     /// Outside a shot, the camera is always the player's: nothing here runs, so a pan or an aim is never disturbed.
@@ -48,6 +48,7 @@ namespace IsoGolf.Rendering
         private const float ArrivalDistance = 0.01f;
         private const float ArrivalSpeed = 0.05f;
         private const float ArrivalTurn = 0.05f;
+        private const float ArrivalZoom = 0.002f;
 
         // How far to either side a ball that hasn't reached the side band may go before the camera moves.
         private const float SideBackstop = 0.85f;
@@ -73,6 +74,8 @@ namespace IsoGolf.Rendering
         private Phase _phase = Phase.Idle;
         private Vector3 _velocity;
         private float _turnSpeed;
+        private float _zoomSpeed;
+        private float? _restZoom;
         private bool _reachedBand;
         private bool _reachedSides;
         private Vector3 _resetPivot;
@@ -115,6 +118,12 @@ namespace IsoGolf.Rendering
         /// </summary>
         public CameraHeading Rule { get; set; }
 
+        /// <summary>
+        /// Picks the zoom for a ball at rest, closer near the hole. Null keeps the player's zoom at rest and the
+        /// default zoom on the reset view, as before approach framing existed.
+        /// </summary>
+        public ApproachFraming Approach { get; set; }
+
         /// <summary>The automatic heading in effect, as a yaw in degrees. The view's yaw is this plus <see cref="Twist"/>.</summary>
         public float Heading { get; private set; }
 
@@ -152,7 +161,7 @@ namespace IsoGolf.Rendering
         }
 
         /// <summary>
-        /// Eases to the default view: the default zoom and the automatic heading, with the ball at its rest spot, and
+        /// Eases to the default view: the default zoom (the approach zoom near the hole) and the automatic heading, with the ball at its rest spot, and
         /// clears the twist. The target is worked out once, here, so it holds still while the camera gets there. A
         /// finger or a shot ends it where it is.
         /// </summary>
@@ -163,7 +172,7 @@ namespace IsoGolf.Rendering
             ChooseHeading(ball);
             _resetPivot = ball;
             _resetTurn = Mathf.DeltaAngle(_navigator.Yaw, Heading);
-            _resetTo = _navigator.PositionWith(_defaultZoom, ball, _rest, Heading);
+            _resetTo = _navigator.PositionWith(RestZoom(ball) ?? _defaultZoom, ball, _rest, Heading);
 
             // Eased in the frame of the final heading, then turned back by what's left of the turn: with no turn this
             // is the straight ease it always was, and with one the ball travels across the screen as it would without.
@@ -200,10 +209,11 @@ namespace IsoGolf.Rendering
             }
             else if (_phase == Phase.Returning)
             {
-                // Turns around the ball first, which keeps it where it is on screen, then eases it to its spot.
+                // Turns and zooms around the ball first, which keeps it where it is on screen, then eases it to its spot.
                 float turnLeft = Turn(ball, deltaTime);
+                float zoomLeft = ZoomStep(ball, deltaTime);
                 float left = EaseBy(BringTo(ball, _rest), _returnSmoothTime, deltaTime);
-                if (left < ArrivalDistance && _velocity.magnitude < ArrivalSpeed && turnLeft < ArrivalTurn)
+                if (left < ArrivalDistance && _velocity.magnitude < ArrivalSpeed && turnLeft < ArrivalTurn && zoomLeft < ArrivalZoom)
                 {
                     EnterPhase(Phase.Idle);
                 }
@@ -219,8 +229,42 @@ namespace IsoGolf.Rendering
             EnterPhase(Phase.Idle);
             Twist = 0f;
             ChooseHeading(ball);
+            float? zoom = RestZoom(ball);
+            if (zoom.HasValue && Mathf.Abs(zoom.Value - _navigator.Zoom) > 1e-4f)
+            {
+                _navigator.ZoomTo(zoom.Value);
+            }
+
             _navigator.TurnTo(Heading, ball);
             _navigator.Move(BringTo(ball, _rest));
+        }
+
+        /// <summary>The approach zoom for a ball at rest here, at the heading in effect, or null without approach framing.</summary>
+        private float? RestZoom(Vector3 ball)
+        {
+            // Read at the heading, not the twist: the twist never changes the zoom.
+            return Approach?.ZoomFor(_navigator, ball, _rest, Heading);
+        }
+
+        /// <summary>One frame of the zoom to the approach zoom, around the ball. Returns how much zoom is left.</summary>
+        private float ZoomStep(Vector3 ball, float deltaTime)
+        {
+            if (!_restZoom.HasValue)
+            {
+                return 0f;
+            }
+
+            float target = _restZoom.Value;
+            float zoom = _navigator.Zoom;
+            if (Mathf.Abs(zoom - target) < 1e-5f)
+            {
+                _zoomSpeed = 0f;
+                return 0f;
+            }
+
+            float next = Mathf.SmoothDamp(zoom, target, ref _zoomSpeed, Mathf.Max(_returnSmoothTime, 0.0001f), Mathf.Infinity, deltaTime);
+            _navigator.ZoomAbout(ball, next);
+            return Mathf.Abs(next - target);
         }
 
         /// <summary>
@@ -304,6 +348,7 @@ namespace IsoGolf.Rendering
                     // The heading is picked once, as the ball stops, so the camera has one target to ease to.
                     EnterPhase(Phase.Returning);
                     ChooseHeading(ball);
+                    _restZoom = RestZoom(ball);
                 }
             }
             else if (_phase == Phase.Returning && fingerDown)
@@ -322,6 +367,12 @@ namespace IsoGolf.Rendering
             }
 
             _turnSpeed = 0f;
+            _zoomSpeed = 0f;
+            if (phase != Phase.Returning)
+            {
+                _restZoom = null;
+            }
+
             _phase = phase;
         }
 

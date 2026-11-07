@@ -80,6 +80,12 @@ namespace IsoGolf.Rendering
         [Tooltip("Where a stopped ball ends up on screen, from -1 to 1. Must leave room below it for a full pull.")]
         [SerializeField] private Vector2 restBallViewport = new Vector2(0f, -0.4f);
 
+        [Tooltip("Near the hole, the camera at rest zooms in just enough to put the hole this high on screen, from -1 (bottom) to 1 (top). 0.24 is 62% up. Far from the hole that's the default zoom already.")]
+        [SerializeField, Range(-0.5f, 0.9f)] private float approachHoleViewportY = 0.24f;
+
+        [Tooltip("The closest that approach framing zooms, on the same scale as the default zoom (1 is the closest the player can zoom).")]
+        [SerializeField, Range(0f, 1f)] private float approachClosestZoom = 1f;
+
         [Tooltip("How slowly the camera eases to a stopped ball, in seconds.")]
         [SerializeField, Range(0.01f, 3f)] private float returnSmoothTime = 0.6f;
 
@@ -109,5 +115,7 @@ namespace IsoGolf.Rendering
         public float FollowSmoothTime => followSmoothTime;
         public Vector2 RestBallViewport => restBallViewport;
         public float ReturnSmoothTime => returnSmoothTime;
+        public float ApproachHoleViewportY => approachHoleViewportY;
+        public float ApproachClosestZoom => approachClosestZoom;
     }
 }

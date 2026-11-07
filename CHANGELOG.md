@@ -4,6 +4,20 @@ All notable progress on Iso Golf. The format follows [Keep a Changelog](https://
 
 ## [Unreleased]
 
+### 2026-11-06: Approach framing (`feature/m3-approach-framing`)
+
+#### Added
+
+- `ApproachFraming`: near the hole, the camera at rest comes just close enough to put the hole `approachHoleViewportY` up the screen (0.24, about 62%), with the ball at its rest spot (30% up, which keeps room for a full pull below it). No threshold: the zoom grows smoothly from the default zoom to `approachClosestZoom` (1, the closest the player can zoom) as the ball nears the hole. On `Main` it starts closing in at about 10 m and is fully in by about 4 m. Beyond a full-power shot (where the heading follows the leg) it stays at the default zoom.
+- `CameraFollow.Approach`: the rest ease zooms around the ball (which stays put on screen) while it turns and eases it to its spot; the reset view takes the approach zoom; the level start too (on every fixture the tee is far, so it is the default zoom, pinned). Never in flight. It wins over a manual zoom, which lasts until the next shot. The twist never changes the zoom, and a twist or a finger during the rest ease stops it where it is.
+- `CameraNavigator.ZoomAbout(point, zoom)` and `FreePositionWith(…)` (the framing without the limits, so the zoom doesn't depend on where the island's edge is).
+- `ApproachFramingTests` (27). EditMode: 506 tests, 502 passing, 4 explicit measurements skipped, as before.
+
+#### Changed
+
+- `CLAUDE.md` (Key systems: Approach framing) and `ART_DIRECTION.md` §9 record the decisions taken with the director: continuous closeness, ball and hole framed together, the approach zoom wins at each rest, and it engages like the heading (at rest and on the reset view only).
+- Shadow fade: the approach camera is never higher than the default one (tested on the four fixtures), so nothing new lies past the 56.8 m fade start.
+
 ### 2026-11-06: Two-finger twist (`feature/m3-camera-twist`)
 
 #### Added
