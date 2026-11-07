@@ -902,6 +902,7 @@ GameObject:
   - component: {fileID: 1678882215}
   - component: {fileID: 1678882214}
   - component: {fileID: 1678882216}
+  - component: {fileID: 1678882217}
   m_Layer: 0
   m_Name: Sun
   m_TagString: Untagged
@@ -1018,6 +1019,19 @@ MonoBehaviour:
   m_ShadowLayerMask: 1
   m_RenderingLayers: 1
   m_ShadowRenderingLayers: 1
+--- !u!114 &1678882217
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1678882213}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 06e20bfd7736d7843b28316326b952e8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: IsoGolf.Rendering::IsoGolf.Rendering.LevelSun
+  sun: {fileID: 1678882214}
 --- !u!1 &1989556502
 GameObject:
   m_ObjectHideFlags: 0
@@ -1101,6 +1115,7 @@ MonoBehaviour:
   clouds: {fileID: 1989556503}
   ball: {fileID: 1103648086}
   hole: {fileID: 441434113}
+  sun: {fileID: 1678882217}
 --- !u!4 &2062916158
 Transform:
   m_ObjectHideFlags: 0

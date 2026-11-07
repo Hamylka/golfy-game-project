@@ -18,6 +18,8 @@ namespace IsoGolf.Gameplay
         [Tooltip("Optional, with the hole. Sandbox scenes have no ball.")]
         [SerializeField] private BallView ball;
         [SerializeField] private HoleView hole;
+        [Tooltip("Optional. Scenes without it keep their sun as authored.")]
+        [SerializeField] private LevelSun sun;
 
         private void Start()
         {
@@ -26,6 +28,12 @@ namespace IsoGolf.Gameplay
             if (ball != null)
             {
                 islandCamera.SetHole(terrain.Layout.Hole, ShotReach.FullPowerDistance(ball.Shot));
+            }
+
+            // Before the clouds, which bake their tones from the sun's direction.
+            if (sun != null)
+            {
+                sun.Apply(SunHeading.CourseHeading(terrain.Layout.Centreline.Points, terrain.Layout.Tee, terrain.Layout.Hole));
             }
 
             // After the hole, which decides the headings the camera can take, and so the ground the clouds must cover.
