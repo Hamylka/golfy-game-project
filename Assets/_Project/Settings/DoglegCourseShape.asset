@@ -24,8 +24,9 @@ MonoBehaviour:
     widthWobble: 2.5
     centerZ: -6.309341
     heading: -35
-  fairwayStart: -33
-  fairwayEnd: 0
+  alongCentreline: 1
+  fairwayStart: -2
+  fairwayEnd: 51.3
   fairwayHalfWidth: 2.5
   fairwayWobble: 1.6
   stripeWidth: 1

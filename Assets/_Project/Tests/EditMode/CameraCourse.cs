@@ -27,11 +27,17 @@ namespace IsoGolf.Tests
         private const float CentreStep = 2f;
 
         public CameraCourse(string path, float aspect, float? holeMaxTurn = null)
+            : this(AssetDatabase.LoadAssetAtPath<CourseShapeSettings>(path).ToLayout(), aspect, holeMaxTurn)
+        {
+        }
+
+        /// <summary>The same set-up for any course layout, a generated one say.</summary>
+        public CameraCourse(CourseLayout layout, float aspect, float? holeMaxTurn = null)
         {
             Rig = AssetDatabase.LoadAssetAtPath<CameraRigSettings>("Assets/_Project/Settings/CameraRigSettings.asset");
             Shot = AssetDatabase.LoadAssetAtPath<ShotSettings>("Assets/_Project/Settings/ShotSettings.asset");
             var palette = AssetDatabase.LoadAssetAtPath<PaletteSettings>("Assets/_Project/Settings/Palette.asset");
-            Layout = AssetDatabase.LoadAssetAtPath<CourseShapeSettings>(path).ToLayout();
+            Layout = layout;
             TerrainResult terrain = TerrainBuilder.Build(Layout, palette);
             Outline = terrain.Outline;
             Centreline = Layout.Centreline.Points;

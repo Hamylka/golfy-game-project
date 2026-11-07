@@ -81,10 +81,36 @@ namespace IsoGolf.Generation
         public float Fairway(Vector3 p)
         {
             FairwayLayout fairway = _layout.Fairway;
-            float wobble = (CourseNoise.Value01((p.x * 0.2f) + 70f, 1.3f) - 0.5f) * fairway.Wobble;
-            float across = Mathf.Abs(p.z) - (fairway.HalfWidth + wobble);
-            float along = Mathf.Max(fairway.Start - p.x, p.x - fairway.End);
-            return Mathf.Max(across, along);
+            if (!_layout.AlongCentreline)
+            {
+                float wobble = (CourseNoise.Value01((p.x * 0.2f) + 70f, 1.3f) - 0.5f) * fairway.Wobble;
+                float across = Mathf.Abs(p.z) - (fairway.HalfWidth + wobble);
+                float along = Mathf.Max(fairway.Start - p.x, p.x - fairway.End);
+                return Mathf.Max(across, along);
+            }
+
+            // The same strip, unbent along the centreline: the distance along it plays the part of X, the distance across
+            // it the part of Z. Around the outside of a bend the edge rounds off, so the strip keeps its width there.
+            float s = _layout.Centreline.Project(new Vector2(p.x, p.z), out float side);
+            float pathWobble = (CourseNoise.Value01((s * 0.2f) + 70f + fairway.NoiseOffset, 1.3f) - 0.5f) * fairway.Wobble;
+            float pathAcross = Mathf.Abs(side) - (fairway.HalfWidth + pathWobble);
+            float pathAlong = Mathf.Max(fairway.Start - s, s - fairway.End);
+            return Mathf.Max(pathAcross, pathAlong);
+        }
+
+        /// <summary>
+        /// The signed distance across the play axis: Z on a hand-made course, the distance across the centreline (positive
+        /// on its left) on a generated one. The mowing stripes and the calm band of the relief are measured from it.
+        /// </summary>
+        public float Across(Vector3 p)
+        {
+            if (!_layout.AlongCentreline)
+            {
+                return p.z;
+            }
+
+            _layout.Centreline.Project(new Vector2(p.x, p.z), out float across);
+            return across;
         }
 
         /// <summary>
@@ -121,9 +147,9 @@ namespace IsoGolf.Generation
         private float Noise(float x, float z)
         {
             GroundRelief ground = _layout.Relief;
-            float amount = Mathf.Clamp01(Mathf.Abs(z) / ground.ReliefDistance);
+            float amount = Mathf.Clamp01(Mathf.Abs(Across(new Vector3(x, 0f, z))) / ground.ReliefDistance);
             float relief = Mathf.Lerp(ground.AxisRelief, ground.EdgeRelief, amount);
-            float noise = CourseNoise.Value01((x * ground.NoiseScale) + 40f, (z * ground.NoiseScale) + 9f);
+            float noise = CourseNoise.Value01((x * ground.NoiseScale) + 40f + ground.NoiseOffset, (z * ground.NoiseScale) + 9f);
             return (noise - 0.5f) * relief * 2f;
         }
 
@@ -209,10 +235,13 @@ namespace IsoGolf.Generation
             return -Mathf.Lerp(edge.SkirtDepth.x, edge.SkirtDepth.y, noise);
         }
 
-        /// <summary>Which mowing stripe a point is on. Even and odd stripes alternate along the play axis.</summary>
-        public int Stripe(float z)
+        /// <summary>
+        /// Which mowing stripe a distance across the play axis (<see cref="Across"/>) falls on. Even and odd stripes
+        /// alternate across it, so they run along the axis, and along each leg on a generated course.
+        /// </summary>
+        public int Stripe(float across)
         {
-            return Mathf.FloorToInt(z / _layout.Fairway.StripeWidth);
+            return Mathf.FloorToInt(across / _layout.Fairway.StripeWidth);
         }
 
         private static float Island(Vector3 point, IslandOutline island)
@@ -229,7 +258,7 @@ namespace IsoGolf.Generation
                 return Mathf.Abs(p.z) + ((Mathf.Abs(local) - 1f) * island.HalfLength);
             }
 
-            float wobble = (CourseNoise.Value01((p.x * island.WidthNoiseScale) + 11f, 3.1f) - 0.5f) * island.WidthWobble;
+            float wobble = (CourseNoise.Value01((p.x * island.WidthNoiseScale) + 11f + island.NoiseOffset, 3.1f) - 0.5f) * island.WidthWobble;
             return Mathf.Abs(p.z) - ((island.HalfWidth + wobble) * Mathf.Sqrt(along));
         }
 
