@@ -71,7 +71,7 @@ namespace IsoGolf.Generation
                 new FairwayLayout(-settings.FairwayBehindTee, length - settings.FairwayShortOfHole, settings.FairwayHalfWidth, settings.FairwayWobble, settings.StripeWidth, fairwayOffset),
                 new[] { new GreenLayout(new EllipseShape(greenCentre, settings.GreenRadius, settings.GreenWobble), tilt) },
                 new EllipseShape[0],
-                new EllipseShape[0],
+                new PondLayout[0],
                 new GroundSwell[0],
                 settings.WaterLevel,
                 new GroundRelief(settings.CellSize, settings.AxisRelief, settings.EdgeRelief, settings.ReliefDistance, settings.ReliefNoiseScale, reliefOffset),

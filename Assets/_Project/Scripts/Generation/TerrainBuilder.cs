@@ -345,7 +345,8 @@ namespace IsoGolf.Generation
 
         private Vector3 Lower(Vector3 point)
         {
-            return new Vector3(point.x, _layout.WaterLevel, point.z);
+            // The water of the pond this point belongs to, so bank walls, water and water edges all agree per pond.
+            return new Vector3(point.x, _fields.WaterLevelAt(point), point.z);
         }
 
         private static Vector3 Across(Segment segment, Func<Vector3, float> field, bool towardPositive)

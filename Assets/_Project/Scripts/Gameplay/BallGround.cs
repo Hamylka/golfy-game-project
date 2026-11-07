@@ -8,13 +8,11 @@ namespace IsoGolf.Gameplay
     {
         private readonly CourseFields _fields;
         private readonly CourseHeightField _heights;
-        private readonly float _waterLevel;
 
         public BallGround(CourseLayout layout)
         {
             _fields = new CourseFields(layout);
             _heights = new CourseHeightField(layout);
-            _waterLevel = layout.WaterLevel;
             Tee = layout.Tee;
             Hole = layout.Hole;
         }
@@ -29,7 +27,7 @@ namespace IsoGolf.Gameplay
         {
             // Water comes from the pond's outline. The height field runs on under the pond as if it were
             // dry, so its height there says nothing about whether a point is wet.
-            return Surface(x, z) == CourseSurface.Water ? _waterLevel : _heights.Height(x, z);
+            return Surface(x, z) == CourseSurface.Water ? _fields.WaterLevelAt(new Vector3(x, 0f, z)) : _heights.Height(x, z);
         }
 
         public Vector2 Slope(float x, float z) => _heights.Slope(x, z);
@@ -44,7 +42,7 @@ namespace IsoGolf.Gameplay
         /// </summary>
         public float DrawnHeight(float x, float z)
         {
-            return _fields.Pond(new Vector3(x, 0f, z)) < 0f ? _waterLevel : _heights.FacetHeight(x, z);
+            return _fields.Pond(new Vector3(x, 0f, z)) < 0f ? _fields.WaterLevelAt(new Vector3(x, 0f, z)) : _heights.FacetHeight(x, z);
         }
 
         public bool IsOnIsland(float x, float z) => _fields.Island(new Vector3(x, 0f, z)) < 0f;

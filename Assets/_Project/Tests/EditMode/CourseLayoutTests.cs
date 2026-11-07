@@ -42,9 +42,10 @@ namespace IsoGolf.Tests
             Assert.That(layout.Greens[0].Outline.Center, Is.EqualTo(shape.Green.Center));
             Assert.That(layout.Greens[0].Tilt, Is.EqualTo(shape.GreenTilt));
             Assert.That(layout.Bunkers[0].Center, Is.EqualTo(shape.Bunker.Center));
-            Assert.That(layout.Ponds[0].Center, Is.EqualTo(shape.Pond.Center));
+            Assert.That(layout.Ponds[0].Outline.Center, Is.EqualTo(shape.Pond.Center));
             Assert.That(layout.Swells.Count, Is.EqualTo(shape.Swells.Length));
             Assert.That(layout.WaterLevel, Is.EqualTo(shape.WaterLevel));
+            Assert.That(layout.Ponds[0].WaterLevel, Is.EqualTo(shape.WaterLevel));
             Assert.That(layout.Relief.CellSize, Is.EqualTo(shape.CellSize));
             Assert.That(layout.Tee, Is.EqualTo(shape.Tee));
             Assert.That(layout.Hole, Is.EqualTo(shape.Hole));
@@ -74,7 +75,7 @@ namespace IsoGolf.Tests
         [Test]
         public void Layout_NeedsAnIslandAndAPath()
         {
-            Assert.Throws<ArgumentException>(() => Build(new IslandOutline[0], new EllipseShape[0], new EllipseShape[0]));
+            Assert.Throws<ArgumentException>(() => Build(new IslandOutline[0], new EllipseShape[0], new PondLayout[0]));
             Assert.Throws<ArgumentException>(() => new CoursePath(new[] { Vector2.zero }));
         }
 
@@ -82,7 +83,7 @@ namespace IsoGolf.Tests
         public void Layout_KeepsItsOwnCopyOfTheLists()
         {
             var bunkers = new[] { new EllipseShape(new Vector2(0f, 2f), Vector2.one, 0f) };
-            CourseLayout layout = Build(new[] { Island() }, bunkers, new EllipseShape[0]);
+            CourseLayout layout = Build(new[] { Island() }, bunkers, new PondLayout[0]);
             bunkers[0] = new EllipseShape(new Vector2(5f, 5f), Vector2.one, 0f);
 
             Assert.That(layout.Bunkers[0].Center, Is.EqualTo(new Vector2(0f, 2f)));
@@ -94,7 +95,7 @@ namespace IsoGolf.Tests
             CourseLayout layout = Build(
                 new[] { new IslandOutline(10f, 3f, 1f, 0.2f), new IslandOutline(6f, 5f, 2f, 0.2f) },
                 new EllipseShape[0],
-                new EllipseShape[0]);
+                new PondLayout[0]);
 
             Assert.That(layout.HalfExtent, Is.EqualTo(new Vector2(10f, 6f)));
         }
@@ -104,7 +105,7 @@ namespace IsoGolf.Tests
         {
             var left = new EllipseShape(new Vector2(-3f, 1.5f), new Vector2(0.8f, 0.8f), 0f);
             var right = new EllipseShape(new Vector2(3f, -1.5f), new Vector2(0.8f, 0.8f), 0f);
-            var fields = new CourseFields(Build(new[] { Island() }, new[] { left, right }, new EllipseShape[0]));
+            var fields = new CourseFields(Build(new[] { Island() }, new[] { left, right }, new PondLayout[0]));
 
             Assert.That(fields.Surface(new Vector3(-3f, 0f, 1.5f)), Is.EqualTo(CourseSurface.Bunker));
             Assert.That(fields.Surface(new Vector3(3f, 0f, -1.5f)), Is.EqualTo(CourseSurface.Bunker));
@@ -114,7 +115,7 @@ namespace IsoGolf.Tests
         [Test]
         public void Terrain_BuildsWithNoPondsOrBunkers()
         {
-            CourseLayout layout = Build(new[] { Island() }, new EllipseShape[0], new EllipseShape[0]);
+            CourseLayout layout = Build(new[] { Island() }, new EllipseShape[0], new PondLayout[0]);
             TerrainResult terrain = TerrainBuilder.Build(layout, _palette);
 
             Assert.That(terrain.Land.TriangleCount, Is.GreaterThan(0));
@@ -127,7 +128,7 @@ namespace IsoGolf.Tests
 
         private static IslandOutline Island() => new IslandOutline(10f, 4f, 1f, 0.2f);
 
-        private static CourseLayout Build(IslandOutline[] islands, EllipseShape[] bunkers, EllipseShape[] ponds)
+        private static CourseLayout Build(IslandOutline[] islands, EllipseShape[] bunkers, PondLayout[] ponds)
         {
             var tee = new Vector2(-7f, 0f);
             var hole = new Vector2(7f, 0f);

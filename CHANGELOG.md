@@ -4,6 +4,21 @@ All notable progress on Iso Golf. The format follows [Keep a Changelog](https://
 
 ## [Unreleased]
 
+### 2026-11-07: Hazard shapes (`refactor/m3-hazard-shapes`, PR 6a)
+
+Data and rendering support for PR 6b's hazards. No generator change, nothing visible on any scene.
+
+#### Changed
+
+- Per-pond water level: `PondLayout` (outline + `WaterLevel`), `CourseLayout.Ponds` is now a list of them. `CourseFields.WaterLevelAt` returns the level of the pond whose field is lowest at a point (the layout's default level with no pond). `TerrainBuilder.Lower` (bank walls, water, water edges) and `BallGround.LandingHeight` / `DrawnHeight` use it. Hand-made courses wrap their one pond at the same level, so every pin holds.
+- `EllipseShape.Heading` (degrees from +X toward +Z, default 0): `CourseFields` rotates into the ellipse's frame when it is not 0, and runs the exact old code when it is.
+- Smooth sand on generated courses: on `AlongCentreline` courses the facet noise is multiplied by `1 - bunkerCalm` in `Height` and `FeltHeight`. Hand-made courses keep the exact path.
+- `CourseFields.BroadHeight` / `BroadSlope`: the ground without facet noise (same masks, swells, green tilt and elevation as `Height`), for PR 6b.
+
+#### Added
+
+- `PondLevelTests` (6) and `EllipseHeadingTests` (3).
+
 ### 2026-11-07: Seeded elevation (`feature/m3-elevation`)
 
 #### Added
