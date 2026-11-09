@@ -361,7 +361,7 @@ namespace IsoGolf.Generation
             return field;
         }
 
-        private static float Ellipse(Vector3 p, EllipseShape shape)
+        internal static float Ellipse(Vector3 p, EllipseShape shape)
         {
             float dx = (p.x - shape.Center.x) / shape.Radius.x;
             float dz = (p.z - shape.Center.y) / shape.Radius.y;

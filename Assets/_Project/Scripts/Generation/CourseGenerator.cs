@@ -7,8 +7,9 @@ namespace IsoGolf.Generation
     /// Builds a course from a seed and a par: centreline, then the stretches of land along it (cut by a gap or an island
     /// green), then one island per leg of each stretch, then the fairway along the centreline and the green at the hole.
     /// Plain C# with one seeded <see cref="SeededRandom"/> passed down every step in a fixed order, so the same (seed,
-    /// par, variant) always gives the same course. Elevation comes last of the draws, so it left every outline as it was. Hazards and the tee and hole strategy (PR 6) and
-    /// the course checks (PR 7, which move a failing seed on to its next <c>variant</c>) plug in after these steps.
+    /// par, variant) always gives the same course. Elevation comes last of the draws, so it left every outline as it was. The green, the pin and the hazards (PR 6b,
+    /// <see cref="CourseHazards"/>) draw from a second stream of their own, so they never move any of the above. The course
+    /// checks (PR 7, which move a failing seed on to its next <c>variant</c>) plug in after these steps.
     /// </summary>
     public static class CourseGenerator
     {
@@ -24,6 +25,9 @@ namespace IsoGolf.Generation
             public float From { get; }
             public float To { get; }
         }
+
+        // Salt for the surfaces stream (green, pin, hazards): its own random sequence next to the main one.
+        private const int SurfacesStream = 6;
 
         public static CourseLayout Generate(int seed, int par, LevelGenSettings settings, int variant = 0)
         {
@@ -56,7 +60,12 @@ namespace IsoGolf.Generation
             var path = new CoursePath(centreline);
             Vector2 tee = path.Start;
             Vector2 hole = path.End;
-            Vector2 greenCentre = path.PointAt(length - settings.GreenCentreShortOfHole);
+
+            // A second stream for the green, the pin and the hazards, so tuning them never moves an island or a slope: the main
+            // stream's draws (outline, noise offsets, elevation) stay exactly where they were. Read first.
+            var surfaces = new SeededRandom(unchecked((int)CourseNoise.Hash(unchecked((int)CourseNoise.Hash(seed, par, variant)), SurfacesStream, 0)));
+            GreenPlan green = CourseHazards.GreenAndPin(surfaces, path, length, islandGreen, settings);
+            Vector2 greenCentre = green.Centre;
 
             // The noise offsets keep their place in the order; the elevation draws come after them, so adding elevation left
             // every outline of the earlier steps as it was.
@@ -65,13 +74,13 @@ namespace IsoGolf.Generation
             ElevationProfile elevation = Elevation(random, rules, settings, length);
             Vector2 tilt = GreenTilt(random, settings);
 
-            return new CourseLayout(
+            CourseLayout Build(IEnumerable<EllipseShape> bunkers, IEnumerable<PondLayout> ponds, CoursePlan plan) => new CourseLayout(
                 islands,
                 path,
                 new FairwayLayout(-settings.FairwayBehindTee, length - settings.FairwayShortOfHole, settings.FairwayHalfWidth, settings.FairwayWobble, settings.StripeWidth, fairwayOffset),
                 new[] { new GreenLayout(new EllipseShape(greenCentre, settings.GreenRadius, settings.GreenWobble), tilt) },
-                new EllipseShape[0],
-                new PondLayout[0],
+                bunkers,
+                ponds,
                 new GroundSwell[0],
                 settings.WaterLevel,
                 new GroundRelief(settings.CellSize, settings.AxisRelief, settings.EdgeRelief, settings.ReliefDistance, settings.ReliefNoiseScale, reliefOffset),
@@ -81,7 +90,13 @@ namespace IsoGolf.Generation
                 settings.FlatBlend,
                 new EdgeLayout(settings.SkirtDepth, settings.SkirtNoiseScale),
                 alongCentreline: true,
-                elevation: elevation);
+                elevation: elevation,
+                plan: plan);
+
+            // The hazards read the ground without them (broad heights, the island, the green), then join it.
+            CourseLayout bare = Build(new EllipseShape[0], new PondLayout[0], null);
+            HazardResult hazards = CourseHazards.Place(surfaces, bare, green, par, dogleg, islandGreen, bends, settings);
+            return Build(hazards.Bunkers, hazards.Ponds, hazards.Plan);
         }
 
         /// <summary>

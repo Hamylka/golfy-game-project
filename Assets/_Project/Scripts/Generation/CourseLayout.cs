@@ -358,9 +358,11 @@ namespace IsoGolf.Generation
             float flatBlend,
             EdgeLayout edge,
             bool alongCentreline = false,
-            ElevationProfile elevation = null)
+            ElevationProfile elevation = null,
+            CoursePlan plan = null)
         {
             AlongCentreline = alongCentreline;
+            Plan = plan;
             Elevation = elevation ?? ElevationProfile.Empty;
             _islands = new List<IslandOutline>(islands).ToArray();
             if (_islands.Length == 0)
@@ -395,6 +397,9 @@ namespace IsoGolf.Generation
         public IReadOnlyList<EllipseShape> Bunkers => _bunkers;
         public IReadOnlyList<PondLayout> Ponds => _ponds;
         public IReadOnlyList<GroundSwell> Swells => _swells;
+
+        /// <summary>What the generator meant by this course (hazard roles, shot lines, the safe route). <c>null</c> on hand-made courses.</summary>
+        public CoursePlan Plan { get; }
 
         /// <summary>The default water level: the hand-made courses' ponds, and the value away from any pond. Each pond has its own, see <see cref="PondLayout"/>.</summary>
         public float WaterLevel { get; }

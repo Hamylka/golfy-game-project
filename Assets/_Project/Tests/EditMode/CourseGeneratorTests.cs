@@ -39,6 +39,34 @@ namespace IsoGolf.Tests
                 Add(green.Outline.Center.x); Add(green.Outline.Center.y);
             }
 
+            foreach (EllipseShape bunker in layout.Bunkers)
+            {
+                Add(bunker.Center.x); Add(bunker.Center.y); Add(bunker.Radius.x); Add(bunker.Radius.y); Add(bunker.Wobble); Add(bunker.Heading);
+            }
+
+            foreach (PondLayout pond in layout.Ponds)
+            {
+                Add(pond.Outline.Center.x); Add(pond.Outline.Center.y); Add(pond.Outline.Radius.x); Add(pond.Outline.Radius.y); Add(pond.Outline.Wobble); Add(pond.Outline.Heading); Add(pond.WaterLevel);
+            }
+
+            if (layout.Plan != null)
+            {
+                foreach (HazardInfo hazard in layout.Plan.Hazards)
+                {
+                    text.Append((int)hazard.Role).Append(hazard.IsWater ? 'w' : 's').Append(hazard.Index).Append(' ');
+                }
+
+                foreach (HazardRole missing in layout.Plan.MissingRoles)
+                {
+                    text.Append("missing").Append((int)missing).Append(' ');
+                }
+
+                foreach (Vector2 spot in layout.Plan.SafeRoute)
+                {
+                    Add(spot.x); Add(spot.y);
+                }
+            }
+
             return text.ToString();
         }
 
@@ -279,7 +307,7 @@ namespace IsoGolf.Tests
                 {
                     Vector2 p = layout.Centreline.PointAt(s);
                     CourseSurface surface = fields.Surface(new Vector3(p.x, 0f, p.y));
-                    Assert.That(surface, Is.EqualTo(CourseSurface.Fairway).Or.EqualTo(CourseSurface.OffIsland).Or.EqualTo(CourseSurface.Green), $"seed {seed} at {s} m");
+                    Assert.That(surface, Is.EqualTo(CourseSurface.Fairway).Or.EqualTo(CourseSurface.OffIsland).Or.EqualTo(CourseSurface.Green).Or.EqualTo(CourseSurface.Bunker).Or.EqualTo(CourseSurface.Water), $"seed {seed} at {s} m");
                 }
 
                 // And the fairway's width, across the centreline, is the same on every leg.
@@ -306,12 +334,12 @@ namespace IsoGolf.Tests
                 CourseLayout layout = CourseGenerator.Generate(seed, par, Settings);
                 TerrainResult terrain = TerrainBuilder.Build(layout, palette);
                 Assert.That(terrain.Land.TriangleCount, Is.GreaterThan(0), $"seed {seed}");
-                Assert.That(terrain.Water.TriangleCount, Is.Zero, $"seed {seed}: no ponds before PR 6");
+                Assert.That(terrain.Water.TriangleCount > 0, Is.EqualTo(layout.Ponds.Count > 0), $"seed {seed}: water only where there is a pond");
 
                 float minX = float.MaxValue, maxX = float.MinValue, minZ = float.MaxValue, maxZ = float.MinValue;
                 foreach (EdgeSegment edge in terrain.Edge)
                 {
-                    Assert.That(edge.Inner, Is.EqualTo(EdgeSurface.Land), $"seed {seed}");
+                    Assert.That(edge.Inner == EdgeSurface.Water ? layout.Ponds.Count : 1, Is.GreaterThan(0), $"seed {seed}: water edges only where there is a pond");
                     minX = Mathf.Min(minX, edge.A.x);
                     maxX = Mathf.Max(maxX, edge.A.x);
                     minZ = Mathf.Min(minZ, edge.A.z);

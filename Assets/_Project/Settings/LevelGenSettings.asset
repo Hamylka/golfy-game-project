@@ -22,6 +22,9 @@ MonoBehaviour:
     fairwayRelief: 0.5
     greenHeight: {x: -0.6, y: 0.6}
     knotSpacing: 6
+    hazardCount: {x: 2, y: 4}
+    secondGuardChance: 25
+    driveZoneChance: 0
   par4:
     length: {x: 40, y: 55}
     doglegChance: 50
@@ -32,6 +35,9 @@ MonoBehaviour:
     fairwayRelief: 1
     greenHeight: {x: -1.2, y: 1.2}
     knotSpacing: 8
+    hazardCount: {x: 3, y: 5}
+    secondGuardChance: 35
+    driveZoneChance: 100
   par5:
     length: {x: 65, y: 85}
     doglegChance: 50
@@ -42,6 +48,9 @@ MonoBehaviour:
     fairwayRelief: 1.2
     greenHeight: {x: -1.5, y: 1.5}
     knotSpacing: 9
+    hazardCount: {x: 3, y: 6}
+    secondGuardChance: 50
+    driveZoneChance: 100
   doglegTurn: {x: 15, y: 35}
   softTurn: {x: 3, y: 8}
   maxHeading: 35
@@ -89,3 +98,56 @@ MonoBehaviour:
   legBlend: 4
   skirtDepth: {x: 0.9, y: 1.8}
   skirtNoiseScale: 0.7
+  minCarry: 1
+  fullCarry: 26
+  fullReach: 32
+  cutPower: 0.9
+  layupPower: 0.7
+  safeStep: 24
+  gapCountsAsHazard: 1
+  greenGuardWaterChance: 30
+  cornerWaterChance: 60
+  driveZoneWaterChance: 35
+  flankWaterChance: 20
+  driveZoneStyle: 0
+  driveZoneWithDoglegChance: 40
+  waterFallsBackToSand: 1
+  triesPerSlot: 24
+  bunkerRadius: {x: 0.8, y: 1.5}
+  bunkerAspect: {x: 55, y: 85}
+  bunkerWobble: {x: 0.12, y: 0.25}
+  pondRadius: {x: 1.8, y: 3.4}
+  pondAspect: {x: 45, y: 75}
+  pondWobble: {x: 0.15, y: 0.3}
+  hazardTurnJitter: 20
+  hazardFromTee: 6
+  hazardFromHole: 3
+  hazardSpacing: 1.2
+  bunkerFromEdge: 0.4
+  pondEdgeSliver: 1.2
+  pondEdgeCrossing: 0.6
+  pondFromGapEdge: 3
+  gapLandingZone: 6
+  bunkerMaxSlope: 0.08
+  pondMaxRimRise: 0.35
+  pondDrop: 0.22
+  guardBunkerClearance: {x: 0.3, y: 1}
+  guardPondClearance: {x: 1, y: 2}
+  bunkerFromGreen: 0.3
+  pondFromGreen: 1
+  guardLineReach: 1.5
+  cutLandingMargin: 2
+  driveLineReach: 1.5
+  sideGuardThreshold: 8
+  sideGuardJitter: 15
+  frontGuardAngle: {x: 10, y: 35}
+  pinOffset: {x: 0.5, y: 1}
+  pinAlong: {x: -0.4, y: 0.6}
+  pinFromBorder: 1.5
+  safeRouteExtraShots: 1
+  safeLandingBack: 5
+  safeLandingAhead: 1.5
+  safeLandingHalfWidth: 1.5
+  edgeMargin: 0.8
+  gapLandingMargin: 2
+  shotCorridorHalfWidth: 2
