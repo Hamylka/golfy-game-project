@@ -16,9 +16,13 @@ namespace IsoGolf.Tests
         [TestCase(CameraCourse.Par3Path, 9f / 16f, -27.3643f, 16.8725f, -3.8264f)]
         [TestCase(CameraCourse.Par3Path, 9f / 21f, -33.1909f, 23.0510f, -5.1404f)]
         [TestCase(CameraCourse.Par3Path, 1280f / 2800f, -31.6336f, 21.4574f, -4.8049f)]
-        [TestCase(CameraCourse.LongPath, 9f / 16f, -56.5881f, 22.9004f, -3.2590f)]
-        [TestCase(CameraCourse.LongPath, 9f / 21f, -65.5088f, 31.8979f, -5.5091f)]
-        [TestCase(CameraCourse.LongPath, 1280f / 2800f, -63.1309f, 29.5730f, -4.9454f)]
+        // The long course (generated par 5, seed 33) replaced the hand-made Par5SandboxCourseShape in M3 PR 8, whose
+        // pre-heading figures were (-56.5881, 22.9004, -3.2590), (-65.5088, 31.8979, -5.5091) and (-63.1309, 29.5730, -4.9454).
+        // These are measured from today's framing, so they pin it against drift, not against the old camera: the old figures
+        // belong to a different island, and the framing of the straight par 3 above is still the proof it did not change.
+        [TestCase(CameraCourse.LongPath, 9f / 16f, -59.2771f, 21.4950f, -2.0872f)]
+        [TestCase(CameraCourse.LongPath, 9f / 21f, -67.5148f, 29.9690f, -4.2212f)]
+        [TestCase(CameraCourse.LongPath, 1280f / 2800f, -65.3151f, 27.7828f, -3.6879f)]
         public void StraightCourses_KeepTheirFraming(string path, float aspect, float x, float y, float z)
         {
             var course = new CameraCourse(path, aspect);
@@ -28,8 +32,9 @@ namespace IsoGolf.Tests
             Assert.That((course.Home - new Vector3(x, y, z)).magnitude, Is.LessThan(Tolerance));
         }
 
+        // The par 3 only: this holds for a course whose fairway and islands are symmetric about the axis. A generated par 5's
+        // islands wobble around a centreline that is itself 1.7 m off the axis, so the stretches differ by 2.35 m (seed 33).
         [TestCase(CameraCourse.Par3Path)]
-        [TestCase(CameraCourse.LongPath)]
         public void StraightCourses_FrameTheSameWithOrWithoutTheirCentreline(string path)
         {
             var course = new CameraCourse(path, 9f / 16f);

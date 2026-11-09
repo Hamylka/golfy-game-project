@@ -125,7 +125,7 @@ Do not create assets outside `Assets/_Project/` (third-party packages excepted).
 
 1. **Low poly pipeline sandbox:** camera framing, faceted terrain with clean surface borders, lighting and shadows, on a test island. Validate the look and performance on the phone.
 2. **Shot prototype:** ball, arc flight, putting on the green, rolling on slopes, shadow, aim preview, power gauge, placeholder input.
-3. **Island generator:** seeded outline, elevation by seed and par (fairway rises and dips, sloped greens), tufted grass edge, surfaces, tee and hole placement. Doglegs on long courses, with a camera that turns with the course at rest and a two-finger twist, and gaps as separate islands that belong to the course. The hand-made par 3 (`CourseShapeSettings`, `Par3CourseShape`) stays as a fixed test course; `Main` plays a generated course, with a seed in the Inspector until M5.
+3. **Island generator:** seeded outline, elevation by seed and par (fairway rises and dips, sloped greens), tufted grass edge, surfaces, tee and hole placement. Doglegs on long courses, with a camera that turns with the course at rest and a two-finger twist, and gaps as separate islands that belong to the course. The hand-made par 3 (`CourseShapeSettings`, `Par3CourseShape`) stays as a fixed test course in `Sandbox_Par3` (with the hand-placed trees) and in tests; the hand-made gap and dogleg shapes stay as test fixtures only (no scene). `Main` plays a generated, checked course (`LevelBootstrap` calls `CheckedCourse.Generate`), with a seed and par in the Inspector until M5, and no trees until M4's placement rules.
 4. **Props and art pass:** modular kit, placement rules, ambient life (foliage, flag, water, birds).
 5. **Progression:** level flow, transitions, seed sequence.
 

@@ -14,21 +14,42 @@ namespace IsoGolf.Tests
     public sealed class CameraCourse
     {
         public const string Par3Path = "Assets/_Project/Settings/Par3CourseShape.asset";
-        public const string LongPath = "Assets/_Project/Settings/Par5SandboxCourseShape.asset";
         public const string GapPath = "Assets/_Project/Settings/GapCourseShape.asset";
         public const string DoglegPath = "Assets/_Project/Settings/DoglegCourseShape.asset";
 
-        /// <summary>The courses of Main, Sandbox_LongCourse, Sandbox_Gap and Sandbox_Dogleg.</summary>
-        public static readonly string[] ScenePaths = { Par3Path, LongPath, GapPath, DoglegPath };
+        /// <summary>
+        /// The long straight test course: a generated, checked par 5, which replaced the hand-made Par5SandboxCourseShape (M3 PR 8).
+        /// Seed 33 is one of the straight ones: its first leg's heading rounds to the convention's own (yaw 0 off), its tee and
+        /// hole are 1.7 m apart across the course's whole length, and it has a gap.
+        /// </summary>
+        public const string LongPath = "generated:5:33";
+
+        /// <summary>The hand-made fixtures, as shape assets: the par 3 of Sandbox_Par3, the gap and the dogleg.</summary>
+        public static readonly string[] ScenePaths = { Par3Path, GapPath, DoglegPath };
 
         public const float BallHeight = 0.12f;
 
         // How far apart the view centres are that the shadow fade check tries, in metres.
         private const float CentreStep = 2f;
 
+        /// <summary>A hand-made shape asset's path, or "generated:{par}:{seed}" for a generated, checked course of the shipped settings.</summary>
         public CameraCourse(string path, float aspect, float? holeMaxTurn = null)
-            : this(AssetDatabase.LoadAssetAtPath<CourseShapeSettings>(path).ToLayout(), aspect, holeMaxTurn)
+            : this(Load(path), aspect, holeMaxTurn)
         {
+        }
+
+        private static CourseLayout Load(string path)
+        {
+            const string Prefix = "generated:";
+            if (!path.StartsWith(Prefix))
+            {
+                return AssetDatabase.LoadAssetAtPath<CourseShapeSettings>(path).ToLayout();
+            }
+
+            string[] parts = path.Substring(Prefix.Length).Split(':');
+            var generator = AssetDatabase.LoadAssetAtPath<LevelGenSettings>("Assets/_Project/Settings/LevelGenSettings.asset");
+            var shot = AssetDatabase.LoadAssetAtPath<ShotSettings>("Assets/_Project/Settings/ShotSettings.asset");
+            return CheckedCourse.Generate(int.Parse(parts[1]), int.Parse(parts[0]), generator, shot).Layout;
         }
 
         /// <summary>The same set-up for any course layout, a generated one say.</summary>

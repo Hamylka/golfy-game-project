@@ -86,9 +86,11 @@ namespace IsoGolf.Tests
         [TestCase(CameraCourse.Par3Path, 9f, 16f, 49.07f, 48.13f)]
         [TestCase(CameraCourse.Par3Path, 1280f, 2800f, 54.93f, 53.95f)]
         [TestCase(CameraCourse.Par3Path, 9f, 21f, 57.00f, 56.06f)]
-        [TestCase(CameraCourse.LongPath, 9f, 16f, 68.03f, 58.58f)]
-        [TestCase(CameraCourse.LongPath, 1280f, 2800f, 76.17f, 67.84f)]
-        [TestCase(CameraCourse.LongPath, 9f, 21f, 79.17f, 71.11f)]
+        // The long course is the generated par 5 seed 33 since M3 PR 8 (the hand-made one measured 68.03/58.58, 76.17/67.84
+        // and 79.17/71.11). Worst heading is 150 on all three; at the starting heading it is under the fade start on 9:16.
+        [TestCase(CameraCourse.LongPath, 9f, 16f, 69.14f, 55.02f)]
+        [TestCase(CameraCourse.LongPath, 1280f, 2800f, 76.21f, 63.36f)]
+        [TestCase(CameraCourse.LongPath, 9f, 21f, 78.83f, 66.37f)]
         [TestCase(CameraCourse.GapPath, 9f, 16f, 56.80f, 55.44f)]
         [TestCase(CameraCourse.GapPath, 1280f, 2800f, 65.30f, 63.75f)]
         [TestCase(CameraCourse.GapPath, 9f, 21f, 68.33f, 66.73f)]
