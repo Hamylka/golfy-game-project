@@ -32,6 +32,14 @@ namespace IsoGolf.Generation
         [Tooltip("About how far apart the height knots sit along the centreline, in metres. At least one interval.")]
         [SerializeField, Min(1f)] private float knotSpacing = 6f;
 
+        [Header("Hazards")]
+        [Tooltip("Hazards on the course, from the fewest to the most. A gap counts as one when gapCountsAsHazard is set.")]
+        [SerializeField] private Vector2Int hazardCount = new Vector2Int(3, 5);
+        [Tooltip("Chance of a second bunker beside the green, in percent.")]
+        [SerializeField, Range(0, 100)] private int secondGuardChance = 35;
+        [Tooltip("Chance of a hazard in the drive zone of a course without a dogleg, in percent. A par 3 has none.")]
+        [SerializeField, Range(0, 100)] private int driveZoneChance = 100;
+
         public Vector2 Length => length;
         public int DoglegChance => doglegChance;
         public int SecondDoglegChance => secondDoglegChance;
@@ -41,8 +49,11 @@ namespace IsoGolf.Generation
         public float FairwayRelief => fairwayRelief;
         public Vector2 GreenHeight => greenHeight;
         public float KnotSpacing => knotSpacing;
+        public Vector2Int HazardCount => hazardCount;
+        public int SecondGuardChance => secondGuardChance;
+        public int DriveZoneChance => driveZoneChance;
 
-        public static ParRules Create(Vector2 length, int doglegChance, int secondDoglegChance, int softBends, int gapChance, int islandGreenChance, float fairwayRelief = 0.5f, Vector2 greenHeight = default, float knotSpacing = 6f)
+        public static ParRules Create(Vector2 length, int doglegChance, int secondDoglegChance, int softBends, int gapChance, int islandGreenChance, float fairwayRelief = 0.5f, Vector2 greenHeight = default, float knotSpacing = 6f, Vector2Int hazardCount = default, int secondGuardChance = 35, int driveZoneChance = 100)
         {
             return new ParRules
             {
@@ -55,6 +66,9 @@ namespace IsoGolf.Generation
                 fairwayRelief = fairwayRelief,
                 greenHeight = greenHeight == default ? new Vector2(-0.6f, 0.6f) : greenHeight,
                 knotSpacing = knotSpacing,
+                hazardCount = hazardCount == default ? new Vector2Int(3, 5) : hazardCount,
+                secondGuardChance = secondGuardChance,
+                driveZoneChance = driveZoneChance,
             };
         }
     }
@@ -68,9 +82,9 @@ namespace IsoGolf.Generation
     public sealed class LevelGenSettings : ScriptableObject
     {
         [Header("Pars")]
-        [SerializeField] private ParRules par3 = ParRules.Create(new Vector2(18f, 26f), 0, 0, 0, 0, 15, 0.5f, new Vector2(-0.6f, 0.6f), 6f);
-        [SerializeField] private ParRules par4 = ParRules.Create(new Vector2(40f, 55f), 50, 0, 1, 60, 0, 1f, new Vector2(-1.2f, 1.2f), 8f);
-        [SerializeField] private ParRules par5 = ParRules.Create(new Vector2(65f, 85f), 50, 50, 2, 33, 0, 1.2f, new Vector2(-1.5f, 1.5f), 9f);
+        [SerializeField] private ParRules par3 = ParRules.Create(new Vector2(18f, 26f), 0, 0, 0, 0, 15, 0.5f, new Vector2(-0.6f, 0.6f), 6f, new Vector2Int(2, 4), 25, 0);
+        [SerializeField] private ParRules par4 = ParRules.Create(new Vector2(40f, 55f), 50, 0, 1, 60, 0, 1f, new Vector2(-1.2f, 1.2f), 8f, new Vector2Int(3, 5), 35, 100);
+        [SerializeField] private ParRules par5 = ParRules.Create(new Vector2(65f, 85f), 50, 50, 2, 33, 0, 1.2f, new Vector2(-1.5f, 1.5f), 9f, new Vector2Int(3, 6), 50, 100);
 
         [Header("Bends")]
         [Tooltip("How far a dogleg turns, in degrees.")]
@@ -165,6 +179,113 @@ namespace IsoGolf.Generation
         [SerializeField] private Vector2 skirtDepth = new Vector2(0.9f, 1.8f);
         [SerializeField, Min(0f)] private float skirtNoiseScale = 0.7f;
 
+        // Hazards, the green's pin and the safe route (M3 PR 6b). The decisions are in CLAUDE.md (Key systems: Level generator,
+        // Hazards). Lengths in metres, angles in degrees, chances in percent.
+        [Header("Shot model (copies of ShotSettings; LevelGenShotModelTests keeps them equal)")]
+        [Tooltip("Carry at zero power on flat ground. Equals ShotSettings.minCarry.")]
+        [SerializeField, Min(0.1f)] private float minCarry = 1f;
+        [Tooltip("Carry at full power on flat ground. Equals ShotSettings.maxCarry.")]
+        [SerializeField, Min(0.1f)] private float fullCarry = 26f;
+        [Tooltip("How far a full-power shot goes, carry and roll. Within 1 m of ShotReach.FullPowerDistance.")]
+        [SerializeField, Min(0.1f)] private float fullReach = 32f;
+        [Tooltip("The power a golfer uses to cut a dogleg's corner.")]
+        [SerializeField, Range(0f, 1f)] private float cutPower = 0.9f;
+        [Tooltip("The power that must be enough to carry a gap from the lay-up spot.")]
+        [SerializeField, Range(0f, 1f)] private float layupPower = 0.7f;
+        [Tooltip("The longest step of the safe route, as the crow flies.")]
+        [SerializeField, Min(1f)] private float safeStep = 24f;
+
+        [Header("Hazards")]
+        [Tooltip("A gap (or an island green's gap) counts as one of the course's hazards.")]
+        [SerializeField] private bool gapCountsAsHazard = true;
+        [Tooltip("Chance that a hazard guarding the green is water, in percent.")]
+        [SerializeField, Range(0, 100)] private int greenGuardWaterChance = 30;
+        [Tooltip("The same for the hazard at a dogleg's corner.")]
+        [SerializeField, Range(0, 100)] private int cornerWaterChance = 60;
+        [Tooltip("The same for the hazard in the drive zone.")]
+        [SerializeField, Range(0, 100)] private int driveZoneWaterChance = 35;
+        [Tooltip("The same for the hazards that fill up the course.")]
+        [SerializeField, Range(0, 100)] private int flankWaterChance = 20;
+        [Tooltip("Cross: the drive zone's hazard reaches over the centreline. Flank: it sits beside the fairway.")]
+        [SerializeField] private DriveZoneStyle driveZoneStyle = DriveZoneStyle.Cross;
+        [Tooltip("Chance of a drive zone hazard on a par 5 with a dogleg, in percent.")]
+        [SerializeField, Range(0, 100)] private int driveZoneWithDoglegChance = 40;
+        [Tooltip("A pond that finds no place is tried again as a bunker, so the role is not left empty. Off: the slot stays empty, as in the written plan.")]
+        [SerializeField] private bool waterFallsBackToSand = true;
+        [Tooltip("Candidates tried for each hazard before its slot stays empty.")]
+        [SerializeField, Range(1, 64)] private int triesPerSlot = 24;
+        [Tooltip("A bunker's long half-axis.")]
+        [SerializeField] private Vector2 bunkerRadius = new Vector2(0.9f, 1.6f);
+        [Tooltip("A bunker's short half-axis as a percentage of the long one.")]
+        [SerializeField] private Vector2Int bunkerAspect = new Vector2Int(55, 85);
+        [SerializeField] private Vector2 bunkerWobble = new Vector2(0.12f, 0.25f);
+        [Tooltip("A pond's long half-axis.")]
+        [SerializeField] private Vector2 pondRadius = new Vector2(1.8f, 3.4f);
+        [SerializeField] private Vector2Int pondAspect = new Vector2Int(45, 75);
+        [SerializeField] private Vector2 pondWobble = new Vector2(0.15f, 0.3f);
+        [Tooltip("How far a hazard's heading may stray from its role's, in degrees either side.")]
+        [SerializeField, Range(0f, 90f)] private float hazardTurnJitter = 20f;
+        [SerializeField, Min(0f)] private float hazardFromTee = 6f;
+        [SerializeField, Min(0f)] private float hazardFromHole = 3f;
+        [Tooltip("Free ground between two hazards.")]
+        [SerializeField, Min(0f)] private float hazardSpacing = 1.2f;
+        [Tooltip("A bunker keeps this far from the island's edge.")]
+        [SerializeField, Min(0f)] private float bunkerFromEdge = 0.6f;
+        [Tooltip("A pond either keeps this far from the edge or runs off it, never leaving a sliver of land.")]
+        [SerializeField, Min(0f)] private float pondEdgeSliver = 1.2f;
+        [Tooltip("A pond that runs off the edge crosses it by at least this much.")]
+        [SerializeField, Min(0f)] private float pondEdgeCrossing = 0.6f;
+        [Tooltip("A pond keeps this far from the tips of the islands either side of a gap.")]
+        [SerializeField, Min(0f)] private float pondFromGapEdge = 3f;
+        [Tooltip("No hazard on the safe corridor within this far past a gap's far edge.")]
+        [SerializeField, Min(0f)] private float gapLandingZone = 6f;
+        [Tooltip("A bunker's broad slope, rise per metre.")]
+        [SerializeField, Range(0.01f, 0.3f)] private float bunkerMaxSlope = 0.08f;
+        [Tooltip("The most a pond's rim may vary in height.")]
+        [SerializeField, Min(0f)] private float pondMaxRimRise = 0.35f;
+        [Tooltip("The water sits this far below the lowest point of the rim.")]
+        [SerializeField, Min(0f)] private float pondDrop = 0.22f;
+        [Tooltip("Free ground between the green's border and a bunker that guards it.")]
+        [SerializeField] private Vector2 guardBunkerClearance = new Vector2(0.3f, 1f);
+        [Tooltip("The same for a pond.")]
+        [SerializeField] private Vector2 guardPondClearance = new Vector2(1f, 2f);
+        [Tooltip("The least free ground between the green's border and a bunker.")]
+        [SerializeField, Min(0f)] private float bunkerFromGreen = 0.3f;
+        [SerializeField, Min(0f)] private float pondFromGreen = 1f;
+        [Tooltip("A green guard comes at least this close to the direct line to the pin.")]
+        [SerializeField, Min(0f)] private float guardLineReach = 1.5f;
+        [Tooltip("The corner hazard ends at least this far before the cut shot lands.")]
+        [SerializeField, Min(0f)] private float cutLandingMargin = 2f;
+        [Tooltip("Flank style: the drive zone's hazard comes at least this close to the drive line.")]
+        [SerializeField, Min(0f)] private float driveLineReach = 1.5f;
+
+        [Header("Green and pin")]
+        [Tooltip("Beyond this angle between the last leg and the direct line the guard sits on the line's side, in degrees.")]
+        [SerializeField, Min(0f)] private float sideGuardThreshold = 8f;
+        [SerializeField, Min(0f)] private float sideGuardJitter = 15f;
+        [Tooltip("A guard in front of the green sits this far to one side of the approach, in degrees.")]
+        [SerializeField] private Vector2 frontGuardAngle = new Vector2(15f, 40f);
+        [Tooltip("The hole sits this far from the green's centre toward the guard, in metres.")]
+        [SerializeField] private Vector2 pinOffset = new Vector2(0.5f, 1f);
+        [Tooltip("The hole also sits this far toward the back of the green (negative: the front).")]
+        [SerializeField] private Vector2 pinAlong = new Vector2(-0.4f, 0.6f);
+        [Tooltip("The hole keeps this far from the green's border, so the flat ground around it stays on the green.")]
+        [SerializeField, Min(0f)] private float pinFromBorder = 1.5f;
+
+        [Header("Safe route")]
+        [Tooltip("Shots the safe route may take beyond par - 1. The plan says 0; with 0 about one par 5 in eight has no route at all because of a gap close to the green, so the default is 1 (a route of at most par shots to the safe target).")]
+        [SerializeField, Range(0, 3)] private int safeRouteExtraShots = 1;
+        [Tooltip("A rest spot's landing capsule starts this far behind it, along the centreline.")]
+        [SerializeField, Min(0f)] private float safeLandingBack = 5f;
+        [SerializeField, Min(0f)] private float safeLandingAhead = 1.5f;
+        [SerializeField, Min(0.1f)] private float safeLandingHalfWidth = 1.5f;
+        [Tooltip("The capsule keeps this far inside the island's edge.")]
+        [SerializeField, Min(0f)] private float edgeMargin = 0.8f;
+        [Tooltip("The lay-up shot lands this far past a gap's far edge at least.")]
+        [SerializeField, Min(0f)] private float gapLandingMargin = 2f;
+        [Tooltip("Half the width of the strip along the shot lines that M4 keeps free of props.")]
+        [SerializeField, Min(0f)] private float shotCorridorHalfWidth = 2f;
+
         /// <summary>The rules for a par from 3 to 5.</summary>
         public ParRules Rules(int par)
         {
@@ -224,5 +345,73 @@ namespace IsoGolf.Generation
         public float LegBlend => legBlend;
         public Vector2 SkirtDepth => skirtDepth;
         public float SkirtNoiseScale => skirtNoiseScale;
+
+        public float MinCarry => minCarry;
+        public float FullCarry => fullCarry;
+        public float FullReach => fullReach;
+        public float CutPower => cutPower;
+        public float LayupPower => layupPower;
+        public float SafeStep => safeStep;
+
+        /// <summary>The carry of a shot at this power on flat ground, like <c>ShotSettings.CarryFor</c>.</summary>
+        public float CarryAt(float power) => Mathf.Lerp(minCarry, fullCarry, power);
+
+        public bool GapCountsAsHazard => gapCountsAsHazard;
+        public int GreenGuardWaterChance => greenGuardWaterChance;
+        public int CornerWaterChance => cornerWaterChance;
+        public int DriveZoneWaterChance => driveZoneWaterChance;
+        public int FlankWaterChance => flankWaterChance;
+        public DriveZoneStyle DriveZoneStyle => driveZoneStyle;
+        public int DriveZoneWithDoglegChance => driveZoneWithDoglegChance;
+        public int TriesPerSlot => triesPerSlot;
+        public bool WaterFallsBackToSand => waterFallsBackToSand;
+        public Vector2 BunkerRadius => bunkerRadius;
+        public Vector2Int BunkerAspect => bunkerAspect;
+        public Vector2 BunkerWobble => bunkerWobble;
+        public Vector2 PondRadius => pondRadius;
+        public Vector2Int PondAspect => pondAspect;
+        public Vector2 PondWobble => pondWobble;
+        public float HazardTurnJitter => hazardTurnJitter;
+        public float HazardFromTee => hazardFromTee;
+        public float HazardFromHole => hazardFromHole;
+        public float HazardSpacing => hazardSpacing;
+        public float BunkerFromEdge => bunkerFromEdge;
+        public float PondEdgeSliver => pondEdgeSliver;
+        public float PondEdgeCrossing => pondEdgeCrossing;
+        public float PondFromGapEdge => pondFromGapEdge;
+        public float GapLandingZone => gapLandingZone;
+        public float BunkerMaxSlope => bunkerMaxSlope;
+        public float PondMaxRimRise => pondMaxRimRise;
+        public float PondDrop => pondDrop;
+        public Vector2 GuardBunkerClearance => guardBunkerClearance;
+        public Vector2 GuardPondClearance => guardPondClearance;
+        public float BunkerFromGreen => bunkerFromGreen;
+        public float PondFromGreen => pondFromGreen;
+        public float GuardLineReach => guardLineReach;
+        public float CutLandingMargin => cutLandingMargin;
+        public float DriveLineReach => driveLineReach;
+        public float SideGuardThreshold => sideGuardThreshold;
+        public float SideGuardJitter => sideGuardJitter;
+        public Vector2 FrontGuardAngle => frontGuardAngle;
+        public Vector2 PinOffset => pinOffset;
+        public Vector2 PinAlong => pinAlong;
+        public float PinFromBorder => pinFromBorder;
+        public int SafeRouteExtraShots => safeRouteExtraShots;
+        public float SafeLandingBack => safeLandingBack;
+        public float SafeLandingAhead => safeLandingAhead;
+        public float SafeLandingHalfWidth => safeLandingHalfWidth;
+        public float EdgeMargin => edgeMargin;
+        public float GapLandingMargin => gapLandingMargin;
+        public float ShotCorridorHalfWidth => shotCorridorHalfWidth;
+    }
+
+    /// <summary>Where a drive-zone hazard sits on a straight par 4 or 5.</summary>
+    public enum DriveZoneStyle
+    {
+        /// <summary>Over one side of the fairway and across the centreline: carry it or lay up short.</summary>
+        Cross,
+
+        /// <summary>Beside the fairway, in the rough.</summary>
+        Flank,
     }
 }

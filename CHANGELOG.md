@@ -4,6 +4,31 @@ All notable progress on Iso Golf. The format follows [Keep a Changelog](https://
 
 ## [Unreleased]
 
+### 2026-11-09: Surfaces and hazards (`feature/m3-surfaces-hazards`, PR 6b)
+
+#### Added
+
+- `CourseHazards` (green and pin, hazards by role), `SafeRoute` (+ `RouteWorld`), `HazardGeometry` (`HazardOutline`: 24-point true outline by bisection, metric distances), `CoursePlan` on `CourseLayout.Plan` (hazard roles, shot lines, safe route, missing roles). Generated courses now have a green guard (30% water), a hazard to carry at each dogleg corner that a 90% shot can cut, a hazard across the drive on straight par 4/5s, an optional second guard, and flanks beside the safe route's rest spots, up to the drawn count (par 3 2-4, par 4 3-5, par 5 3-6; a gap counts as one). The hole stays, the green moves 0.5-1 m away from its guard. Water is about one hazard in five.
+- A second random stream (surfaces) for green, pin and hazards: islands, centreline, fairway, relief and elevation of a seed are unchanged (a test compares them with hazards off).
+- Ponds get a per-pond water level (rim spread at most 0.35 m, water 0.22 m under the lowest rim point and 8 cm under the drawn rim); ponds can run off the island edge (water edge, no tufts).
+- `LevelGenSettings` (and asset): shot model copy (`minCarry` 1, `fullCarry` 26, `fullReach` 32, `cutPower`, `layupPower`, `safeStep`), per-par `hazardCount`, `secondGuardChance`, `driveZoneChance`, and the hazard, green and pin, and safe route fields.
+- Tests: `CourseHazardTests`, `SafeRouteTests` (5), `LevelGenShotModelTests` (1); explicit `CourseHazardMeasurements` (ace sweep, generation time, seed survey, strategy maps). 40 new tests. EditMode: 629 tests, 618 pass, 11 explicit skipped, 0 failed.
+- Captures in `Docs/Screenshots/m3-surfaces-hazards/` and strategy maps in `strategy-map/`.
+
+#### Changed (plan deviations, each one setting or one line to undo)
+
+- Safe route is found by counting the fewest shots back from the safe target, then walking forward; greedy dead-ended before gaps.
+- `safeRouteExtraShots` = 1: the route may take par shots (plan: par - 1). With 0, about one par 5 in eight had no route on the bare course (a gap close to the green).
+- `waterFallsBackToSand`: a pond that finds no place is retried as a bunker (plan: slot stays empty). Without it a third of drive zones stayed empty.
+- `fullReach` is 32, not 30: `ShotReach.FullPowerDistance` is 31.97 (a test pins it within 1 m).
+- Pin: the extra offset along the green's side instead of along the approach, so the hole is always `pinOffset` toward the guard. The hole cannot keep 1.5 m from the green border (it already sits 1.4 m off the centre): measured minimum border distance over 200 seeds: 1.38 m (par 3), 1.24 m (par 4), 1.22 m (par 5).
+- Tuned to reach 85% complete courses: safe capsule half-width 1.5 m (2.0 left no room for flanks on a 10 m island), shot corridor 2.0, bunker radius 0.8-1.5 m, `bunkerFromEdge` 0.4, front guard angle 10-35 degrees, 24 tries per slot; ponds point across the edge, corner and flank ponds draw around the cut line; a drive-zone gap counts as the drive zone's hazard; the final approach of the safe route is 1.2 m wide and needs only the last metre of its middle on the green.
+
+#### Notes
+
+- Complete courses (all required roles and a route), 200 seeds per par: par 3 199, par 4 171, par 5 174. Generation takes 14.7, 25.2 and 33.1 ms per course (Editor, Mono; not measured on the phone).
+- Ace sweep over generated par 3 seeds 0-49: mean 1.17%, max 1.73% (seed 32), 41 seeds at or above 1%, full power never holes. Above the 1% target: PR 7's job (hazards only change the line, not the lie at the hole).
+
 ### 2026-11-07: Hazard shapes (`refactor/m3-hazard-shapes`, PR 6a)
 
 Data and rendering support for PR 6b's hazards. No generator change, nothing visible on any scene.
