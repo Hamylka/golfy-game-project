@@ -49,6 +49,19 @@ namespace IsoGolf.Measurement
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         private static void Create()
         {
+            // Autoplay only when asked: adb push a file named measure.txt holding "<par> <seed>" to the app's files folder.
+            string flag = Path.Combine(Application.persistentDataPath, "measure.txt");
+            if (!File.Exists(flag))
+            {
+                return;
+            }
+
+            string[] parts = File.ReadAllText(flag).Split(new[] { ' ', '\n', '\r' }, System.StringSplitOptions.RemoveEmptyEntries);
+            if (parts.Length >= 2)
+            {
+                DebugCourseOverride.Set(int.Parse(parts[1], CultureInfo.InvariantCulture), int.Parse(parts[0], CultureInfo.InvariantCulture));
+            }
+
             var host = new GameObject("PhoneMeasurement");
             DontDestroyOnLoad(host);
             host.AddComponent<PhoneMeasurement>();
@@ -211,7 +224,7 @@ namespace IsoGolf.Measurement
             _sceneIndex++;
             if (_sceneIndex >= SceneManager.sceneCountInBuildSettings)
             {
-                string path = Path.Combine(Application.persistentDataPath, "m2_phone.csv");
+                string path = Path.Combine(Application.persistentDataPath, "phone_checks.csv");
                 File.WriteAllText(path, _csv.ToString());
                 Debug.Log("MEASURE_DONE " + path);
                 enabled = false;

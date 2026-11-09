@@ -34,9 +34,26 @@ namespace IsoGolf.Gameplay
         {
             if (generator != null)
             {
+#if ISOGOLF_MEASURE
+                // Phone checks: the seed and par picked on the device, and the time generation and checks take there.
+                if (DebugCourseOverride.Has)
+                {
+                    seed = DebugCourseOverride.Seed;
+                    par = DebugCourseOverride.Par;
+                }
+
+                var clock = System.Diagnostics.Stopwatch.StartNew();
+#endif
                 Generated = CheckedCourse.Generate(seed, par, generator, ball.Shot);
+#if ISOGOLF_MEASURE
+                double generateMs = clock.Elapsed.TotalMilliseconds;
+                clock.Restart();
+#endif
                 Debug.Log($"Course seed {seed} par {par}: variant {Generated.Variant} kept after {Generated.Candidates} candidate(s), failed checks: {Generated.Failed}.");
                 terrain.Build(Generated.Layout);
+#if ISOGOLF_MEASURE
+                Debug.Log($"COURSE_TIMING seed {seed} par {par} generate+checks {generateMs:F1} ms, terrain build {clock.Elapsed.TotalMilliseconds:F1} ms, variant {Generated.Variant}, candidates {Generated.Candidates}, failed {Generated.Failed}");
+#endif
             }
             else
             {
