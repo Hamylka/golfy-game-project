@@ -4,6 +4,30 @@ All notable progress on Iso Golf. The format follows [Keep a Changelog](https://
 
 ## [Unreleased]
 
+### 2026-11-09: Course checks and deterministic reroll (`feature/m3-course-checks`, PR 7)
+
+#### Added
+
+- `CourseChecks` and `CheckedCourse` (`Gameplay`, plain C#): checks a generated course with the real `BallSimulation` on its `BallGround`, and tries variants 0, 1, ... of a (seed, par) until one passes, at most `checkVariants` (8). If none passes it keeps the one failing the fewest checks (the lowest variant on a tie) and logs a warning. Same (seed, par), same course. The checks, all cheap enough for the phone:
+  - `IncompletePlan`: `CoursePlan.Complete` (every required role placed, a safe route);
+  - `GapNotCleared`: every safe-route leg across open sky brings a ball to rest past the gap at a power from 0.30 to the lay-up power (0.70), aimed at the next rest spot;
+  - `NoRestNearHole`: from the safe route's last rest spot, some approach (aims -1, 0, +1 degrees, powers 0.02-1.00 by 0.02) holes or stops on the green within 2 m of the hole.
+- `LevelGenSettings` (and asset): `checkVariants` 8, `restNearHole` 2, `restCheckAim` 1, `restCheckPower` 0.02-1.00, `checkPowerStep` 0.02, `gapCheckMinPower` 0.3.
+- Tests: `CourseCheckTests` (11: pinned seeds and their variants, determinism, every checked course passes on seeds 0-29 per par, incomplete plans reroll, each check can fail, exhaustion keeps the least bad and warns, fine ace sweep on two pinned par 3s); explicit `CourseCheckMeasurements` (reroll survey over seeds 0-199 per par, fine ace sweep over checked par 3 seeds 0-49). EditMode: 642 tests, 629 pass, 13 explicit skipped, 0 failed.
+
+#### Changed
+
+- `ShotSettings.green.restitution` 0.30 → 0.42 (the director's choice among the measured options): a ball landing on the green hops higher, so where it lands matters more. Putts are unchanged. Generator levers alone could not reach the ace target (best: par 3 length 22-26 m and a smaller green, 0.93% mean, 7 of 16 seeds at or over 1%), because aces land on the green itself 3-4 m short of the hole and roll in.
+- `BallOnCourseTests.FullTeeShot_...` is now `StrongTeeShot_...` at power 0.95: on the hand-made 28 m par 3, a full shot now hops over the back of the green and off the island. On generated par 3s (18-26 m) a full shot straight at the hole was already lost on 30 of 30 seeds before this change.
+- `CLAUDE.md`: where the checks run (cheap ones on the phone, the ace rate held by tuning and gated by tests).
+
+#### Notes
+
+- Ace sweep (fine: +-6 degrees by 0.1, power 0.50-1.00 by 0.01) over checked par 3 seeds 0-49: mean 0.48%, max 0.78% (seed 0), no seed at or over 1%, full power never holes. Before (PR 6b): mean 1.17%, max 1.73%, 41 seeds at or over 1%.
+- Reroll survey, seeds 0-199: par 3 rerolled 1 (seed 9), par 4 29, par 5 26; no seed runs out of variants (highest variant kept: 1, 3, 2). Every reroll is an incomplete plan: the gap and rest-near-hole checks failed on no variant 0 of the 600 courses, so today they are guards for later tuning. 1.01, 1.18 and 1.15 candidates per course; 26.7, 51.1 and 69.1 ms per checked course (Editor, Mono; not measured on the phone).
+- One fine ace sweep costs 2.3-3.4 s per par 3 in the Editor, which is why it stays offline. The phone path is not wired yet: `TerrainView` still calls `CourseGenerator.Generate` directly; PR 8 (Main on a generated course) switches it to `CheckedCourse`.
+- Plan deviation: the approach powers start at 0.02, not the 0.30 the plan asked about. The last rest spot is often a lay-up about 8 m short, and 0.30 already carries about 8.5 m, so with 0.30 every approach from there flew off the island (12-20% false failures).
+
 ### 2026-11-09: Surfaces and hazards (`feature/m3-surfaces-hazards`, PR 6b)
 
 #### Added

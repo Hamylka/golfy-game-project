@@ -34,7 +34,7 @@ MonoBehaviour:
     rollingDeceleration: 1.6
     carryScale: 1
   green:
-    restitution: 0.3
+    restitution: 0.42
     tangentKeep: 0.45
     rollingDeceleration: 1.2
     carryScale: 1

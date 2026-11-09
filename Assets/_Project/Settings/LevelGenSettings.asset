@@ -151,3 +151,9 @@ MonoBehaviour:
   edgeMargin: 0.8
   gapLandingMargin: 2
   shotCorridorHalfWidth: 2
+  checkVariants: 8
+  restNearHole: 2
+  restCheckAim: 1
+  restCheckPower: {x: 0.02, y: 1}
+  checkPowerStep: 0.02
+  gapCheckMinPower: 0.3
