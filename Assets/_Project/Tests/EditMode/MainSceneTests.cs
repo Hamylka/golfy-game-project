@@ -83,6 +83,48 @@ namespace IsoGolf.Tests
         }
 
         [Test]
+        public void MainPlaysAGeneratedCourse_WithoutHandPlacedTrees()
+        {
+            // Main generates and checks its course from a seed and par; trees wait for M4's placement rules.
+            var bootstrap = new SerializedObject(Root("Level").GetComponent<LevelBootstrap>());
+            var terrain = new SerializedObject(Root("Course").GetComponentInChildren<TerrainView>(true));
+
+            Assert.That(bootstrap.FindProperty("generator").objectReferenceValue, Is.Not.Null);
+            Assert.That(bootstrap.FindProperty("par").intValue, Is.InRange(3, 5));
+            Assert.That(terrain.FindProperty("trees").objectReferenceValue, Is.Null);
+            Assert.That(terrain.FindProperty("shape").objectReferenceValue, Is.Null);
+        }
+
+        [Test]
+        public void SandboxPar3_KeepsTheHandMadeCourseAndItsTrees()
+        {
+            const string Path = "Assets/_Project/Scenes/Sandbox_Par3.unity";
+            Scene scene = EditorSceneManager.OpenScene(Path, OpenSceneMode.Additive);
+            try
+            {
+                // Searched in this scene's roots: Main may be loaded beside it.
+                LevelBootstrap level = null;
+                TerrainView view = null;
+                foreach (GameObject root in scene.GetRootGameObjects())
+                {
+                    level = level != null ? level : root.GetComponentInChildren<LevelBootstrap>(true);
+                    view = view != null ? view : root.GetComponentInChildren<TerrainView>(true);
+                }
+
+                var bootstrap = new SerializedObject(level);
+                var terrain = new SerializedObject(view);
+
+                Assert.That(bootstrap.FindProperty("generator").objectReferenceValue, Is.Null);
+                Assert.That(terrain.FindProperty("shape").objectReferenceValue.name, Is.EqualTo("Par3CourseShape"));
+                Assert.That(terrain.FindProperty("trees").objectReferenceValue, Is.Not.Null);
+            }
+            finally
+            {
+                EditorSceneManager.CloseScene(scene, true);
+            }
+        }
+
+        [Test]
         public void BallShadowAndHoleLiveDirectlyInTheCourseContainer()
         {
             // Directly, at the container's origin, because their positions and vertices are in its local space.

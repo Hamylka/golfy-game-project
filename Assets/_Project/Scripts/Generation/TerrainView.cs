@@ -3,15 +3,10 @@ using UnityEngine;
 
 namespace IsoGolf.Generation
 {
-    /// <summary>Turns a course into meshes in the scene. The course is generated from a seed and a par when generator settings are set, otherwise read from a hand-made shape.</summary>
+    /// <summary>Turns a course into meshes in the scene. The course is handed in (generated and checked by the level bootstrap) or, without one, read from a hand-made shape.</summary>
     public sealed class TerrainView : MonoBehaviour
     {
         [SerializeField] private CourseShapeSettings shape;
-
-        [Tooltip("Optional. When set, the course is generated from the seed and par below and the hand-made shape is ignored.")]
-        [SerializeField] private LevelGenSettings generator;
-        [SerializeField] private int seed;
-        [SerializeField, Range(3, 5)] private int par = 3;
 
         [SerializeField] private PaletteSettings palette;
         [SerializeField] private Material landMaterial;
@@ -33,10 +28,17 @@ namespace IsoGolf.Generation
         /// <summary>Every piece of every island's edge, for where the camera may look.</summary>
         public IReadOnlyList<EdgeSegment> Edge { get; private set; }
 
+        /// <summary>Builds the hand-made shape, the fixed test course of the sandbox scenes.</summary>
         public void Build()
         {
+            Build(shape.ToLayout());
+        }
+
+        /// <summary>Builds this course, a generated one say.</summary>
+        public void Build(CourseLayout layout)
+        {
             Clear();
-            Layout = generator != null ? CourseGenerator.Generate(seed, par, generator) : shape.ToLayout();
+            Layout = layout;
             TerrainResult result = TerrainBuilder.Build(Layout, palette);
             AddMesh("Land", result.Land, landMaterial);
             AddMesh("Water", result.Water, waterMaterial);

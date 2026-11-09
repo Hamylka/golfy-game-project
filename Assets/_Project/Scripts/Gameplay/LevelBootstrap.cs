@@ -21,9 +21,28 @@ namespace IsoGolf.Gameplay
         [Tooltip("Optional. Scenes without it keep their sun as authored.")]
         [SerializeField] private LevelSun sun;
 
+        [Header("Generated course")]
+        [Tooltip("Optional, needs the ball. When set, the course is generated from the seed and par below and checked; otherwise the terrain's hand-made shape is built.")]
+        [SerializeField] private LevelGenSettings generator;
+        [SerializeField] private int seed;
+        [SerializeField, Range(3, 5)] private int par = 3;
+
+        /// <summary>What the checked generation settled on, or null for a hand-made course.</summary>
+        public CheckedCourseResult Generated { get; private set; }
+
         private void Start()
         {
-            terrain.Build();
+            if (generator != null)
+            {
+                Generated = CheckedCourse.Generate(seed, par, generator, ball.Shot);
+                Debug.Log($"Course seed {seed} par {par}: variant {Generated.Variant} kept after {Generated.Candidates} candidate(s), failed checks: {Generated.Failed}.");
+                terrain.Build(Generated.Layout);
+            }
+            else
+            {
+                terrain.Build();
+            }
+
             islandCamera.SetIsland(terrain.Outline, terrain.Layout.Centreline.Points, GroundEdges(terrain.Edge));
             if (ball != null)
             {

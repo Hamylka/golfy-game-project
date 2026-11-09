@@ -4,6 +4,30 @@ All notable progress on Iso Golf. The format follows [Keep a Changelog](https://
 
 ## [Unreleased]
 
+### 2026-11-09: Main on a generated course (`feature/m3-main-generated`, PR 8)
+
+#### Added
+
+- `LevelBootstrap` (`Gameplay`) generates the course when given `LevelGenSettings`: `CheckedCourse.Generate(seed, par, generator, ball.Shot)`, then `TerrainView.Build(layout)`, then the camera, sun, clouds and ball as before. It logs the variant kept, the candidates tried and the failed checks (`CheckedCourseResult` stays readable on `Generated`). `seed` and `par` are Inspector fields until M5.
+- `Sandbox_Par3`: the old `Main` (hand-made par 3 with its hand-placed trees), the fixed test course.
+- Tests: `MainSceneTests` checks that `Main` has a generator and no trees, and that `Sandbox_Par3` keeps the hand-made shape and trees.
+- Captures in `Docs/Screenshots/m3-main-generated/`.
+
+#### Changed
+
+- `Main` plays a generated, checked course (seed 1, par 3 by default) with no trees: on a generated course hand-placed trees would land on bunkers, shot lines and the safe route. M4's placement rules bring them back (director's choice).
+- `TerrainView` takes a layout (`Build(CourseLayout)`) or, as `Build()`, its hand-made shape; it no longer holds a generator, seed or par (`Generation` can't see the checks in `Gameplay`).
+- `CameraCourse.LongPath` is now a generated, checked par 5 (seed 33, straight first leg, a gap), `"generated:5:33"`. Moved pins: `CameraPathTests` framing figures re-measured (they pin today's framing now, the old ones belonged to the old island; the straight par 3 rows still hold the pre-heading capture) and the "with or without centreline" check keeps only the par 3, because a generated par 5's islands wobble around a centreline 1.7 m off the axis (2.35 m difference); `ShadowDistanceTests` figures re-measured (worst heading / starting heading, m): 9:16 69.14 / 55.02 (was 68.03 / 58.58), 1280:2800 76.21 / 63.36 (was 76.17 / 67.84), 9:21 78.83 / 66.37 (was 79.17 / 71.11).
+- `CLAUDE.md` names the new scene layout.
+
+#### Removed
+
+- `Sandbox_LongCourse`, `Par5SandboxCourseShape`, and the scenes `Sandbox_Gap`, `Sandbox_Dogleg` and `Sandbox_Generated` (generated courses replace them to the eye). `GapCourseShape` and `DoglegCourseShape` stay as test fixtures (camera, island area, shadow, multi-island and dogleg tests).
+
+#### Notes
+
+- Not checked in Play Mode: a shot and the rest framing on generated courses (Play Mode doesn't tick while Unity is unfocused); those paths are covered by the existing camera and ball tests. Start views were captured for par 3 seed 1, par 4 seed 3 and par 5 seed 33.
+
 ### 2026-11-09: Course checks and deterministic reroll (`feature/m3-course-checks`, PR 7)
 
 #### Added
