@@ -5,8 +5,8 @@ namespace IsoGolf.Rendering
 {
     /// <summary>
     /// The automatic heading for a ball at rest: toward the hole when a full-power shot can reach it, otherwise along
-    /// the course ahead of the ball, read over a look-ahead stretch of the centreline. Pure maths, for the camera to
-    /// ease to and for tests.
+    /// the course ahead of the ball, read over a look-ahead stretch of the centreline, turned toward the hole by at
+    /// most a set angle. Pure maths, for the camera to ease to and for tests.
     /// </summary>
     public sealed class CameraHeading
     {
@@ -16,6 +16,7 @@ namespace IsoGolf.Rendering
         private readonly float _closest;
         private readonly float _maxTurn;
         private readonly float _lookAhead;
+        private readonly float _farTurn;
 
         /// <param name="centreline">The course's centreline, tee to hole (x is world X, y is world Z). A single leg counts as +X.</param>
         /// <param name="hole">The hole on the ground.</param>
@@ -29,7 +30,11 @@ namespace IsoGolf.Rendering
         /// How far along the centreline, in metres, the course ahead is read. 0 takes the direction of the leg the ball
         /// is on, as before the look-ahead existed.
         /// </param>
-        public CameraHeading(IReadOnlyList<Vector2> centreline, Vector2 hole, float reach, float closest, float maxTurn = 180f, float lookAhead = 0f)
+        /// <param name="farTurn">
+        /// With the hole out of reach on a bent course, how far, in degrees, the heading turns from the course ahead
+        /// toward the hole. 0 follows the course ahead only.
+        /// </param>
+        public CameraHeading(IReadOnlyList<Vector2> centreline, Vector2 hole, float reach, float closest, float maxTurn = 180f, float lookAhead = 0f, float farTurn = 0f)
         {
             // A straight course runs along the play axis, whatever small offset to the side its hole has, as the
             // framing reads it.
@@ -40,6 +45,7 @@ namespace IsoGolf.Rendering
             _closest = closest;
             _maxTurn = maxTurn;
             _lookAhead = Mathf.Max(0f, lookAhead);
+            _farTurn = Mathf.Max(0f, farTurn);
         }
 
         /// <summary>The heading of the course's first leg, for the start of a level.</summary>
@@ -57,7 +63,17 @@ namespace IsoGolf.Rendering
                 return Mathf.Abs(turn) <= _maxTurn ? toHole / distance : Rotate(ahead, Mathf.Clamp(turn, -_maxTurn, _maxTurn));
             }
 
-            return Ahead(ball);
+            Vector2 course = Ahead(ball);
+            if (_path == null || _farTurn <= 0f || distance < _closest || distance <= 1e-4f || OnTheTee(ball))
+            {
+                return course;
+            }
+
+            // Out of reach, the view still leans toward the hole, by at most the far turn: the course ahead alone can
+            // put a distant hole off the side of the screen (par 5 seed 6: course ahead 29 degrees, hole 14, the hole
+            // well off to the right), while facing the hole outright could look across the void beside a dogleg.
+            float toward = Vector2.SignedAngle(course, toHole);
+            return Rotate(course, Mathf.Clamp(toward, -_farTurn, _farTurn));
         }
 
         /// <summary>
@@ -86,6 +102,18 @@ namespace IsoGolf.Rendering
             }
 
             return (_path.PointAt(end) - _path.PointAt(along)).normalized;
+        }
+
+        /// <summary>
+        /// Whether the ball sits on the tee, the centreline's first point on every course: the start view, and a lost
+        /// tee shot's return. There the view faces the course ahead only, with the tee's fairway running straight up
+        /// the screen (director's choice, F1); the lean toward the hole starts after the first shot.
+        /// </summary>
+        private bool OnTheTee(Vector2 ball)
+        {
+            // A tolerance, not a tunable: a ball on the tee is exactly there, and any played shot ends metres away.
+            const float TeeRadius = 0.5f;
+            return (ball - _path.Points[0]).sqrMagnitude < TeeRadius * TeeRadius;
         }
 
         private static Vector2 Rotate(Vector2 direction, float degrees)

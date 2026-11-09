@@ -255,15 +255,67 @@ namespace IsoGolf.Tests
             Assert.That((course.Layout.Hole - ball).magnitude, Is.GreaterThan(course.Reach), "hole out of reach");
 
             float heading = AngleOf(course.Rule.For(ball));
+            float hole = AngleOf(course.Layout.Hole - ball);
 
-            Assert.That(heading - firstLeg, Is.GreaterThan(20f), "turned well off the first leg");
+            Assert.That(heading - firstLeg, Is.GreaterThan(10f), "turned off the first leg");
             Assert.That(heading, Is.LessThanOrEqualTo(secondLeg + 1e-3f), "no further than the next leg");
+            Assert.That(heading, Is.EqualTo(hole).Within(0.1f), "the hole is within the far turn of the course ahead: faces it");
             Assert.That(heading, Is.EqualTo(GeneratedPar5Seed6RestHeading).Within(0.1f), "pinned");
         }
 
         // Measured on the generator of PR F1; moves if the seed's course or the ball's flight changes.
-        // Before the look-ahead it was -2.0 (the first leg; yaw 82), now 29.28 (yaw 50.72), the second leg being 30.0.
-        private const float GeneratedPar5Seed6RestHeading = 29.28f;
+        // The first leg alone gave -2.0 (yaw 82), the course ahead alone 29.28 (yaw 50.72, the hole off screen to the
+        // right); leaning toward the hole by up to 20 degrees gives the hole's own bearing.
+        private const float GeneratedPar5Seed6RestHeading = 15.37f;
+
+        [Test]
+        public void FarTurn_HoleOutOfReach_LeansTowardTheHole_NoFurtherThanTheLimit()
+        {
+            // With no look-ahead the course ahead is the first leg (+X); from here the hole is about 29 degrees right of it, out of reach.
+            var rule = new CameraHeading(Bent, Bent[2], 10f, 1.5f, 180f, 0f, 20f);
+            var ball = new Vector2(-5f, 0f);
+            Assert.That(Vector2.Angle(Vector2.right, Bent[2] - ball), Is.GreaterThan(20f), "the fixture's hole is past the limit");
+
+            float heading = AngleOf(rule.For(ball));
+
+            Assert.That(heading, Is.EqualTo(-20f).Within(1e-3f), "the limit, on the hole's side");
+        }
+
+        [Test]
+        public void FarTurn_HoleOutOfReach_WithinTheLimit_FacesTheHole()
+        {
+            var rule = new CameraHeading(Bent, Bent[2], 10f, 1.5f, 180f, 10f, 45f);
+            var ball = new Vector2(-20f, 0f);
+
+            Assert.That((rule.For(ball) - (Bent[2] - ball).normalized).magnitude, Is.LessThan(1e-4f));
+        }
+
+        [Test]
+        public void FarTurn_OnTheTee_FacesTheCourseAheadOnly()
+        {
+            // The start view keeps the tee's fairway straight up the screen; the lean starts after the first shot.
+            var rule = new CameraHeading(Bent, Bent[2], 10f, 1.5f, 180f, 10f, 45f);
+
+            Assert.That((rule.For(Bent[0]) - Vector2.right).magnitude, Is.LessThan(1e-5f), "on the tee");
+            Assert.That(Vector2.Angle(Vector2.right, rule.For(Bent[0] + new Vector2(2f, 0f))), Is.GreaterThan(10f), "a shot away, it leans");
+        }
+
+        [Test]
+        public void FarTurn_Zero_FollowsTheCourseAheadOnly()
+        {
+            var rule = new CameraHeading(Bent, Bent[2], 10f, 1.5f, 180f, 10f, 0f);
+
+            Assert.That((rule.For(new Vector2(-20f, 0f)) - Vector2.right).magnitude, Is.LessThan(1e-5f));
+        }
+
+        [Test]
+        public void FarTurn_OnAStraightCourse_KeepsPlusX()
+        {
+            // The framing reads a straight course along the play axis, whatever its hole's small offset.
+            var rule = new CameraHeading(new[] { new Vector2(-37f, 0f), new Vector2(37.2f, 0.4f) }, new Vector2(37.2f, 0.4f), 30f, 1.5f, 180f, 16f, 20f);
+
+            Assert.That(rule.For(new Vector2(-30f, 0f)), Is.EqualTo(Vector2.right));
+        }
 
         [Test]
         public void Dogleg_FromTheTee_FacesTheFirstLeg_AndOnceInReach_TheHole()

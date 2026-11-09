@@ -165,7 +165,7 @@ namespace IsoGolf.Rendering
         /// </summary>
         public void SetHole(Vector2 hole, float fullPowerReach, System.Func<float, float, float> ground = null)
         {
-            _rule = new CameraHeading(_centreline, hole, fullPowerReach, settings.HoleHeadingMinDistance, settings.HoleHeadingMaxTurn, settings.HeadingLookAhead);
+            _rule = new CameraHeading(_centreline, hole, fullPowerReach, settings.HoleHeadingMinDistance, settings.HoleHeadingMaxTurn, settings.HeadingLookAhead, settings.HoleHeadingFarTurn);
             _approach = new ApproachFraming(hole, fullPowerReach, settings.ApproachHoleViewportY, settings.DefaultZoom, settings.ApproachClosestZoom, ground);
             _follow.Rule = _rule;
             _follow.Approach = _approach;

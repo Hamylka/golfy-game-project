@@ -25,6 +25,7 @@ MonoBehaviour:
   headingSmoothTime: 0.5
   headingMinTurn: 5
   headingLookAhead: 16
+  holeHeadingFarTurn: 20
   holeHeadingMinDistance: 0.3
   holeHeadingMaxTurn: 180
   maxTwist: 45

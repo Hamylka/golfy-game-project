@@ -67,7 +67,7 @@ namespace IsoGolf.Tests
             Centreline = Layout.Centreline.Points;
             Area = new IslandArea(LevelBootstrap.GroundEdges(terrain.Edge), Centreline, Rig.IslandMargin);
             Reach = ShotReach.FullPowerDistance(Shot);
-            Rule = new CameraHeading(Centreline, Layout.Hole, Reach, Rig.HoleHeadingMinDistance, holeMaxTurn ?? Rig.HoleHeadingMaxTurn, Rig.HeadingLookAhead);
+            Rule = new CameraHeading(Centreline, Layout.Hole, Reach, Rig.HoleHeadingMinDistance, holeMaxTurn ?? Rig.HoleHeadingMaxTurn, Rig.HeadingLookAhead, Rig.HoleHeadingFarTurn);
 
             StartYaw = IsoCameraConvention.YawFor(Rule.FirstLeg);
             Quaternion rotation = Mathf.Abs(Mathf.DeltaAngle(StartYaw, IsoCameraConvention.StraightYaw)) < 1e-3f
