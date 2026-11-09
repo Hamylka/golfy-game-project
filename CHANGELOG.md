@@ -4,6 +4,20 @@ All notable progress on Iso Golf. The format follows [Keep a Changelog](https://
 
 ## [Unreleased]
 
+### 2026-11-09: M3 phone checks (`feature/m3-phone-checks`, PR 9)
+
+#### Added
+
+- Phone-check tooling, compiled only with the scripting define `ISOGOLF_MEASURE` (never in a release build): `PhoneChecksPanel` (seed -/+ and par 3/4/5 strip, frame-time readout, `FRAMES` log every 5 s), `DebugCourseOverride` (`Gameplay`, seed/par from PlayerPrefs, read by `LevelBootstrap`), `COURSE_TIMING` log of generation + checks and terrain build. `PhoneMeasurement` autoplay now starts only when a `measure.txt` ("<par> <seed>") is pushed to the app's files folder.
+- `Docs/Measurements/m3/README.md` with results, `par5-seed33.csv`, and device screenshots in `Docs/Screenshots/m3-phone-checks/`.
+
+#### Results (Honor 500 Pro, development build)
+
+- Passed: gaps, water, bunkers and the livelier green (PR 43); sun per level (PR 38); shadow fade on par 4/5 accepted.
+- Partial: slopes hard to read, rough fairway/green junction (seed 4 par 4) and fairway bunker outline (seed 6 par 4); camera heading after a full-power shot on seed 6 par 5.
+- Measured: par 5 seed 33 held 60 fps (16.51 ms max over 8,782 frames); generation + checks 14-37 ms, terrain build 47-220 ms on the phone.
+- Follow-ups for M4 or later are listed in the results doc. No gameplay code changed.
+
 ### 2026-11-09: Main on a generated course (`feature/m3-main-generated`, PR 8)
 
 #### Added
