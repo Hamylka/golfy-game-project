@@ -286,6 +286,20 @@ namespace IsoGolf.Generation
         [Tooltip("Half the width of the strip along the shot lines that M4 keeps free of props.")]
         [SerializeField, Min(0f)] private float shotCorridorHalfWidth = 2f;
 
+        [Header("Course checks (read by Gameplay's CourseChecks)")]
+        [Tooltip("Variants tried per seed and par before the generator keeps the one that failed the fewest checks.")]
+        [SerializeField, Range(1, 32)] private int checkVariants = 8;
+        [Tooltip("Some approach from the safe route's last rest spot must hole or stop on the green this close to the hole.")]
+        [SerializeField, Min(0.1f)] private float restNearHole = 2f;
+        [Tooltip("The approach is tried straight at the hole and this many degrees either side.")]
+        [SerializeField, Range(0f, 5f)] private float restCheckAim = 1f;
+        [Tooltip("Powers of the approach. The low end is small because the last rest spot is often a lay-up a few metres short.")]
+        [SerializeField] private Vector2 restCheckPower = new Vector2(0.02f, 1f);
+        [Tooltip("Power step of the simulated check shots.")]
+        [SerializeField, Range(0.005f, 0.1f)] private float checkPowerStep = 0.02f;
+        [Tooltip("The weakest shot tried across a gap; the strongest is the lay-up power.")]
+        [SerializeField, Range(0f, 1f)] private float gapCheckMinPower = 0.3f;
+
         /// <summary>The rules for a par from 3 to 5.</summary>
         public ParRules Rules(int par)
         {
@@ -403,6 +417,12 @@ namespace IsoGolf.Generation
         public float EdgeMargin => edgeMargin;
         public float GapLandingMargin => gapLandingMargin;
         public float ShotCorridorHalfWidth => shotCorridorHalfWidth;
+        public int CheckVariants => checkVariants;
+        public float RestNearHole => restNearHole;
+        public float RestCheckAim => restCheckAim;
+        public Vector2 RestCheckPower => restCheckPower;
+        public float CheckPowerStep => checkPowerStep;
+        public float GapCheckMinPower => gapCheckMinPower;
     }
 
     /// <summary>Where a drive-zone hazard sits on a straight par 4 or 5.</summary>
