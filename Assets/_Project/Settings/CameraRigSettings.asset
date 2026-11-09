@@ -24,14 +24,19 @@ MonoBehaviour:
   islandMargin: 3
   headingSmoothTime: 0.5
   headingMinTurn: 5
+  headingLookAhead: 16
   holeHeadingMinDistance: 0.3
   holeHeadingMaxTurn: 180
   maxTwist: 45
+  twistDeadZone: 4
+  twistMinSpread: 0.1
   followZoneTop: 0.2
   followZoneBottom: -0.2
   followBackstop: -0.85
   followZoneSide: 0.2
   followSmoothTime: 0.08
   restBallViewport: {x: 0, y: -0.4}
+  approachHoleViewportY: 0.24
+  approachClosestZoom: 1
   returnSmoothTime: 0.6
   resetSeconds: 0.35

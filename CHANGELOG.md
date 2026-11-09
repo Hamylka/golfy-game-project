@@ -4,6 +4,22 @@ All notable progress on Iso Golf. The format follows [Keep a Changelog](https://
 
 ## [Unreleased]
 
+### 2026-11-09: Camera heading reads the course ahead (`fix/m3-camera-heading-par5-seed6`, F1)
+
+#### Changed
+
+- The automatic heading at rest, when the hole is out of a full shot's reach, is now the **course ahead** instead of the leg the ball is on: the direction of the centreline from the ball's projection on it to `CameraRigSettings.headingLookAhead` (16 m, about half a full shot) further on, stopped at the hole end (`CameraHeading.Ahead`, was `Leg`). Mid-leg it is the leg's heading, as before; short of a bend it turns gradually toward the next leg, with no threshold. Facing the hole within reach, the twist, the approach zoom and the never-in-flight rule are unchanged. Director's choice (option A, "look ahead") over a hard leg switch near bends.
+- `CLAUDE.md` (Camera conventions, Camera heading) and `ART_DIRECTION.md` (Framing) say "the course ahead".
+
+#### Fixed
+
+- Generated par 5 seed 6 (phone check, M3 PR 9, follow-up 1): a full tee shot rests at (-6.41, -5.21), 0.37 m short of a 32 degree bend, with the hole 45.0 m away (reach 31.97 m). The view faced the first leg (-2.0 degrees, yaw 82), past the corner at the island's edge and the sky; it now faces 29.28 degrees (yaw 50.72), along the course, the second leg being 30.0.
+
+#### Added
+
+- Tests in `CameraHeadingTests`: the look-ahead mid-leg, just short of a bend, turning gradually with no jump, at and past the hole end, a ball off to one side, a zero look-ahead, and seed 6 par 5's rest heading pinned with the real `BallSimulation`.
+- Captures in `Docs/Screenshots/m3-camera-heading/`.
+
 ### 2026-11-09: M3 phone checks (`feature/m3-phone-checks`, PR 9)
 
 #### Added

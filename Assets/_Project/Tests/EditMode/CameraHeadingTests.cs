@@ -166,6 +166,105 @@ namespace IsoGolf.Tests
             Assert.That(rule.For(new Vector2(-30f, 0f)), Is.EqualTo(Vector2.right));
         }
 
+        // ----- The course ahead (look-ahead) -----
+
+        private static float AngleOf(Vector2 direction) => Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg;
+
+        [Test]
+        public void LookAhead_MidLeg_IsTheLegsHeading()
+        {
+            // The next bend is further than the look-ahead: the chord lies on the leg.
+            var rule = new CameraHeading(Bent, Bent[2], 0f, 1.5f, 180f, 10f);
+
+            Assert.That((rule.For(new Vector2(-20f, 1f)) - Vector2.right).magnitude, Is.LessThan(1e-5f));
+        }
+
+        [Test]
+        public void LookAhead_JustShortOfABend_FacesMostlyTheNextLeg()
+        {
+            var rule = new CameraHeading(Bent, Bent[2], 0f, 1.5f, 180f, 10f);
+            float nextLeg = AngleOf(Bent[2] - Bent[1]);
+
+            float heading = AngleOf(rule.For(new Vector2(-0.4f, 0f)));
+
+            Assert.That(heading, Is.LessThan(nextLeg * 0.8f), "most of the way to the next leg");
+            Assert.That(heading, Is.GreaterThanOrEqualTo(nextLeg - 1e-3f), "never past it");
+        }
+
+        [Test]
+        public void LookAhead_TurnsGraduallyTowardABend_WithNoJump()
+        {
+            var rule = new CameraHeading(Bent, Bent[2], 0f, 1.5f, 180f, 10f);
+            float previous = AngleOf(rule.For(new Vector2(-25f, 0f)));
+            for (float x = -24.5f; x <= 0f; x += 0.5f)
+            {
+                float heading = AngleOf(rule.For(new Vector2(x, 0f)));
+                Assert.That(heading, Is.LessThanOrEqualTo(previous + 1e-4f), $"turning one way only, at x {x}");
+                Assert.That(previous - heading, Is.LessThan(2.5f), $"no jump at x {x}");
+                previous = heading;
+            }
+        }
+
+        [Test]
+        public void LookAhead_StopsAtTheHoleEnd_AndPastIt_KeepsTheLastLeg()
+        {
+            var rule = new CameraHeading(Bent, Bent[2], 0f, 1.5f, 180f, 10f);
+            Vector2 lastLeg = (Bent[2] - Bent[1]).normalized;
+
+            Assert.That((rule.For(Bent[2] - (lastLeg * 2f)) - lastLeg).magnitude, Is.LessThan(1e-4f), "2 m short of the end");
+            Assert.That((rule.For(Bent[2] + (lastLeg * 3f)) - lastLeg).magnitude, Is.LessThan(1e-4f), "past the end");
+        }
+
+        [Test]
+        public void LookAhead_ABallOffToOneSide_GetsTheCentrelinesHeading()
+        {
+            var rule = new CameraHeading(Bent, Bent[2], 0f, 1.5f, 180f, 10f);
+
+            Vector2 onLine = rule.For(new Vector2(-4f, 0f));
+            Vector2 offLine = rule.For(new Vector2(-4f, 3f));
+
+            Assert.That((onLine - offLine).magnitude, Is.LessThan(1e-5f));
+        }
+
+        [Test]
+        public void LookAhead_Zero_FollowsTheLegTheBallIsOn()
+        {
+            var rule = new CameraHeading(Bent, Bent[2], 0f, 1.5f, 180f, 0f);
+
+            Assert.That((rule.For(new Vector2(-0.4f, 0f)) - Vector2.right).magnitude, Is.LessThan(1e-5f));
+        }
+
+        [Test]
+        public void GeneratedPar5Seed6_AFullTeeShotShortOfTheBend_FacesTheCourseAhead()
+        {
+            // The phone check's case (Docs/Measurements/m3, follow-up 1): a full shot from the tee stops just short of
+            // a 32 degree bend, with the hole out of reach. The leg it is on would look past the corner at the sky.
+            var course = new CameraCourse(CameraCourse.GeneratedPar5Seed6, Aspect);
+            var simulation = new BallSimulation(new BallGround(course.Layout), course.Shot, course.Layout.Tee);
+            simulation.Shoot(course.Rule.FirstLeg, 1f);
+            for (int i = 0; i < 20000 && simulation.State != BallState.Resting; i++)
+            {
+                simulation.Step();
+            }
+
+            var ball = new Vector2(simulation.Position.x, simulation.Position.z);
+            Vector2 bend = course.Centreline[1];
+            float firstLeg = AngleOf(course.Rule.FirstLeg);
+            float secondLeg = AngleOf(course.Centreline[2] - course.Centreline[1]);
+            Assert.That((ball - bend).magnitude, Is.LessThan(1.5f), "rests by the first bend");
+            Assert.That((course.Layout.Hole - ball).magnitude, Is.GreaterThan(course.Reach), "hole out of reach");
+
+            float heading = AngleOf(course.Rule.For(ball));
+
+            Assert.That(heading - firstLeg, Is.GreaterThan(20f), "turned well off the first leg");
+            Assert.That(heading, Is.LessThanOrEqualTo(secondLeg + 1e-3f), "no further than the next leg");
+            Assert.That(heading, Is.EqualTo(GeneratedPar5Seed6RestHeading).Within(0.1f), "pinned");
+        }
+
+        // Measured on the generator of PR F1; moves if the seed's course or the ball's flight changes.
+        // Before the look-ahead it was -2.0 (the first leg; yaw 82), now 29.28 (yaw 50.72), the second leg being 30.0.
+        private const float GeneratedPar5Seed6RestHeading = 29.28f;
+
         [Test]
         public void Dogleg_FromTheTee_FacesTheFirstLeg_AndOnceInReach_TheHole()
         {
