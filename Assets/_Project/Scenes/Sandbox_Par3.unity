@@ -1117,6 +1117,7 @@ MonoBehaviour:
   ball: {fileID: 1103648086}
   hole: {fileID: 441434113}
   sun: {fileID: 1678882217}
+  collisions: 1
   generator: {fileID: 0}
   seed: 0
   par: 3

@@ -20,6 +20,13 @@ namespace IsoGolf.Generation
         [SerializeField] private TuftSettings tufts;
 
         private readonly List<Mesh> _meshes = new List<Mesh>();
+        private readonly List<PropShape> _propShapes = new List<PropShape>();
+
+        /// <summary>
+        /// The collision shapes of the props this view built, in the course's local space (the hand-placed
+        /// trees for now; M4 PR 4.3 reads them from the course's own prop list).
+        /// </summary>
+        public IReadOnlyList<PropShape> PropShapes => _propShapes;
 
         /// <summary>The course this view built at each <see cref="Build"/>.</summary>
         public CourseLayout Layout { get; private set; }
@@ -46,7 +53,7 @@ namespace IsoGolf.Generation
             AddMesh("Water", result.Water, waterMaterial);
             if (trees != null && propKit != null)
             {
-                AddMesh("Trees", PropBuilder.BuildTrees(trees, propKit, palette, Layout), landMaterial);
+                AddMesh("Trees", PropBuilder.BuildTrees(trees, propKit, palette, Layout, _propShapes), landMaterial);
             }
 
             if (tufts != null)
@@ -93,6 +100,7 @@ namespace IsoGolf.Generation
             }
 
             _meshes.Clear();
+            _propShapes.Clear();
 
             for (int i = transform.childCount - 1; i >= 0; i--)
             {

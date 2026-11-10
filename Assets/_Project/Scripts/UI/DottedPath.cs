@@ -14,6 +14,12 @@ namespace IsoGolf.UI
         /// </summary>
         public static void AlongArc(BallisticArc arc, ArcLanding landing, float spacing, float lift, List<Vector3> dots)
         {
+            AlongArc(arc, landing.Time, spacing, lift, dots);
+        }
+
+        /// <summary>The same, up to any end of the flight: a landing, or a hit on an obstacle, whose mark sits there.</summary>
+        public static void AlongArc(BallisticArc arc, float endTime, float spacing, float lift, List<Vector3> dots)
+        {
             dots.Clear();
 
             Vector3 velocity = arc.Velocity;
@@ -24,7 +30,7 @@ namespace IsoGolf.UI
             }
 
             float interval = spacing / groundSpeed;
-            float last = landing.Time - (interval * 0.5f);
+            float last = endTime - (interval * 0.5f);
             for (int i = 1; i * interval <= last; i++)
             {
                 dots.Add(arc.PositionAt(i * interval) + (Vector3.up * lift));

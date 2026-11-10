@@ -26,6 +26,12 @@ namespace IsoGolf.UI
         [Tooltip("How far the ring floats above the ground, in metres. It must stay above the ball's shadow.")]
         [SerializeField, Min(0f)] private float ringLift = 0.03f;
 
+        [Header("Hit mark")]
+        [Tooltip("A small ring facing the camera where a shot would strike an obstacle, in metres.")]
+        [SerializeField, Min(0.01f)] private float hitMarkRadius = 0.09f;
+        [SerializeField, Min(0.005f)] private float hitMarkInnerRadius = 0.055f;
+        [SerializeField, Min(3)] private int hitMarkSegments = 16;
+
         [Header("Power gauge")]
         [Tooltip("As a share of the screen's width, so it reads the same at every zoom and every distance.")]
         [SerializeField, Range(0.02f, 0.4f)] private float gaugeWidth = 0.08f;
@@ -49,6 +55,9 @@ namespace IsoGolf.UI
         public int RingVertexRings => ringVertexRings;
         public int RingSegments => ringSegments;
         public float RingLift => ringLift;
+        public float HitMarkRadius => hitMarkRadius;
+        public float HitMarkInnerRadius => hitMarkInnerRadius;
+        public int HitMarkSegments => hitMarkSegments;
         public float GaugeWidth => gaugeWidth;
         public float GaugeHeight => gaugeHeight;
         public float GaugeBorder => gaugeBorder;

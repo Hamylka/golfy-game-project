@@ -79,9 +79,11 @@ namespace IsoGolf.Generation
 
         /// <summary>
         /// Builds the hand-placed trees of a sandbox course, standing on its ground. Each tree has its own
-        /// generator, so moving or removing a tree leaves the others unchanged.
+        /// generator, so moving or removing a tree leaves the others unchanged. Their collision shapes go
+        /// into <paramref name="shapes"/>, when given, for the ball.
         /// </summary>
-        public static TerrainMeshData BuildTrees(TreeSettings trees, PropKitSettings kit, PaletteSettings palette, CourseLayout layout)
+        public static TerrainMeshData BuildTrees(TreeSettings trees, PropKitSettings kit, PaletteSettings palette, CourseLayout layout,
+            System.Collections.Generic.List<PropShape> shapes = null)
         {
             var builder = new PropBuilder(kit, palette);
             var fields = new CourseFields(layout);
@@ -93,14 +95,10 @@ namespace IsoGolf.Generation
                 var root = new Vector3(placement.Position.x, height, placement.Position.y);
                 var random = new System.Random(unchecked(trees.Seed + (i * 7919)));
 
-                if (placement.Kind == TreeKind.Cypress)
-                {
-                    builder.AddCypress(root, placement.Scale, random);
-                }
-                else
-                {
-                    builder.AddOlive(root, placement.Scale, random);
-                }
+                PropShape[] tree = placement.Kind == TreeKind.Cypress
+                    ? builder.AddCypress(root, placement.Scale, random)
+                    : builder.AddOlive(root, placement.Scale, random);
+                shapes?.AddRange(tree);
             }
 
             return builder.Mesh;
