@@ -4,6 +4,21 @@ All notable progress on Iso Golf. The format follows [Keep a Changelog](https://
 
 ## [Unreleased]
 
+### 2026-11-10: M4 props and art pass decisions (`docs/m4-plan`)
+
+#### Added
+
+- `Docs/Plans/m4-plan.md`: the M4 plan, with the director's 12 answers word for word, the PR split (4.1 prop kit to 4.9 phone checks) and the model per PR.
+
+#### Changed
+
+- Props: built procedurally in C# from a shared mesh kit (no modelled prefabs): olive trees, cypresses, round bushes, rocks, dry-stone walls, a shed, a bench, one or two traces, a small decorative stone bridge (a block collider, never a way across a pond, placed where no shot line or landing capsule passes, at most one per course) and at most one landmark (chapel or lighthouse, about one course in two). Static props in one mesh on the land material; foliage may need its own animated mesh (at most +2 draw calls).
+- Placement: own random stream (salt 7), clusters, low density (par 3 2-3 clusters, par 4 3-5, par 5 4-7) tunable in `LevelGenSettings` and reviewed on the phone so the island doesn't feel empty. The strict rule stays: no prop in a shot corridor (direct, cut or safe), a landing capsule, the tee, around the green, on a hazard or on the +X end kept for M5. Strategic obstacles on shot lines are a possible follow-up after the M4 playtest.
+- Ball collisions: in `BallSimulation`, deterministic; hard trunks, rocks, walls and built props, soft crowns and bushes; flat traces don't collide; the flag pole counts in flight only, so putting is unchanged. The aim preview stops its dots at the hit with a small mark. Checks and the ace sweep run with props on.
+- Ambient life: flag, foliage, water highlights and birds in M4; butterflies and a cloud shadow tried on the phone, kept only if approved.
+- Art rechecks on the phone with props in: outline, slope readability (facet contrast and height tint first, a green tilt hint only if needed), bunker outlines. The waterfall where water meets the edge moves into M4.
+- `CLAUDE.md` (Key systems: Props, Ball collisions, Ambient life, aim preview; Milestones) and `ART_DIRECTION.md` (§6, §7, §8, §9) describe the decisions.
+
 ### 2026-11-10: Surface junctions, fairway ends and bunker outlines (`fix/m3-surface-junctions`, F2)
 
 #### Fixed
