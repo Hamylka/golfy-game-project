@@ -50,6 +50,23 @@ MonoBehaviour:
   lipOutSpeedKeep: 0.6
   holeDepth: 0.35
   holeDropSpeed: 1.5
+  ballRadius: 0.12
+  poleRadius: 0.03
+  poleHeight: 1.8
+  maxHits: 8
+  obstacleRestSpeed: 0.05
+  wood:
+    restitution: 0.45
+    alongKeep: 0.7
+  stone:
+    restitution: 0.55
+    alongKeep: 0.75
+  foliage:
+    restitution: 0.05
+    alongKeep: 0.15
+  pole:
+    restitution: 0.25
+    alongKeep: 0.6
   lostSeconds: 1
   sinkSpeed: 0.6
   waterDrag: 5

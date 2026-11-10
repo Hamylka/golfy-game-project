@@ -40,6 +40,8 @@ namespace IsoGolf.UI
         private Vector2 _aimedDirection;
         private float _aimedPower;
         private bool _ringVisible;
+        private bool _hitMarkVisible;
+        private Vector3 _hitMark;
         private float _shownPower;
 
         private void Awake()
@@ -112,11 +114,24 @@ namespace IsoGolf.UI
                 DottedPath.AlongPath(_path, settings.PuttShare, settings.PuttDotSpacing, _dots);
                 SeatDotsOnTheGround();
                 _ringVisible = false;
+                _hitMarkVisible = false;
                 return;
             }
 
             BallisticArc arc = simulation.ArcFor(direction, power);
             ArcLanding landing = simulation.PredictLanding(arc);
+
+            // A shot that strikes an obstacle shows its dots up to the hit and a mark there, and nothing after it.
+            if (simulation.PredictHit(arc, landing, out ArcHit hit))
+            {
+                DottedPath.AlongArc(arc, hit.Time, settings.ArcDotSpacing, ball.Radius, _dots);
+                _hitMark = hit.Contact;
+                _hitMarkVisible = true;
+                _ringVisible = false;
+                return;
+            }
+
+            _hitMarkVisible = false;
             DottedPath.AlongArc(arc, landing, settings.ArcDotSpacing, ball.Radius, _dots);
             _ring.Place(landing.Point.x, landing.Point.z, settings.RingLift, _markColor);
             _ringVisible = true;
@@ -168,6 +183,12 @@ namespace IsoGolf.UI
             if (_ringVisible)
             {
                 _geometry.AddDisc(_ring);
+            }
+
+            // Facing the camera, since it stands on a trunk or a wall rather than lying on the ground.
+            if (_hitMarkVisible)
+            {
+                _geometry.AddRing(_hitMark, settings.HitMarkInnerRadius, settings.HitMarkRadius, settings.HitMarkSegments, right, up, _markColor);
             }
 
             _mesh.Clear();

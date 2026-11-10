@@ -16,6 +16,7 @@ namespace IsoGolf.Gameplay
         [SerializeField] private BallShadowView shadow;
 
         private BallGround _ground;
+        private BallObstacles _obstacles;
         private Mesh _mesh;
         private Vector3 _lastPosition;
 
@@ -30,9 +31,11 @@ namespace IsoGolf.Gameplay
         /// <summary>How far the drawn ball's center sits above its contact point.</summary>
         public float Radius => settings.BallRadius;
 
-        public void Build(BallGround ground)
+        /// <param name="obstacles">What the ball can strike, or null to play through everything.</param>
+        public void Build(BallGround ground, BallObstacles obstacles = null)
         {
             _ground = ground;
+            _obstacles = obstacles;
             _mesh = PlayPieceBuilder.BuildBall(settings, palette).ToMesh("Ball");
             GetComponent<MeshFilter>().sharedMesh = _mesh;
 
@@ -46,7 +49,7 @@ namespace IsoGolf.Gameplay
         /// <summary>A fresh ball on the tee.</summary>
         public void ReturnToTee()
         {
-            Simulation = new BallSimulation(_ground, shot, _ground.Tee);
+            Simulation = new BallSimulation(_ground, shot, _ground.Tee, _obstacles);
             _lastPosition = Simulation.Position;
             Draw();
         }

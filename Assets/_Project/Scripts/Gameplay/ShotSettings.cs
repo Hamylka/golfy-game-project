@@ -34,6 +34,37 @@ namespace IsoGolf.Gameplay
         public float CarryScale => carryScale;
     }
 
+    /// <summary>How one kind of obstacle treats a ball that strikes it, in flight or rolling.</summary>
+    [Serializable]
+    public struct ObstacleResponse
+    {
+        [Tooltip("Share of the speed into the obstacle that comes back out. 0 means the ball doesn't bounce off it.")]
+        [SerializeField, Range(0f, 1f)] private float restitution;
+
+        [Tooltip("Share of the speed along the obstacle's surface kept through the hit.")]
+        [SerializeField, Range(0f, 1f)] private float alongKeep;
+
+        public ObstacleResponse(float restitution, float alongKeep)
+        {
+            this.restitution = restitution;
+            this.alongKeep = alongKeep;
+        }
+
+        public float Restitution => restitution;
+        public float AlongKeep => alongKeep;
+
+        /// <summary>
+        /// The velocity after a hit: the part into the obstacle comes back out scaled by the restitution, the
+        /// part along its surface is scaled by the along-keep.
+        /// </summary>
+        public Vector3 Apply(Vector3 velocity, Vector3 normal)
+        {
+            float into = Mathf.Min(Vector3.Dot(velocity, normal), 0f);
+            Vector3 along = velocity - (normal * into);
+            return (along * alongKeep) - (normal * (into * restitution));
+        }
+    }
+
     /// <summary>Everything tunable about a shot. These are starting values, for the M2 tuning PR to judge on the phone.</summary>
     [CreateAssetMenu(fileName = "ShotSettings", menuName = "Iso Golf/Shot Settings")]
     public sealed class ShotSettings : ScriptableObject
@@ -87,6 +118,26 @@ namespace IsoGolf.Gameplay
         [SerializeField, Min(0f)] private float holeDepth = 0.35f;
         [SerializeField, Min(0.01f)] private float holeDropSpeed = 1.5f;
 
+        [Header("Collisions")]
+        [Tooltip("The ball's radius for collisions, in metres. Keep it equal to the drawn ball's (PlayPieces).")]
+        [SerializeField, Min(0.01f)] private float ballRadius = 0.12f;
+        [Tooltip("The flag pole's radius for collisions, in metres. Keep it equal to the drawn pole's (PlayPieces).")]
+        [SerializeField, Min(0.001f)] private float poleRadius = 0.03f;
+        [Tooltip("The flag pole's height above the hole, in metres. Keep it equal to the drawn pole's (PlayPieces).")]
+        [SerializeField, Min(0.1f)] private float poleHeight = 1.8f;
+        [Tooltip("Most hits on obstacles in flight per shot. The last one takes all the ball's speed and it drops, ignoring obstacles in flight for the rest of the shot.")]
+        [SerializeField, Min(1)] private int maxHits = 8;
+        [Tooltip("A rolling ball left slower than this by striking an obstacle, in m/s, comes to rest against it.")]
+        [SerializeField, Min(0f)] private float obstacleRestSpeed = 0.05f;
+        [Tooltip("Trunks: hard.")]
+        [SerializeField] private ObstacleResponse wood = new ObstacleResponse(0.45f, 0.7f);
+        [Tooltip("Rocks and walls: hard.")]
+        [SerializeField] private ObstacleResponse stone = new ObstacleResponse(0.55f, 0.75f);
+        [Tooltip("Crowns and bushes: soft. A bush bounces the ball off weakly; a raised crown lets it on into the leaves with along-keep of its speed, and it falls out underneath.")]
+        [SerializeField] private ObstacleResponse foliage = new ObstacleResponse(0.05f, 0.15f);
+        [Tooltip("The flag pole, in flight only. Low, so a slow ball falls beside it, over the hole.")]
+        [SerializeField] private ObstacleResponse pole = new ObstacleResponse(0.25f, 0.6f);
+
         [Header("Lost ball")]
         [Tooltip("Seconds between losing the ball and its return to where the shot was played.")]
         [SerializeField, Min(0f)] private float lostSeconds = 1f;
@@ -124,6 +175,12 @@ namespace IsoGolf.Gameplay
         public float LostSeconds => lostSeconds;
         public float SinkSpeed => sinkSpeed;
         public float WaterDrag => waterDrag;
+        public float BallRadius => ballRadius;
+        public float PoleRadius => poleRadius;
+        public float PoleHeight => poleHeight;
+        public int MaxHits => maxHits;
+        public float ObstacleRestSpeed => obstacleRestSpeed;
+        public ObstacleResponse PoleResponse => pole;
         public float TouchRadius => touchRadius;
         public float FullPowerPull => fullPowerPull;
         public float HoldSeconds => holdSeconds;
@@ -136,6 +193,19 @@ namespace IsoGolf.Gameplay
 
         /// <summary>How far a putt rolls on level green at a power from 0 to 1.</summary>
         public float PuttDistanceFor(float power) => Mathf.Lerp(minPuttDistance, maxPuttDistance, power);
+
+        public ObstacleResponse ResponseOf(PropMaterial material)
+        {
+            switch (material)
+            {
+                case PropMaterial.Wood:
+                    return wood;
+                case PropMaterial.Stone:
+                    return stone;
+                default:
+                    return foliage;
+            }
+        }
 
         public SurfaceResponse ResponseOf(CourseSurface surface)
         {

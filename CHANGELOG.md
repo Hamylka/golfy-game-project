@@ -4,6 +4,27 @@ All notable progress on Iso Golf. The format follows [Keep a Changelog](https://
 
 ## [Unreleased]
 
+### 2026-11-10: M4 ball collisions (`feature/m4-ball-collisions`, PR 4.2)
+
+#### Added
+
+- `BallObstacles` (`Gameplay`): the props' `PropShape`s and, optionally, the flag pole, each grown by the ball's radius, with a uniform 2 m grid. A straight move of the ball's center is tested exactly against each grown shape (vertical cylinder, ellipsoid, yaw box: where the segment enters it), so nothing is missed between two steps; only entries count, the earliest wins, ties to the lowest index.
+- Collisions in `BallSimulation`, deterministic, no Unity physics, in the course container's local space, behind an optional constructor argument (null: every shot plays exactly as before):
+  - **Flight**: each arc looks up front for its first hit before its landing, on chords at the landing search's step (0.02 s; a chord strays at most g·dt²/8 = 0.5 mm from the parabola, at any power). The ball bounces off with the material's response and flies a new arc that leaves that obstacle out. Hard: wood (restitution 0.45, along-keep 0.7), stone (0.55, 0.75). Soft foliage: a raised crown lets the ball on into the leaves with 15% of its speed, so it falls through and lands under the tree (it may meet its own trunk on the way); a bush on the ground bounces it off weakly (0.05, 0.15).
+  - **Hit cap** (`maxHits` 8): the last hit takes all the speed, and the ball drops straight down, past every obstacle in flight, for the rest of the shot.
+  - **Rolling**: the same grown shapes at the ball's height (trunks, rocks, walls, bushes; crowns are out of reach), the speed bounced off along the ground, the ball set back 1 mm. A ball left slower than `obstacleRestSpeed` (0.05 m/s) rests against the obstacle, so a slope pushing it into a wall can't make it strike forever.
+  - **Flag pole**, in flight only (hops included): a cylinder at the hole, restitution 0.25. A ball reaching it low, already slowed by its landing or first hop, falls over the hole and `HoleRim` decides; higher up it bounces away. A rolling ball ignores it, so putting is unchanged.
+- `ShotSettings` (Collisions): `ballRadius` 0.12, `poleRadius` 0.03, `poleHeight` 1.8 (the drawn sizes, checked by a test), `maxHits`, `obstacleRestSpeed`, and an `ObstacleResponse` (restitution, along-keep) for wood, stone, foliage and the pole. Written to `ShotSettings.asset` through the Editor.
+- Aim preview: `BallSimulation.PredictHit` runs the shot's own search; a shot that strikes something shows its dots up to the hit, a small ring facing the camera at the contact (`AimPreviewSettings` hit mark: 0.09 m, inner 0.055 m) and no landing ring.
+- `LevelBootstrap.collisions` (off by default): on for `Sandbox_Par3`, whose hand-placed trees now give their shapes (`PropBuilder.BuildTrees` fills a list, `TerrainView.PropShapes`). `Main` stays without collisions or pole until PR 4.3 brings its props (director's choice A), so it plays as its checks and the ace sweep do.
+- `BallCollisionTests` (22): each shape and material, a glancing hit, the soft crown drop, crown re-entry (none after the drop; a ball punched up from under a crown is caught by it), the hit cap, rolling into a trunk head-on and off-centre, resting against a wall on a slope, pole chip-in possible but power-dependent, a hop striking the pole where it would have lipped out (deterministic), putting unchanged by the pole, no props ≡ no change, determinism at any frame rate, the preview matching the played shot (a fan of 779 shots on `Sandbox_Par3`: 309 tree hits, 470 clear; 401 pole shots), the grid against testing every shape, simulation sizes against the drawn pieces.
+- Captures in `Docs/Screenshots/m4-ball-collisions/`.
+
+#### Measured (EditMode)
+
+- 751 tests, 737 pass, 14 explicit skipped, 0 failed; no existing pin moved. The ace sweep is unaffected on `Main` (no props, no pole yet).
+- Pole, flat test green, shots straight at the hole from 4, 10 and 16 m, powers 0-1 by 0.0005: the pole adds 27, 35 and 38 holed shots of 2001 and takes none away; those chip-ins all strike it below 0.18 m. For PR 4.3 to measure in the ace sweep with props.
+
 ### 2026-11-10: M4 prop kit (`feature/m4-prop-kit`, PR 4.1)
 
 #### Added

@@ -21,6 +21,9 @@ namespace IsoGolf.Gameplay
         [Tooltip("Optional. Scenes without it keep their sun as authored.")]
         [SerializeField] private LevelSun sun;
 
+        [Tooltip("The ball strikes the props and, in flight, the flag pole. On for Sandbox_Par3's hand-placed trees; Main turns it on with its props (M4 PR 4.3), so it plays as its checks do.")]
+        [SerializeField] private bool collisions;
+
         [Header("Generated course")]
         [Tooltip("Optional, needs the ball. When set, the course is generated from the seed and par below and checked; otherwise the terrain's hand-made shape is built.")]
         [SerializeField] private LevelGenSettings generator;
@@ -84,7 +87,7 @@ namespace IsoGolf.Gameplay
             {
                 var ground = new BallGround(terrain.Layout);
                 hole.Build(ground);
-                ball.Build(ground);
+                ball.Build(ground, collisions ? BallObstacles.ForCourse(terrain.PropShapes, ground, ball.Shot) : null);
                 islandCamera.PlaceOn(ball.transform.localPosition);
             }
         }

@@ -22,6 +22,9 @@ MonoBehaviour:
   ringVertexRings: 2
   ringSegments: 20
   ringLift: 0.03
+  hitMarkRadius: 0.09
+  hitMarkInnerRadius: 0.055
+  hitMarkSegments: 16
   gaugeWidth: 0.08
   gaugeHeight: 0.014
   gaugeBorder: 0.003
