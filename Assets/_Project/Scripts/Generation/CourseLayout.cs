@@ -239,8 +239,10 @@ namespace IsoGolf.Generation
     /// </summary>
     public readonly struct FairwayLayout
     {
-        public FairwayLayout(float start, float end, float halfWidth, float wobble, float stripeWidth, float noiseOffset = 0f)
+        public FairwayLayout(float start, float end, float halfWidth, float wobble, float stripeWidth, float noiseOffset = 0f, float startCap = 0f, float endCap = 0f)
         {
+            StartCap = startCap;
+            EndCap = endCap;
             NoiseOffset = noiseOffset;
             Start = start;
             End = end;
@@ -257,6 +259,15 @@ namespace IsoGolf.Generation
 
         /// <summary>Shifts the edge wobble's noise. 0 on hand-made courses.</summary>
         public float NoiseOffset { get; }
+
+        /// <summary>
+        /// How far the rounded tip at the start reaches in along the strip, in metres: the full width narrows to a point at
+        /// <see cref="Start"/> over this length (a quarter ellipse). 0 is the flat cut of hand-made courses. Generated courses only.
+        /// </summary>
+        public float StartCap { get; }
+
+        /// <summary>The same at the end: the strip narrows to a point at <see cref="End"/> over this length. 0 is a flat cut.</summary>
+        public float EndCap { get; }
     }
 
     /// <summary>A green: its outline and its tilt, the rise per metre along X and along Z, measured from the hole.</summary>

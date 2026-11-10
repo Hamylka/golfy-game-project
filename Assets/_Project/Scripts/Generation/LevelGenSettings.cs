@@ -142,6 +142,12 @@ namespace IsoGolf.Generation
         [SerializeField, Min(0f)] private float fairwayBehindTee = 2f;
         [Tooltip("The fairway ends this far short of the hole, under the green's front, in metres.")]
         [SerializeField, Min(0f)] private float fairwayShortOfHole = 3.7f;
+        [Tooltip("The fairway's rounded tips (at the tee, and at the green) reach this far in along the strip, in metres. 0 is a flat cut.")]
+        [SerializeField, Min(0f)] private float fairwayCapDepth = 2.5f;
+        [Tooltip("When the green's guard sits this many degrees or more off the approach line it counts as beside the green, and the fairway runs into the green. Less is in front: the fairway stops short, keeping a rough apron.")]
+        [SerializeField, Min(0f)] private float fairwayIntoGreenGuardAngle = 25f;
+        [Tooltip("Where a fairway that runs into the green ends, metres past the hole along the centreline (0: its tip is at the hole, under the green).")]
+        [SerializeField] private float fairwayIntoGreen = 0f;
         [SerializeField, Min(0.5f)] private float fairwayHalfWidth = 2.5f;
         [SerializeField, Min(0f)] private float fairwayWobble = 1.6f;
         [SerializeField, Min(0.1f)] private float stripeWidth = 1f;
@@ -337,6 +343,9 @@ namespace IsoGolf.Generation
         public float IslandGreenFromTee => islandGreenFromTee;
         public float FairwayBehindTee => fairwayBehindTee;
         public float FairwayShortOfHole => fairwayShortOfHole;
+        public float FairwayCapDepth => fairwayCapDepth;
+        public float FairwayIntoGreenGuardAngle => fairwayIntoGreenGuardAngle;
+        public float FairwayIntoGreen => fairwayIntoGreen;
         public float FairwayHalfWidth => fairwayHalfWidth;
         public float FairwayWobble => fairwayWobble;
         public float StripeWidth => stripeWidth;

@@ -107,6 +107,10 @@ namespace IsoGolf.Generation
         // Halves the error each step: 12 steps across a 1 m cell lands within a quarter of a millimetre.
         private const int CrossingSteps = 12;
 
+        private const int InBunker = 1;
+        private const int InGreen = 2;
+        private const int InFairway = 4;
+
         private readonly CourseLayout _layout;
         private readonly CourseFields _fields;
         private readonly TerrainResult _result = new TerrainResult();
@@ -191,9 +195,9 @@ namespace IsoGolf.Generation
             // stopped being cut once it was "green", say, its neighbour's later cuts would leave a
             // vertex on their shared edge that only one side has, and that shows as a pinhole.
             List<Triangle> pieces = SplitAlongStripes(new Triangle(a, b, c));
-            pieces = SplitAll(pieces, _fields.Bunker);
-            pieces = SplitAll(pieces, _fields.Green);
-            pieces = SplitAll(pieces, _fields.Fairway);
+            pieces = SplitAll(pieces, _fields.Bunker, InBunker);
+            pieces = SplitAll(pieces, _fields.Green, InGreen);
+            pieces = SplitAll(pieces, _fields.Fairway, InFairway);
 
             // The pond and island edge come last, because each also needs a wall along its cut, and
             // that wall has to match the final vertices.
@@ -219,7 +223,7 @@ namespace IsoGolf.Generation
 
                 foreach (Triangle land in inside)
                 {
-                    _result.Land.Add(land.A, land.B, land.C, Vector3.up, ColorOf(land.Centroid));
+                    _result.Land.Add(land.A, land.B, land.C, Vector3.up, ColorOf(land));
                 }
             }
 
@@ -274,32 +278,38 @@ namespace IsoGolf.Generation
             return pieces;
         }
 
-        private static List<Triangle> SplitAll(List<Triangle> pieces, Func<Vector3, float> field)
+        private static List<Triangle> SplitAll(List<Triangle> pieces, Func<Vector3, float> field, int insideTag = 0)
         {
             var result = new List<Triangle>();
             foreach (Triangle piece in pieces)
             {
-                Split(piece, field, result, result, null);
+                Split(piece, field, result, result, null, insideTag);
             }
 
             return result;
         }
 
-        private Color32 ColorOf(Vector3 point)
+        /// <summary>
+        /// A piece's colour comes from the side of each cut it was split onto, never from a field read at its centroid: the cut
+        /// is a straight chord across the cell, and a small hazard's true outline curves away from its chord by more than a
+        /// piece is wide, so the centroid could disagree with the drawn border (a wedge of sand outside it, sand left out inside).
+        /// </summary>
+        private Color32 ColorOf(Triangle piece)
         {
-            if (_fields.Bunker(point) < 0f)
+            if ((piece.Tags & InBunker) != 0)
             {
                 return _sand;
             }
 
-            if (_fields.Green(point) < 0f)
+            if ((piece.Tags & InGreen) != 0)
             {
                 return _green;
             }
 
-            if (_fields.Fairway(point) < 0f)
+            if ((piece.Tags & InFairway) != 0)
             {
-                return Mathf.Abs(_fields.Stripe(_fields.Across(point))) % 2 == 0 ? _fairwayLight : _fairwayDark;
+                // The stripe lines are exact straight cuts, so a piece lies wholly on one stripe and its centroid names it.
+                return Mathf.Abs(_fields.Stripe(_fields.Across(piece.Centroid))) % 2 == 0 ? _fairwayLight : _fairwayDark;
             }
 
             return _rough;
@@ -357,7 +367,7 @@ namespace IsoGolf.Generation
             return positive == towardPositive ? across : -across;
         }
 
-        private static void Split(Triangle triangle, Func<Vector3, float> field, List<Triangle> inside, List<Triangle> outside, List<Segment> border)
+        private static void Split(Triangle triangle, Func<Vector3, float> field, List<Triangle> inside, List<Triangle> outside, List<Segment> border, int insideTag = 0)
         {
             Vector3[] corners = { triangle.A, triangle.B, triangle.C };
             var inPolygon = new List<Vector3>(4);
@@ -381,8 +391,8 @@ namespace IsoGolf.Generation
                 }
             }
 
-            Fan(inPolygon, inside);
-            Fan(outPolygon, outside);
+            Fan(inPolygon, inside, triangle.Tags | insideTag);
+            Fan(outPolygon, outside, triangle.Tags);
 
             if (border != null && crossings.Count == 2)
             {
@@ -431,22 +441,26 @@ namespace IsoGolf.Generation
             return Vector3.Lerp(from, to, (low + high) * 0.5f);
         }
 
-        private static void Fan(List<Vector3> polygon, List<Triangle> output)
+        private static void Fan(List<Vector3> polygon, List<Triangle> output, int tags)
         {
             for (int i = 1; output != null && i + 1 < polygon.Count; i++)
             {
-                output.Add(new Triangle(polygon[0], polygon[i], polygon[i + 1]));
+                output.Add(new Triangle(polygon[0], polygon[i], polygon[i + 1], tags));
             }
         }
 
         private readonly struct Triangle
         {
-            public Triangle(Vector3 a, Vector3 b, Vector3 c)
+            public Triangle(Vector3 a, Vector3 b, Vector3 c, int tags = 0)
             {
                 A = a;
                 B = b;
                 C = c;
+                Tags = tags;
             }
+
+            /// <summary>Which surface cuts this piece fell inside of (<see cref="InBunker"/> and the others), kept through every later cut.</summary>
+            public int Tags { get; }
 
             public Vector3 A { get; }
             public Vector3 B { get; }

@@ -74,10 +74,12 @@ namespace IsoGolf.Generation
             ElevationProfile elevation = Elevation(random, rules, settings, length);
             Vector2 tilt = GreenTilt(random, settings);
 
+            float fairwayEnd = FairwayEnd(length, green, islandGreen, settings);
+
             CourseLayout Build(IEnumerable<EllipseShape> bunkers, IEnumerable<PondLayout> ponds, CoursePlan plan) => new CourseLayout(
                 islands,
                 path,
-                new FairwayLayout(-settings.FairwayBehindTee, length - settings.FairwayShortOfHole, settings.FairwayHalfWidth, settings.FairwayWobble, settings.StripeWidth, fairwayOffset),
+                new FairwayLayout(-settings.FairwayBehindTee, fairwayEnd, settings.FairwayHalfWidth, settings.FairwayWobble, settings.StripeWidth, fairwayOffset, settings.FairwayCapDepth, settings.FairwayCapDepth),
                 new[] { new GreenLayout(new EllipseShape(greenCentre, settings.GreenRadius, settings.GreenWobble), tilt) },
                 bunkers,
                 ponds,
@@ -97,6 +99,19 @@ namespace IsoGolf.Generation
             CourseLayout bare = Build(new EllipseShape[0], new PondLayout[0], null);
             HazardResult hazards = CourseHazards.Place(surfaces, bare, green, par, dogleg, islandGreen, bends, settings);
             return Build(hazards.Bunkers, hazards.Ponds, hazards.Plan);
+        }
+
+        /// <summary>
+        /// Where the fairway's rounded tip ends, by the green's guard (no draw, so no stream moves). A guard beside the green
+        /// (at least <see cref="LevelGenSettings.FairwayIntoGreenGuardAngle"/> off the line back toward the tee) lets the fairway run
+        /// into the green: its tip sits under the green, and the green's own border is the only seam. A guard in front of the green
+        /// stops the fairway short, so the rough apron stays in front of it. An island green has no fairway joining it: apron.
+        /// </summary>
+        internal static float FairwayEnd(float length, GreenPlan green, bool islandGreen, LevelGenSettings settings)
+        {
+            float guardAngle = Vector2.Angle(green.Guard, -green.Approach);
+            bool beside = !islandGreen && Geo.Cm(guardAngle) >= Geo.Cm(settings.FairwayIntoGreenGuardAngle);
+            return beside ? length + settings.FairwayIntoGreen : length - settings.FairwayShortOfHole;
         }
 
         /// <summary>

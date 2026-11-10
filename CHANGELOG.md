@@ -4,6 +4,25 @@ All notable progress on Iso Golf. The format follows [Keep a Changelog](https://
 
 ## [Unreleased]
 
+### 2026-11-10: Surface junctions, fairway ends and bunker outlines (`fix/m3-surface-junctions`, F2)
+
+#### Fixed
+
+- **Bunker outlines (seed 6 par 4 and all others)**: `TerrainBuilder` coloured each piece of ground from the true outline read at the piece's centroid, while the cut itself is a straight chord across a 1 m cell. A bunker of about 1 m radius curves away from its chord by more than a piece is wide, so sand wedges stuck out beyond the drawn border and sand was left out inside it. A piece now takes its colour from the side of each border cut (bunker, green, fairway) it fell on. Mesh colouring only: no layout, seed or ball behaviour changes, and `BallGround` keeps the true outlines (the M2 limits of 27 cm and 11 cm are not widened). Before: 5, 15, 15 and 11 sand triangles disagreeing with their border on seeds 4, 6, 3 par 4 and 5 par 5, 737 over seeds 0-29 of the three pars; after: 0.
+- **Raw fairway end at the green (seed 4 par 4) and at the tee**: the fairway ended in a flat cut across the centreline, and the green sits off the centreline, so the corner poked out beside it. Both ends are now rounded tips (`FairwayLayout.StartCap` / `EndCap`, quarter ellipse, `fairwayCapDepth` 2.5 m). Chosen by the director per course from the green's guard: a guard beside the green (at least `fairwayIntoGreenGuardAngle`, 25 degrees, off the line back toward the tee) lets the fairway run into the green; a guard in front, or an island green, keeps the fairway `fairwayShortOfHole` (3.7 m) short behind a rough apron. No new draw in any stream.
+
+#### Added
+
+- `SurfaceColourTests` and `FairwayJunctionTests`, explicit `FairwayJunctionTests.LookShare`. EditMode: 668 tests, 654 pass, 14 explicit skipped, 0 failed; no pinned figure moved.
+- Captures in `Docs/Screenshots/m3-surface-junctions/`.
+
+#### Measured (Editor)
+
+- Looks over seeds 0-199: rough apron 131/200 on par 3, 150/200 on par 4, 141/200 on par 5; the rest run into the green.
+- Fine ace sweep, checked par 3 seeds 0-49: mean 0.49% (was 0.48%), max 0.78% (seed 0, unchanged), 0 seeds at or over 1%, full power never holes.
+- Reroll survey, seeds 0-199: par 3 1, par 4 29, par 5 26 rerolled, unchanged; 0 exhausted.
+- `CLAUDE.md` (Level generator) and `ART_DIRECTION.md` (Course elements) describe the rule.
+
 ### 2026-11-09: Camera heading reads the course ahead and leans toward the hole (`fix/m3-camera-heading-par5-seed6`, F1)
 
 #### Changed
