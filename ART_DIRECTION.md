@@ -70,19 +70,19 @@ No photo textures, no fine normal maps.
 - Portrait and the camera angle favor a **long, narrow island**: about 34 × 10 m for the par 3 in the look test, and longer for higher pars (tee to hole: par 3 18–26 m, par 4 40–55 m, par 5 65–85 m).
 - Par 3 islands are straight. About half of par 4s and 5s bend once as a **dogleg** of up to 35°, and a par 5 may bend twice; the others bend softly. Every course keeps heading up the screen.
 - The outline is irregular, and its grass edge is a **continuous fringe of small, short, blunt tufts**: never a clean geometric edge. The tufts overlap and fold over the edge like thatch, so they read as the ground itself rather than objects on it. Chosen on the phone in M1.4 over separate prisms, which read as rough shards, and over longer or sharper teeth, which looked too spiky.
-- Where water reaches the island's edge, there is no fringe. Water falling from that edge is an idea for later.
-- Vegetation: trees with **cauliflower foliage** (clusters of low-detail faceted blobs), short trunk. Cypresses as 6- to 8-sided cones. Round bushes.
+- Where water reaches the island's edge, there is no fringe, and water falls from that edge as a small faceted waterfall into the sky (M4).
+- Vegetation: trees with **cauliflower foliage** (clusters of low-detail faceted blobs), short trunk. Cypresses as 6- to 8-sided cones. Round bushes. Props are built procedurally from the palette, with flat facets, never modelled assets with their own textures.
 - Simple, readable volumes: boxes, cylinders, arches, gabled or conical roofs.
-- Outlines: none for now. Tested on the phone in M1.4 at about 2 px and about 1 px: tone already separates the shapes, and an outline pushes the look toward a cartoon, drawing lines inside tree crowns. Recheck in M4, once real props are in. Never black lines.
+- Outlines: none for now. Tested on the phone in M1.4 at about 2 px and about 1 px: tone already separates the shapes, and an outline pushes the look toward a cartoon, drawing lines inside tree crowns. Recheck in M4 on the phone, once real props are in (none, ~1 px, ~2 px). Never black lines.
 
 ## 7. Scale, solitude and life
 
 - **No characters on screen**, or exceptionally one distant, still silhouette (a fisherman on a rock, a gardener far away): never more than one per level.
 - **No club, no avatar**: the ball *is* the player.
 - The scale-model feel comes from objects: a bench, a shed, a flag, a low wall are enough to convey the size of the world.
-- Life comes from ambience: rustling foliage, a fluttering flag, animated water highlights, birds taking off as the ball passes, butterflies, a cloud shadow drifting across the island.
+- Life comes from ambience: rustling foliage, a flag fluttering calmly on a pole that never sways, animated water highlights, birds taking off as the ball passes. Butterflies and a cloud shadow drifting across the island are tried on the phone in M4 and kept only if they suit the calm.
 - Traces of human presence without humans: an empty bench, a rake left in a bunker, a forgotten bucket of balls, a bicycle against a wall, laundry drying on a line.
-- Density: a few clusters of detail, lots of calm surfaces and empty space around them. Visual silence is part of the mood.
+- Density: a few clusters of detail, lots of calm surfaces and empty space around them. Visual silence is part of the mood. M4 starts low (2-3 clusters on a par 3, up to 4-7 on a par 5) and checks on the phone that the island doesn't feel empty.
 
 ## 8. Interface
 
@@ -90,7 +90,7 @@ No photo textures, no fine normal maps.
 - Power bar: a small yellow gauge (`#E6B53A`) with a dark border, floating above the ball.
 - Aiming: a dotted white arc following the bell-shaped shot curve, with the landing point marked by a small cross or circle on the ground.
 - Putting: on the green there is no arc and no landing marker. The preview stays on the ground: dots along the first part of the putt's true path, about 40%, with no end marker. It never lies, and it leaves the rest of the slope to be read from the facets.
-- Shot gesture: a drag that starts on the ball, pulled back like a slingshot. Its visual feedback is limited to the gauge and the arc.
+- Shot gesture: a drag that starts on the ball, pulled back like a slingshot. Its visual feedback is limited to the gauge and the arc. A shot that would hit a tree, a rock, a wall or the flag pole shows its dots up to the contact point with a small mark, and nothing after it.
 - Camera gestures: one-finger drag to move around, which keeps gliding and slows down after release, pinch to zoom, and a two-finger twist to turn the view up to ±45°, all within the island. Blocked while aiming, allowed during flight.
 - Typography: a small, readable font in a warm dark color (`#3A2E25`) over the sky.
 - Transitions: fade to white between levels, or the next island "dropping" into place.
@@ -103,7 +103,7 @@ No photo textures, no fine normal maps.
 - **Bell-shaped arc** shots away from the green: rise, apex, descent. The shadow stays on the ground and meets the ball on landing: it is what makes the arc readable.
 - **Putts on the green**: the ball only rolls along the ground, with no flight. The green's drawn border is the strict limit: just outside it, a shot is a short arc.
 - **Lost ball**: in the water, off the island or in a gap between islands, the ball sinks or falls out of sight, then returns to where the shot was played after about a second.
-- **Slopes affect the ball**: it rolls downhill, curves on a side slope, travels further going down and stops sooner going up. Slopes stay moderate, which suits the calm mood: the fairway rises and dips up to about ±1.2 m, the green sits up to 1.5 m above or below the tee and tilts 2–6%, and the ground is nearly flat around the hole and flat at the tee. Slopes must be readable on the phone through facet shading; judge that before adding any guide marks.
+- **Slopes affect the ball**: it rolls downhill, curves on a side slope, travels further going down and stops sooner going up. Slopes stay moderate, which suits the calm mood: the fairway rises and dips up to about ±1.2 m, the green sits up to 1.5 m above or below the tee and tilts 2–6%, and the ground is nearly flat around the hole and flat at the tee. Slopes must be readable on the phone through facet shading; judge that before adding any guide marks. Found hard to read on the phone at M3 steepness: M4 tries stronger facet contrast on the ground and a subtle height tint first, and a tilt hint on the green only if those aren't enough.
 - Light trail in flight, a small puff of grass or sand on impact, short bounces.
 
 ### Progression and orientation
@@ -120,7 +120,7 @@ To keep generation faithful to the art direction, levels are assembled from a **
 - Island outline: shape generated with noise along the course's centreline, one or more islands per course, tufted grass edge applied automatically along the whole dry edge of each.
 - Strategy: hazards guard the direct line (beside or in front of the green, at a dogleg's corner, across a gap), and a safer, longer route always exists. Holes in one stay rare.
 - Surfaces: fairway, green, rough, bunker, water, gravel, each with its own material.
-- Props: trees, bushes, rocks, low walls, sheds, benches, bridges. Placed by rules: low density, grouped in clusters rather than scattered, never on the main shot line.
+- Props: trees, bushes, rocks, low walls, sheds, benches, a decorative bridge, traces of human presence, at most one landmark. Placed by rules: low density, grouped in clusters rather than scattered, never on a shot line or where a safe shot lands, and never on the course's far end, where the next island appears. The ball bounces off trunks, rocks and walls, drops through foliage, and can hit the flag pole in flight: a chip-in off the pole is possible but never guaranteed.
 - Per-seed variation: island shape and length, elevation, obstacles, mood (see variants).
 - Bigger terrain features (cliffs, plateaus, elevated tees) and aids for reading the green are for a later version.
 
@@ -131,8 +131,8 @@ To keep generation faithful to the art direction, levels are assembled from a **
 - **Green**: lighter and smoother green, gently sloped, flat around the hole, red or yellow flag.
 - **Rough**: darker grass (`#6A8541`) with more broken facets, blending into the edge.
 - **Bunkers**: sand palette, rolled edge, a few rake marks.
-- **Water hazards**: water palette, round white rocks, small stone bridge.
-- **Scenery**: olive trees, cypresses, dry-stone walls, tile-roofed shed, a small chapel or lighthouse standing alone at the island's edge. No spectators.
+- **Water hazards**: water palette, round white rocks, now and then a small decorative stone bridge across a pond, away from the shot lines (it never offers the ball a way across).
+- **Scenery**: olive trees, cypresses, dry-stone walls, tile-roofed shed, and on about one course in two a small chapel or lighthouse standing alone at the island's edge. No spectators.
 
 ## 10. Avoid
 
