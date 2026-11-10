@@ -24,6 +24,13 @@ namespace IsoGolf.Generation
         [SerializeField] private Color foliageMid = new Color32(0x56, 0x71, 0x3A, 0xFF);
         [SerializeField] private Color foliageDark = new Color32(0x34, 0x48, 0x2A, 0xFF);
         [SerializeField] private Color trunk = new Color32(0x6A, 0x41, 0x28, 0xFF);
+        [Tooltip("Olive crowns' light shade: the grass row's hue, a little greyer and lighter, so olives read silvery.")]
+        [SerializeField] private Color oliveLight = new Color32(0x8A, 0x9E, 0x5E, 0xFF);
+
+        [Header("Stone")]
+        [SerializeField] private Color stoneLight = new Color32(0xF1, 0xEC, 0xE0, 0xFF);
+        [SerializeField] private Color stoneMid = new Color32(0xDA, 0xD3, 0xC3, 0xFF);
+        [SerializeField] private Color stoneDark = new Color32(0xB8, 0xB0, 0xA0, 0xFF);
 
         [Header("Clouds")]
         [SerializeField] private Color cloudLight = new Color32(0xFF, 0xFF, 0xFF, 0xFF);
@@ -66,6 +73,10 @@ namespace IsoGolf.Generation
         public Color FoliageMid => foliageMid;
         public Color FoliageDark => foliageDark;
         public Color Trunk => trunk;
+        public Color OliveLight => oliveLight;
+        public Color StoneLight => stoneLight;
+        public Color StoneMid => stoneMid;
+        public Color StoneDark => stoneDark;
         public Color CloudLight => cloudLight;
         public Color CloudShade => cloudShade;
         public Color Ball => ball;

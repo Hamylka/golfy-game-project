@@ -4,6 +4,28 @@ All notable progress on Iso Golf. The format follows [Keep a Changelog](https://
 
 ## [Unreleased]
 
+### 2026-11-10: M4 prop kit (`feature/m4-prop-kit`, PR 4.1)
+
+#### Added
+
+- `PropMeshKit`: shared mesh helpers (prism, cone, box with slight jitter, gable roof (first used in 4.4), jittered blob, block wall) writing flat-shaded, palette-coloured triangles into `TerrainMeshData`.
+- `PropBuilder`: olive tree, cypress (6-8 sides), round bush, faceted rock (20 facets), round white rock (80 facets), low dry-stone wall (blocks in running bond, a tone picked per block). Each takes a seeded `System.Random`.
+- `PropKitSettings` (+ `Settings/PropKit.asset`): the props' proportions. The tree values moved here from `TreeSettings`, which keeps only the hand-placed list and its seed.
+- `PropShape` / `PropMaterial`: one collider shape per prop part as plain data for PR 4.2 (vertical cylinder for trunks and a cypress's foliage, ellipsoid for crowns, bushes and rocks, yaw box for walls; material Wood, Stone or Foliage; `Level(point)` for inside tests). No collision code yet. Ellipsoids and boxes are fitted to the built mesh, so they enclose it by construction.
+- Sway weight channel: `TerrainMeshData.Sway`, written to UV1.x by `ToMesh` only when some vertex has a non-zero weight (0 on trunks, rocks and walls, rising from 0 at the crown's bottom to 1 at its top on foliage). The terrain's own meshes carry no extra channel; no shader reads it until 4.5.
+- Palette: `OliveLight` (#8A9E5E, the grass row's hue a little greyer) and `StoneLight/Mid/Dark` (#F1ECE0 #DAD3C3 #B8B0A0), written into `Palette.asset`.
+- `Sandbox_Props` scene (`PropShowroom`): every kind in a row, three seeds each, flat ground, the game's material, sun and camera angle.
+- Tests: `PropKitTests` (determinism, budgets, palette only, flat normals, colliders enclosing the mesh, materials, sway, helpers), `HandPlacedTreeTests.SandboxTreesKeepTheirShapeThroughTheKit`.
+
+#### Changed
+
+- `TreeBuilder` is folded into the kit (`PropBuilder.BuildTrees`); `TerrainView` gets a `propKit` field, set on `Sandbox_Par3`. `Sandbox_Par3`'s ten trees keep the same 2260 triangles at the same positions (checked equal to the old code to 0.1 mm).
+- Olive crowns' light shade is `OliveLight` instead of `FoliageLight`: the only look change, a little greyer. Before/after in `Docs/Screenshots/m4-prop-kit/`.
+
+#### Measured (EditMode, triangles per prop at scale 1)
+
+- Olive 412, cypress 40, bush 120, rock 20, round rock 80, 4.5 m wall 376.
+
 ### 2026-11-10: M4 props and art pass decisions (`docs/m4-plan`)
 
 #### Added

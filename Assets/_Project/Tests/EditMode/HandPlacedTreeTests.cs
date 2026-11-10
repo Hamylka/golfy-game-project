@@ -6,7 +6,7 @@ using UnityEngine;
 
 namespace IsoGolf.Tests
 {
-    public class TreeBuilderTests
+    public class HandPlacedTreeTests
     {
         private const string TreesAssetPath = "Assets/_Project/Settings/SandboxTrees.asset";
         private const string ShapeAssetPath = "Assets/_Project/Settings/Par3CourseShape.asset";
@@ -15,6 +15,7 @@ namespace IsoGolf.Tests
         private CourseShapeSettings _shape;
         private PaletteSettings _palette;
         private TreeSettings _trees;
+        private PropKitSettings _kit;
 
         [SetUp]
         public void SetUp()
@@ -22,6 +23,7 @@ namespace IsoGolf.Tests
             _shape = ScriptableObject.CreateInstance<CourseShapeSettings>();
             _palette = ScriptableObject.CreateInstance<PaletteSettings>();
             _trees = ScriptableObject.CreateInstance<TreeSettings>();
+            _kit = ScriptableObject.CreateInstance<PropKitSettings>();
         }
 
         [TearDown]
@@ -30,6 +32,7 @@ namespace IsoGolf.Tests
             Object.DestroyImmediate(_shape);
             Object.DestroyImmediate(_palette);
             Object.DestroyImmediate(_trees);
+            Object.DestroyImmediate(_kit);
         }
 
         private void Place(int seed, TreeKind kind)
@@ -50,8 +53,8 @@ namespace IsoGolf.Tests
         public void SameSeedBuildsTheSameTree(TreeKind kind)
         {
             Place(5, kind);
-            TerrainMeshData first = TreeBuilder.Build(_trees, _palette, _shape.ToLayout());
-            TerrainMeshData second = TreeBuilder.Build(_trees, _palette, _shape.ToLayout());
+            TerrainMeshData first = PropBuilder.BuildTrees(_trees, _kit, _palette, _shape.ToLayout());
+            TerrainMeshData second = PropBuilder.BuildTrees(_trees, _kit, _palette, _shape.ToLayout());
 
             CollectionAssert.AreEqual(first.Positions, second.Positions);
             CollectionAssert.AreEqual(first.Colors, second.Colors);
@@ -62,9 +65,9 @@ namespace IsoGolf.Tests
         public void DifferentSeedBuildsADifferentTree(TreeKind kind)
         {
             Place(5, kind);
-            List<Vector3> first = TreeBuilder.Build(_trees, _palette, _shape.ToLayout()).Positions;
+            List<Vector3> first = PropBuilder.BuildTrees(_trees, _kit, _palette, _shape.ToLayout()).Positions;
             Place(6, kind);
-            List<Vector3> second = TreeBuilder.Build(_trees, _palette, _shape.ToLayout()).Positions;
+            List<Vector3> second = PropBuilder.BuildTrees(_trees, _kit, _palette, _shape.ToLayout()).Positions;
 
             CollectionAssert.AreNotEqual(first, second);
         }
@@ -74,7 +77,7 @@ namespace IsoGolf.Tests
         public void TreeStandsOnTheGround(TreeKind kind)
         {
             Place(5, kind);
-            TerrainMeshData mesh = TreeBuilder.Build(_trees, _palette, _shape.ToLayout());
+            TerrainMeshData mesh = PropBuilder.BuildTrees(_trees, _kit, _palette, _shape.ToLayout());
             float ground = new CourseFields(_shape.ToLayout()).Height(-8f, 4f);
 
             float lowest = float.MaxValue;
@@ -92,10 +95,11 @@ namespace IsoGolf.Tests
         public void TreeUsesOnlyTreeColors(TreeKind kind)
         {
             Place(5, kind);
-            TerrainMeshData mesh = TreeBuilder.Build(_trees, _palette, _shape.ToLayout());
+            TerrainMeshData mesh = PropBuilder.BuildTrees(_trees, _kit, _palette, _shape.ToLayout());
             var allowed = new[]
             {
                 TerrainBuilder.ToVertexColor(_palette.FoliageLight),
+                TerrainBuilder.ToVertexColor(_palette.OliveLight),
                 TerrainBuilder.ToVertexColor(_palette.FoliageMid),
                 TerrainBuilder.ToVertexColor(_palette.FoliageDark),
                 TerrainBuilder.ToVertexColor(_palette.Trunk),
@@ -105,6 +109,33 @@ namespace IsoGolf.Tests
             {
                 CollectionAssert.Contains(allowed, color);
             }
+        }
+
+        /// <summary>
+        /// Pinned before the kit replaced TreeBuilder (develop at 474c2a3): Sandbox_Par3's ten hand-placed trees
+        /// were 2260 triangles, and the TreeBuilder code and the kit's agree on this FNV-1a hash of every vertex
+        /// position rounded to 0.1 mm. Only the olive crowns' light shade changed since (OliveLight), never a position.
+        /// </summary>
+        [Test]
+        public void SandboxTreesKeepTheirShapeThroughTheKit()
+        {
+            var trees = AssetDatabase.LoadAssetAtPath<TreeSettings>(TreesAssetPath);
+            var shape = AssetDatabase.LoadAssetAtPath<CourseShapeSettings>(ShapeAssetPath);
+            TerrainMeshData mesh = PropBuilder.BuildTrees(trees, _kit, _palette, shape.ToLayout());
+
+            // Rounded to 0.1 mm: the kit's code path differs from TreeBuilder's by a last float bit on 10 of 6780 vertices.
+            ulong hash = 14695981039346656037UL;
+            foreach (Vector3 p in mesh.Positions)
+            {
+                foreach (float f in new[] { p.x, p.y, p.z })
+                {
+                    hash ^= (ulong)(long)System.Math.Round(f * 10000.0);
+                    hash *= 1099511628211UL;
+                }
+            }
+
+            Assert.That(mesh.TriangleCount, Is.EqualTo(2260));
+            Assert.That(hash, Is.EqualTo(17899946963706251753UL));
         }
 
         [Test]

@@ -13,6 +13,8 @@ namespace IsoGolf.Generation
         [SerializeField] private Material waterMaterial;
         [Tooltip("Optional. Trees share the land material, so they add one draw call in all.")]
         [SerializeField] private TreeSettings trees;
+        [Tooltip("Proportions of the trees above. Needed when trees is set.")]
+        [SerializeField] private PropKitSettings propKit;
 
         [Tooltip("Optional. The grass border along the island edge. Shares the land material too.")]
         [SerializeField] private TuftSettings tufts;
@@ -42,9 +44,9 @@ namespace IsoGolf.Generation
             TerrainResult result = TerrainBuilder.Build(Layout, palette);
             AddMesh("Land", result.Land, landMaterial);
             AddMesh("Water", result.Water, waterMaterial);
-            if (trees != null)
+            if (trees != null && propKit != null)
             {
-                AddMesh("Trees", TreeBuilder.Build(trees, palette, Layout), landMaterial);
+                AddMesh("Trees", PropBuilder.BuildTrees(trees, propKit, palette, Layout), landMaterial);
             }
 
             if (tufts != null)

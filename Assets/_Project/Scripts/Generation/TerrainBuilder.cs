@@ -17,7 +17,20 @@ namespace IsoGolf.Generation
 
         public int TriangleCount => Positions.Count / 3;
 
+        /// <summary>
+        /// Per-vertex sway weight, written to UV1.x: 0 for ground, trunks, rocks and walls, up to 1 for the
+        /// tip of foliage. Null until a vertex gets a non-zero weight, so the terrain's own meshes carry no
+        /// extra channel. M4 PR 4.5 reads it in the shader; until then nothing does.
+        /// </summary>
+        public List<float> Sway { get; private set; }
+
         public void Add(Vector3 a, Vector3 b, Vector3 c, Vector3 facing, Color32 color)
+        {
+            Add(a, b, c, facing, color, 0f, 0f, 0f);
+        }
+
+        /// <summary>Like the plain overload, with a sway weight per corner (given in a, b, c order).</summary>
+        public void Add(Vector3 a, Vector3 b, Vector3 c, Vector3 facing, Color32 color, float swayA, float swayB, float swayC)
         {
             Vector3 normal = Vector3.Cross(b - a, c - a);
 
@@ -29,12 +42,25 @@ namespace IsoGolf.Generation
 
             // On a front face in Unity, this cross product points toward the viewer.
             bool flip = Vector3.Dot(normal, facing) < 0f;
+            int before = Positions.Count;
             Positions.Add(a);
             Positions.Add(flip ? c : b);
             Positions.Add(flip ? b : c);
             Colors.Add(color);
             Colors.Add(color);
             Colors.Add(color);
+
+            if (Sway == null && (swayA != 0f || swayB != 0f || swayC != 0f))
+            {
+                Sway = new List<float>(new float[before]);
+            }
+
+            if (Sway != null)
+            {
+                Sway.Add(swayA);
+                Sway.Add(flip ? swayC : swayB);
+                Sway.Add(flip ? swayB : swayC);
+            }
         }
 
         /// <summary>A new mesh from these triangles, with flat normals. Whoever calls this destroys it.</summary>
@@ -54,6 +80,17 @@ namespace IsoGolf.Generation
                 : UnityEngine.Rendering.IndexFormat.UInt16;
             mesh.SetVertices(Positions);
             mesh.SetColors(Colors);
+            if (Sway != null)
+            {
+                var uvs = new List<Vector2>(Sway.Count);
+                foreach (float weight in Sway)
+                {
+                    uvs.Add(new Vector2(weight, 0f));
+                }
+
+                mesh.SetUVs(1, uvs);
+            }
+
             mesh.SetTriangles(indices, 0);
             mesh.RecalculateNormals();
             mesh.RecalculateBounds();
