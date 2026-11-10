@@ -127,6 +127,7 @@ To keep generation faithful to the art direction, levels are assembled from a **
 ### Course elements
 
 - **Fairway**: long mowing stripes alternating two greens (`#8FA85A` / `#7E9A48`), aligned with the SW → NE axis. **No tile or checkerboard pattern.** **Open:** on a dogleg, whether the stripes follow each leg or keep the main axis, to judge on a capture when the generator places surfaces.
+- **Where the fairway ends:** both ends are rounded tips, never a flat cut. Where the green's guard is beside it, the fairway runs into the green and the green's own border is the only seam; where the guard is in front of it (or the green is an island), the fairway stops short behind a rough apron. The mix is about two courses in three with the apron.
 - **Green**: lighter and smoother green, gently sloped, flat around the hole, red or yellow flag.
 - **Rough**: darker grass (`#6A8541`) with more broken facets, blending into the edge.
 - **Bunkers**: sand palette, rolled edge, a few rake marks.

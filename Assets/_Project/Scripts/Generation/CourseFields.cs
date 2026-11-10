@@ -118,8 +118,36 @@ namespace IsoGolf.Generation
             float s = _layout.Centreline.Project(new Vector2(p.x, p.z), out float side);
             float pathWobble = (CourseNoise.Value01((s * 0.2f) + 70f + fairway.NoiseOffset, 1.3f) - 0.5f) * fairway.Wobble;
             float pathAcross = Mathf.Abs(side) - (fairway.HalfWidth + pathWobble);
-            float pathAlong = Mathf.Max(fairway.Start - s, s - fairway.End);
-            return Mathf.Max(pathAcross, pathAlong);
+            if (fairway.StartCap <= 0f && fairway.EndCap <= 0f)
+            {
+                return Mathf.Max(pathAcross, Mathf.Max(fairway.Start - s, s - fairway.End));
+            }
+
+            // Rounded tips: a quarter ellipse at each capped end, so the strip never finishes in a flat cut. Where `u` (how far into
+            // the cap) is positive the half width shrinks as 1 - (u/cap)^2; the field there is the across distance with the
+            // along distance scaled to the same units, and it equals the plain strip's field wherever u <= 0.
+            float half = fairway.HalfWidth + pathWobble;
+            float side2 = Mathf.Abs(side);
+            float result = pathAcross;
+            result = Mathf.Max(result, CapField(fairway.StartCap, (fairway.Start + fairway.StartCap) - s, fairway.Start - s, side2, half));
+            result = Mathf.Max(result, CapField(fairway.EndCap, s - (fairway.End - fairway.EndCap), s - fairway.End, side2, half));
+            return result;
+        }
+
+        private static float CapField(float cap, float into, float flatAlong, float across, float half)
+        {
+            if (cap <= 0f)
+            {
+                return flatAlong;
+            }
+
+            if (into <= 0f)
+            {
+                return -Nowhere;
+            }
+
+            float scaled = into * half / cap;
+            return Mathf.Sqrt((across * across) + (scaled * scaled)) - half;
         }
 
         /// <summary>
