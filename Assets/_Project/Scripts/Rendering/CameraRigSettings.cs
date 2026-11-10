@@ -45,10 +45,16 @@ namespace IsoGolf.Rendering
         [Tooltip("A new automatic heading closer than this to the one in effect is ignored, in degrees, so a straight course never turns by a hair.")]
         [SerializeField, Range(0f, 20f)] private float headingMinTurn = 5f;
 
-        [Tooltip("Nearer the hole than this, in metres, the heading follows the ball's leg instead of facing the hole, whose direction means little that close.")]
+        [Tooltip("How far along the centreline the course ahead of a ball at rest is read, in metres, for the heading when the hole is out of reach. About half a full shot, so a ball resting before a bend faces where the course goes next. 0 follows the leg the ball is on.")]
+        [SerializeField, Min(0f)] private float headingLookAhead = 16f;
+
+        [Tooltip("With the hole out of a full shot's reach, how far the heading turns from the course ahead toward the hole, in degrees, so a distant hole leans into view without the view looking across the void beside a dogleg. 0 follows the course ahead only.")]
+        [SerializeField, Range(0f, 45f)] private float holeHeadingFarTurn = 20f;
+
+        [Tooltip("Nearer the hole than this, in metres, the heading follows the course ahead instead of facing the hole, whose direction means little that close.")]
         [SerializeField, Min(0f)] private float holeHeadingMinDistance = 0.3f;
 
-        [Tooltip("How far, in degrees, the heading toward the hole may turn away from the ball's leg. 180 always faces the hole, even from past the green, where the course then runs down the screen. Lower keeps the course running up it.")]
+        [Tooltip("How far, in degrees, the heading toward the hole may turn away from the course ahead. 180 always faces the hole, even from past the green, where the course then runs down the screen. Lower keeps the course running up it.")]
         [SerializeField, Range(0f, 180f)] private float holeHeadingMaxTurn = 180f;
 
         [Tooltip("The furthest a player twist may turn the view from the automatic heading, in degrees.")]
@@ -105,6 +111,8 @@ namespace IsoGolf.Rendering
         public float IslandMargin => islandMargin;
         public float HeadingSmoothTime => headingSmoothTime;
         public float HeadingMinTurn => headingMinTurn;
+        public float HeadingLookAhead => headingLookAhead;
+        public float HoleHeadingFarTurn => holeHeadingFarTurn;
         public float HoleHeadingMinDistance => holeHeadingMinDistance;
         public float HoleHeadingMaxTurn => holeHeadingMaxTurn;
         public float MaxTwist => maxTwist;

@@ -4,6 +4,27 @@ All notable progress on Iso Golf. The format follows [Keep a Changelog](https://
 
 ## [Unreleased]
 
+### 2026-11-09: Camera heading reads the course ahead and leans toward the hole (`fix/m3-camera-heading-par5-seed6`, F1)
+
+#### Changed
+
+- The automatic heading at rest, when the hole is out of a full shot's reach, is now the **course ahead, leaning toward the hole**, instead of the leg the ball is on:
+  - the course ahead is the direction of the centreline from the ball's projection on it to `CameraRigSettings.headingLookAhead` (16 m, about half a full shot) further on, stopped at the hole end (`CameraHeading.Ahead`, was `Leg`). Mid-leg it is the leg's heading; short of a bend it turns gradually toward the next leg, with no threshold;
+  - then it turns toward the hole by at most `holeHeadingFarTurn` (20 degrees), so a distant hole leans into view without the view looking across the void beside a dogleg;
+  - on the tee (start view, lost tee shot) it faces the course ahead only, so the tee's fairway runs straight up the screen.
+  - Facing the hole within reach, the twist, the approach zoom and the never-in-flight rule are unchanged. Director's choices: look-ahead over a hard leg switch; after the first capture ("still not enough toward the hole"), a bounded lean toward the hole over a longer look-ahead or a 50/50 blend; the tee kept on the course ahead.
+- No existing pinned heading moved: the dogleg fixture's tee yaw 80 holds thanks to the tee rule, and the framing, shadow-distance and reachable-yaw pins pass unchanged.
+- `CLAUDE.md` (Camera conventions, Camera heading) and `ART_DIRECTION.md` (Framing) describe the new rule.
+
+#### Fixed
+
+- Generated par 5 seed 6 (phone check, M3 PR 9, follow-up 1): a full tee shot rests at (-6.41, -5.21), 0.37 m short of a 32 degree bend, with the hole 45.0 m away (reach 31.97 m). The view faced the first leg (-2.0 degrees, yaw 82), past the corner at the island's edge and the sky. It now faces 15.37 degrees (yaw 64.63), the hole's own bearing (the course ahead alone gave 29.28 and left the hole well off screen to the right), with the fairway, the pond and the green's bunkers straight ahead.
+
+#### Added
+
+- Tests in `CameraHeadingTests`: the look-ahead (mid-leg, just short of a bend, gradual with no jump, at and past the hole end, a ball off to one side, zero look-ahead), the far turn (bounded at its limit, facing the hole within it, zero, straight course, on the tee), and seed 6 par 5's rest heading pinned with the real `BallSimulation`.
+- Captures in `Docs/Screenshots/m3-camera-heading/`.
+
 ### 2026-11-09: M3 phone checks (`feature/m3-phone-checks`, PR 9)
 
 #### Added

@@ -158,14 +158,14 @@ namespace IsoGolf.Rendering
 
         /// <summary>
         /// Gives the camera the hole and how far a full-power shot goes on flat fairway, so a ball at rest within that
-        /// reach turns the view to face the hole, and comes closer near it. Without it, the view follows the leg the
-        /// ball is on, at the player's zoom. <paramref name="ground"/> gives the ground's height at (x, z) in the course's
+        /// reach turns the view to face the hole, and comes closer near it. Without it, the view follows the course ahead
+        /// of the ball, at the player's zoom. <paramref name="ground"/> gives the ground's height at (x, z) in the course's
         /// space, so the approach zoom frames the hole at its own height on a raised or lowered green; without it the
         /// ground is taken as flat.
         /// </summary>
         public void SetHole(Vector2 hole, float fullPowerReach, System.Func<float, float, float> ground = null)
         {
-            _rule = new CameraHeading(_centreline, hole, fullPowerReach, settings.HoleHeadingMinDistance, settings.HoleHeadingMaxTurn);
+            _rule = new CameraHeading(_centreline, hole, fullPowerReach, settings.HoleHeadingMinDistance, settings.HoleHeadingMaxTurn, settings.HeadingLookAhead, settings.HoleHeadingFarTurn);
             _approach = new ApproachFraming(hole, fullPowerReach, settings.ApproachHoleViewportY, settings.DefaultZoom, settings.ApproachClosestZoom, ground);
             _follow.Rule = _rule;
             _follow.Approach = _approach;

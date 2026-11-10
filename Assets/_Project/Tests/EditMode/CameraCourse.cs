@@ -24,6 +24,9 @@ namespace IsoGolf.Tests
         /// </summary>
         public const string LongPath = "generated:5:33";
 
+        /// <summary>A generated par 5 with two bends, whose full tee shot stops just short of the first (phone check, M3 PR 9).</summary>
+        public const string GeneratedPar5Seed6 = "generated:5:6";
+
         /// <summary>The hand-made fixtures, as shape assets: the par 3 of Sandbox_Par3, the gap and the dogleg.</summary>
         public static readonly string[] ScenePaths = { Par3Path, GapPath, DoglegPath };
 
@@ -64,7 +67,7 @@ namespace IsoGolf.Tests
             Centreline = Layout.Centreline.Points;
             Area = new IslandArea(LevelBootstrap.GroundEdges(terrain.Edge), Centreline, Rig.IslandMargin);
             Reach = ShotReach.FullPowerDistance(Shot);
-            Rule = new CameraHeading(Centreline, Layout.Hole, Reach, Rig.HoleHeadingMinDistance, holeMaxTurn ?? Rig.HoleHeadingMaxTurn);
+            Rule = new CameraHeading(Centreline, Layout.Hole, Reach, Rig.HoleHeadingMinDistance, holeMaxTurn ?? Rig.HoleHeadingMaxTurn, Rig.HeadingLookAhead, Rig.HoleHeadingFarTurn);
 
             StartYaw = IsoCameraConvention.YawFor(Rule.FirstLeg);
             Quaternion rotation = Mathf.Abs(Mathf.DeltaAngle(StartYaw, IsoCameraConvention.StraightYaw)) < 1e-3f
