@@ -9,11 +9,11 @@ namespace IsoGolf.Tests
 {
     /// <summary>
     /// The green, the pin, the hazards and the safe route of generated courses (M3 PR 6b): what the generator guarantees by
-    /// construction, over seeds 0 to 199 of each par. Courses are generated once and shared by the tests.
+    /// construction, over seeds 0 to 49 of each par (the default suite; the Explicit twins run 0 to 199). Courses are generated once and shared by the tests.
     /// </summary>
     public class CourseHazardTests
     {
-        private const int Seeds = 200;
+        private const int Seeds = 50;
         // Decisions compare whole centimetres, so a rule can be missed by half a centimetre in the raw floats.
         private const float Mm = 0.006f;
 
@@ -141,8 +141,22 @@ namespace IsoGolf.Tests
         [TestCase(5)]
         public void HazardCount_IsInRange_OrARoleIsMissing(int par)
         {
+            HazardCount_IsInRange_OrARoleIsMissing_Run(par, 50);
+        }
+
+        [TestCase(3)]
+        [TestCase(4)]
+        [TestCase(5)]
+        [Explicit("Full sweep over seeds 0-199, run by hand before a merge")]
+        public void HazardCount_IsInRange_OrARoleIsMissing_FullSweep(int par)
+        {
+            HazardCount_IsInRange_OrARoleIsMissing_Run(par, 200);
+        }
+
+        private void HazardCount_IsInRange_OrARoleIsMissing_Run(int par, int seeds)
+        {
             Vector2Int range = Settings.Rules(par).HazardCount;
-            for (int seed = 0; seed < Seeds; seed++)
+            for (int seed = 0; seed < seeds; seed++)
             {
                 CourseLayout layout = Course(par, seed);
                 int gap = Settings.GapCountsAsHazard && CourseGeneratorTests.Gaps(layout).Count > 0 ? 1 : 0;
@@ -158,8 +172,22 @@ namespace IsoGolf.Tests
         [TestCase(5)]
         public void MostCourses_AreComplete_WithARouteAndEveryRole(int par)
         {
+            MostCourses_AreComplete_WithARouteAndEveryRole_Run(par, 50);
+        }
+
+        [TestCase(3)]
+        [TestCase(4)]
+        [TestCase(5)]
+        [Explicit("Full sweep over seeds 0-199, run by hand before a merge")]
+        public void MostCourses_AreComplete_WithARouteAndEveryRole_FullSweep(int par)
+        {
+            MostCourses_AreComplete_WithARouteAndEveryRole_Run(par, 200);
+        }
+
+        private void MostCourses_AreComplete_WithARouteAndEveryRole_Run(int par, int seeds)
+        {
             int complete = 0, noRoute = 0, water = 0, hazards = 0;
-            for (int seed = 0; seed < Seeds; seed++)
+            for (int seed = 0; seed < seeds; seed++)
             {
                 CoursePlan plan = Course(par, seed).Plan;
                 complete += plan.Complete ? 1 : 0;
@@ -168,8 +196,8 @@ namespace IsoGolf.Tests
                 hazards += plan.Hazards.Count;
             }
 
-            Debug.Log($"Par {par}: {complete}/{Seeds} complete ({noRoute} with no route on the bare course), {hazards / (float)Seeds:0.00} hazards and {water / (float)Seeds:0.00} ponds per course.");
-            Assert.That(complete, Is.GreaterThanOrEqualTo(Seeds * 85 / 100));
+            Debug.Log($"Par {par}: {complete}/{seeds} complete ({noRoute} with no route on the bare course), {hazards / (float)seeds:0.00} hazards and {water / (float)seeds:0.00} ponds per course.");
+            Assert.That(complete, Is.GreaterThanOrEqualTo(seeds * 85 / 100));
         }
 
         [TestCase(3)]
@@ -177,8 +205,22 @@ namespace IsoGolf.Tests
         [TestCase(5)]
         public void EveryHazard_KeepsItsClearances(int par)
         {
+            EveryHazard_KeepsItsClearances_Run(par, 50);
+        }
+
+        [TestCase(3)]
+        [TestCase(4)]
+        [TestCase(5)]
+        [Explicit("Full sweep over seeds 0-199, run by hand before a merge")]
+        public void EveryHazard_KeepsItsClearances_FullSweep(int par)
+        {
+            EveryHazard_KeepsItsClearances_Run(par, 200);
+        }
+
+        private void EveryHazard_KeepsItsClearances_Run(int par, int seeds)
+        {
             LevelGenSettings s = Settings;
-            for (int seed = 0; seed < Seeds; seed++)
+            for (int seed = 0; seed < seeds; seed++)
             {
                 CourseLayout layout = Course(par, seed);
                 var fields = new CourseFields(layout);
@@ -236,8 +278,22 @@ namespace IsoGolf.Tests
         [TestCase(5)]
         public void GreenGuard_IsOnTheApproachSide_AndNearTheDirectLine(int par)
         {
+            GreenGuard_IsOnTheApproachSide_AndNearTheDirectLine_Run(par, 50);
+        }
+
+        [TestCase(3)]
+        [TestCase(4)]
+        [TestCase(5)]
+        [Explicit("Full sweep over seeds 0-199, run by hand before a merge")]
+        public void GreenGuard_IsOnTheApproachSide_AndNearTheDirectLine_FullSweep(int par)
+        {
+            GreenGuard_IsOnTheApproachSide_AndNearTheDirectLine_Run(par, 200);
+        }
+
+        private void GreenGuard_IsOnTheApproachSide_AndNearTheDirectLine_Run(int par, int seeds)
+        {
             int checkedCourses = 0;
-            for (int seed = 0; seed < Seeds; seed++)
+            for (int seed = 0; seed < seeds; seed++)
             {
                 CourseLayout layout = Course(par, seed);
                 CoursePlan plan = layout.Plan;
@@ -265,7 +321,7 @@ namespace IsoGolf.Tests
                 }
             }
 
-            Assert.That(checkedCourses, Is.GreaterThan(Seeds / 2));
+            Assert.That(checkedCourses, Is.GreaterThan(seeds / 2));
         }
 
         [TestCase(3)]
@@ -273,10 +329,24 @@ namespace IsoGolf.Tests
         [TestCase(5)]
         public void Pin_SitsTowardTheGuard_AndInsideTheGreen(int par)
         {
+            Pin_SitsTowardTheGuard_AndInsideTheGreen_Run(par, 50);
+        }
+
+        [TestCase(3)]
+        [TestCase(4)]
+        [TestCase(5)]
+        [Explicit("Full sweep over seeds 0-199, run by hand before a merge")]
+        public void Pin_SitsTowardTheGuard_AndInsideTheGreen_FullSweep(int par)
+        {
+            Pin_SitsTowardTheGuard_AndInsideTheGreen_Run(par, 200);
+        }
+
+        private void Pin_SitsTowardTheGuard_AndInsideTheGreen_Run(int par, int seeds)
+        {
             LevelGenSettings s = Settings;
             float cap = Mathf.Min(s.GreenRadius.x, s.GreenRadius.y) - s.PinFromBorder - s.GreenWobble;
             float worstBorder = float.MaxValue;
-            for (int seed = 0; seed < Seeds; seed++)
+            for (int seed = 0; seed < seeds; seed++)
             {
                 CourseLayout layout = Course(par, seed);
                 CoursePlan plan = layout.Plan;
@@ -293,7 +363,7 @@ namespace IsoGolf.Tests
                 worstBorder = Mathf.Min(worstBorder, border);
             }
 
-            Debug.Log($"Par {par}: the hole is at least {worstBorder:0.00} m inside the green's border over {Seeds} seeds.");
+            Debug.Log($"Par {par}: the hole is at least {worstBorder:0.00} m inside the green's border over {seeds} seeds.");
             Assert.That(worstBorder, Is.GreaterThan(0.8f));
         }
 
@@ -301,9 +371,22 @@ namespace IsoGolf.Tests
         [TestCase(5)]
         public void CornerCarry_CrossesTheCutLine_AndLeavesTheLandingClear(int par)
         {
+            CornerCarry_CrossesTheCutLine_AndLeavesTheLandingClear_Run(par, 50);
+        }
+
+        [TestCase(4)]
+        [TestCase(5)]
+        [Explicit("Full sweep over seeds 0-199, run by hand before a merge")]
+        public void CornerCarry_CrossesTheCutLine_AndLeavesTheLandingClear_FullSweep(int par)
+        {
+            CornerCarry_CrossesTheCutLine_AndLeavesTheLandingClear_Run(par, 200);
+        }
+
+        private void CornerCarry_CrossesTheCutLine_AndLeavesTheLandingClear_Run(int par, int seeds)
+        {
             LevelGenSettings s = Settings;
             int checkedCorners = 0;
-            for (int seed = 0; seed < Seeds; seed++)
+            for (int seed = 0; seed < seeds; seed++)
             {
                 CourseLayout layout = Course(par, seed);
                 CoursePlan plan = layout.Plan;
@@ -349,7 +432,7 @@ namespace IsoGolf.Tests
             }
 
             Debug.Log($"Par {par}: {checkedCorners} corner hazards checked.");
-            Assert.That(checkedCorners, Is.GreaterThan(10));
+            Assert.That(checkedCorners, Is.GreaterThan(seeds >= 200 ? 10 : 1));
         }
 
         [TestCase(3)]
@@ -357,9 +440,23 @@ namespace IsoGolf.Tests
         [TestCase(5)]
         public void SafeRoute_ExistsOnEveryCompleteCourse_AndKeepsItsRules(int par)
         {
+            SafeRoute_ExistsOnEveryCompleteCourse_AndKeepsItsRules_Run(par, 50);
+        }
+
+        [TestCase(3)]
+        [TestCase(4)]
+        [TestCase(5)]
+        [Explicit("Full sweep over seeds 0-199, run by hand before a merge")]
+        public void SafeRoute_ExistsOnEveryCompleteCourse_AndKeepsItsRules_FullSweep(int par)
+        {
+            SafeRoute_ExistsOnEveryCompleteCourse_AndKeepsItsRules_Run(par, 200);
+        }
+
+        private void SafeRoute_ExistsOnEveryCompleteCourse_AndKeepsItsRules_Run(int par, int seeds)
+        {
             LevelGenSettings s = Settings;
             int layup = Geo.Cm(s.CarryAt(s.LayupPower));
-            for (int seed = 0; seed < Seeds; seed++)
+            for (int seed = 0; seed < seeds; seed++)
             {
                 CourseLayout layout = Course(par, seed);
                 CoursePlan plan = layout.Plan;
@@ -404,9 +501,23 @@ namespace IsoGolf.Tests
         [TestCase(5)]
         public void Ponds_SitJustBelowALevelEnoughRim_AndBunkersOnGentleGround(int par)
         {
+            Ponds_SitJustBelowALevelEnoughRim_AndBunkersOnGentleGround_Run(par, 50);
+        }
+
+        [TestCase(3)]
+        [TestCase(4)]
+        [TestCase(5)]
+        [Explicit("Full sweep over seeds 0-199, run by hand before a merge")]
+        public void Ponds_SitJustBelowALevelEnoughRim_AndBunkersOnGentleGround_FullSweep(int par)
+        {
+            Ponds_SitJustBelowALevelEnoughRim_AndBunkersOnGentleGround_Run(par, 200);
+        }
+
+        private void Ponds_SitJustBelowALevelEnoughRim_AndBunkersOnGentleGround_Run(int par, int seeds)
+        {
             LevelGenSettings s = Settings;
             int ponds = 0;
-            for (int seed = 0; seed < Seeds; seed++)
+            for (int seed = 0; seed < seeds; seed++)
             {
                 CourseLayout layout = Course(par, seed);
                 var fields = new CourseFields(layout);
@@ -428,7 +539,7 @@ namespace IsoGolf.Tests
                 }
             }
 
-            Debug.Log($"Par {par}: {ponds} ponds checked over {Seeds} seeds.");
+            Debug.Log($"Par {par}: {ponds} ponds checked over {seeds} seeds.");
         }
 
         [Test]

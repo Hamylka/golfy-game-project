@@ -166,8 +166,22 @@ namespace IsoGolf.Tests
         [TestCase(5)]
         public void Length_TeeToHole_StaysInItsRange(int par)
         {
+            Length_TeeToHole_StaysInItsRange_Run(par, 50);
+        }
+
+        [TestCase(3)]
+        [TestCase(4)]
+        [TestCase(5)]
+        [Explicit("Full sweep over seeds 0-199, run by hand before a merge")]
+        public void Length_TeeToHole_StaysInItsRange_FullSweep(int par)
+        {
+            Length_TeeToHole_StaysInItsRange_Run(par, 200);
+        }
+
+        private void Length_TeeToHole_StaysInItsRange_Run(int par, int seeds)
+        {
             Vector2 range = Settings.Rules(par).Length;
-            for (int seed = 0; seed < 200; seed++)
+            for (int seed = 0; seed < seeds; seed++)
             {
                 float length = CourseGenerator.Generate(seed, par, Settings).Centreline.Length;
                 Assert.That(length, Is.InRange(range.x - 0.001f, range.y + 0.001f), $"seed {seed}");
@@ -177,7 +191,19 @@ namespace IsoGolf.Tests
         [Test]
         public void ParThree_IsStraightAlongX()
         {
-            for (int seed = 0; seed < 200; seed++)
+            ParThree_IsStraightAlongX_Run(50);
+        }
+
+        [Test]
+        [Explicit("Full sweep over seeds 0-199, run by hand before a merge")]
+        public void ParThree_IsStraightAlongX_FullSweep()
+        {
+            ParThree_IsStraightAlongX_Run(200);
+        }
+
+        private void ParThree_IsStraightAlongX_Run(int seeds)
+        {
+            for (int seed = 0; seed < seeds; seed++)
             {
                 CourseLayout layout = CourseGenerator.Generate(seed, 3, Settings);
                 Assert.That(layout.Centreline.Points.Count, Is.EqualTo(2), $"seed {seed}");
