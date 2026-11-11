@@ -4,6 +4,15 @@ All notable progress on Iso Golf. The format follows [Keep a Changelog](https://
 
 ## [Unreleased]
 
+### 2026-11-11: bucket of balls fix (`fix/m4-bucket-of-balls`)
+
+#### Fixed
+
+- The bucket of balls (a bench's trace) stood almost against the bench's end (a 0.18 m gap from its edge, so in the game camera's view it read as standing on the bench), and its pail was an open tube: no top, so the inside faces were culled and the ground showed through it. It is now a closed pail: a tapered body (`AddFrustum`, bottom 82% of the top radius, sunk 0.1 m like the other built props) with a dark lid ring at the rim, the three balls resting on it.
+- `PropPlacement.BuiltTrace`: the bucket stands half a bench length, its own reach (0.16 m x 1.4 scale x the collider's 1.05) and `BucketGap` (0.3 m) of ground from the bench's centre along its length, so the clear gap is at least 0.25 m.
+- Tests: `BucketIsAClosedPail_EveryFaceLooksOutward` (numeric: body faces look away from the axis, lid faces look up and close the rim, each ball's faces look away from its own centre) and `ABucketStandsOnTheGroundBesideItsBench_NeverOverlappingIt` (seeds 0-49, every par: base at ground height within 2 cm, gap of at least 0.25 m between the bucket's collider and the bench's box).
+- Captures before and after (par 5 seed 120) in `Docs/Screenshots/m4-bucket-fix/`.
+
 ### 2026-11-11: M4 built props (`feature/m4-built-props`, PR 4.4)
 
 #### Added

@@ -545,6 +545,48 @@ namespace IsoGolf.Tests
         }
 
         [Test]
+        public void ABucketStandsOnTheGroundBesideItsBench_NeverOverlappingIt()
+        {
+            int buckets = 0;
+            foreach (int par in new[] { 3, 4, 5 })
+            {
+                for (int seed = 0; seed < 50; seed++)
+                {
+                    CourseLayout layout = CourseGenerator.Generate(seed, par, Settings);
+                    var fields = new CourseFields(layout);
+                    foreach (CourseProp bucket in layout.Props)
+                    {
+                        if (bucket.Kind != PropKind.Bucket)
+                        {
+                            continue;
+                        }
+
+                        buckets++;
+                        Assert.That(bucket.Root.y, Is.EqualTo(fields.Height(bucket.Root.x, bucket.Root.z)).Within(0.02f), $"seed {seed} par {par}: the bucket's base is at ground height");
+                        float radius = bucket.Shapes[0].Extents.x;
+                        foreach (CourseProp bench in layout.Props)
+                        {
+                            if (bench.Cluster != bucket.Cluster || bench.Kind != PropKind.Bench)
+                            {
+                                continue;
+                            }
+
+                            PropShape box = bench.Shapes[0];
+                            float yaw = box.Yaw;
+                            var d = new Vector2(bucket.Root.x - box.Center.x, bucket.Root.z - box.Center.z);
+                            float along = Mathf.Abs((d.x * Mathf.Cos(yaw)) + (d.y * Mathf.Sin(yaw)));
+                            float across = Mathf.Abs((-d.x * Mathf.Sin(yaw)) + (d.y * Mathf.Cos(yaw)));
+                            float gap = Mathf.Max(along - box.Extents.x, across - box.Extents.z) - radius;
+                            Assert.That(gap, Is.GreaterThanOrEqualTo(0.25f), $"seed {seed} par {par}: a clear gap between the bucket and the bench");
+                        }
+                    }
+                }
+            }
+
+            Assert.That(buckets, Is.GreaterThan(5), "buckets exist over seeds 0-49");
+        }
+
+        [Test]
         public void ATraceStandsBesideItsBuiltProp()
         {
             int shedTraces = 0;

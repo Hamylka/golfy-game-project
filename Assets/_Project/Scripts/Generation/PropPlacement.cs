@@ -215,6 +215,9 @@ namespace IsoGolf.Generation
         /// The trace of a shed (a bicycle on one gable wall, or laundry on a line behind it) or of a bench (a bucket of balls at its end).
         /// A trace stands against its built prop, so it only keeps clear of the other clusters' props.
         /// </summary>
+        private const float BucketReach = 0.16f * 1.4f * 1.05f;
+        private const float BucketGap = 0.3f;
+
         private static bool BuiltTrace(SeededRandom sub, PropZones zones, Maker maker, PropRules rules, Planned main, bool shed, int yaw,
             float scale, List<Planned> placed, List<Planned> cluster, int index)
         {
@@ -226,7 +229,8 @@ namespace IsoGolf.Generation
 
             if (!shed)
             {
-                Vector2 at = root + (right * (side * ((kit.BenchLength * scale * 0.5f) + 0.4f))) + (forward * 0.1f);
+                // Beside the bench's end with a clear gap: half the bench, the bucket's own reach (0.16 m x its 1.4 scale) and 0.3 m of ground.
+                Vector2 at = root + (right * (side * ((kit.BenchLength * scale * 0.5f) + BucketReach + BucketGap))) + (forward * 0.1f);
                 return TryAccept(sub, zones, rules, maker.Oriented(sub, PropKind.Bucket, at, 0, 1.4f, index), placed, cluster, false, false);
             }
 

@@ -238,6 +238,47 @@ namespace IsoGolf.Tests
         }
 
         [Test]
+        public void BucketIsAClosedPail_EveryFaceLooksOutward()
+        {
+            // Body (8 sides x 2 triangles), lid ring (8 triangles), then three 20-face balls: the order PropBuilder.AddBucket draws them.
+            for (int seed = 0; seed < 20; seed++)
+            {
+                TerrainMeshData mesh = Build(PropKind.Bucket, seed, 25f, 1.4f).mesh;
+                List<Vector3> p = mesh.Positions;
+                Assert.That(p.Count, Is.EqualTo((16 + 8 + 60) * 3), $"seed {seed}: body, lid and three balls");
+                float rim = Root.y + (0.28f * 1.4f);
+                for (int t = 0; t < p.Count; t += 3)
+                {
+                    Vector3 centroid = (p[t] + p[t + 1] + p[t + 2]) / 3f;
+                    Vector3 normal = Vector3.Cross(p[t + 1] - p[t], p[t + 2] - p[t]).normalized;
+                    int face = t / 3;
+                    if (face < 16)
+                    {
+                        Vector3 outward = new Vector3(centroid.x - Root.x, 0f, centroid.z - Root.z);
+                        Assert.That(Vector3.Dot(normal, outward), Is.GreaterThan(0f), $"seed {seed}: body face {face} looks outward");
+                    }
+                    else if (face < 24)
+                    {
+                        Assert.That(normal.y, Is.GreaterThan(0.99f), $"seed {seed}: lid face {face} looks up");
+                        Assert.That(centroid.y, Is.EqualTo(rim).Within(1e-4f), $"seed {seed}: the lid closes the rim");
+                    }
+                    else
+                    {
+                        int first = 24 * 3 + ((face - 24) / 20 * 60);
+                        Vector3 centre = Vector3.zero;
+                        for (int i = 0; i < 60; i++)
+                        {
+                            centre += p[first + i];
+                        }
+
+                        centre /= 60f;
+                        Assert.That(Vector3.Dot(normal, centroid - centre), Is.GreaterThan(0f), $"seed {seed}: ball face {face} looks outward");
+                    }
+                }
+            }
+        }
+
+        [Test]
         public void LighthouseNarrowsUp_AndItsCylindersFollowIt()
         {
             PropShape[] cylinders = Build(PropKind.Lighthouse, 2).shapes;
