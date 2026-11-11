@@ -50,6 +50,51 @@ namespace IsoGolf.Generation
         [Tooltip("Random change in each block's corners, in metres.")]
         [SerializeField, Range(0f, 0.08f)] private float wallJitter = 0.025f;
 
+        [Header("Shed (M4 PR 4.4)")]
+        [SerializeField, Min(0.5f)] private float shedLength = 2.3f;
+        [SerializeField, Min(0.5f)] private float shedWidth = 1.7f;
+        [SerializeField, Min(0.5f)] private float shedWallHeight = 1.5f;
+        [SerializeField, Min(0.1f)] private float shedRoofRise = 0.7f;
+        [SerializeField, Min(0f)] private float shedOverhang = 0.15f;
+
+        [Header("Bench")]
+        [SerializeField, Min(0.5f)] private float benchLength = 1.4f;
+
+        [Header("Stone bridge")]
+        [SerializeField, Min(0.5f)] private float bridgeWidth = 1.2f;
+        [Tooltip("How high the deck's middle rises over its ends.")]
+        [SerializeField, Min(0f)] private float bridgeRise = 0.45f;
+        [Tooltip("Height of the deck over the banks, before the rise.")]
+        [SerializeField, Min(0.1f)] private float bridgeDeck = 0.35f;
+        [SerializeField, Min(0.2f)] private float bridgeBlockLength = 0.8f;
+        [Tooltip("The bridge's stone reaches this far below the lower bank, so it stands in the water.")]
+        [SerializeField, Min(0.1f)] private float bridgeDepth = 0.8f;
+
+        [Header("Landmarks")]
+        [SerializeField, Min(0.5f)] private float chapelLength = 2.1f;
+        [SerializeField, Min(0.5f)] private float chapelWidth = 1.5f;
+        [SerializeField, Min(0.5f)] private float chapelWallHeight = 1.6f;
+        [SerializeField, Min(0.5f)] private float chapelTowerHeight = 2.7f;
+        [SerializeField, Min(0.3f)] private float lighthouseRadius = 0.8f;
+        [SerializeField, Min(1f)] private float lighthouseHeight = 3.5f;
+
+        public float ShedLength => shedLength;
+        public float ShedWidth => shedWidth;
+        public float ShedWallHeight => shedWallHeight;
+        public float ShedRoofRise => shedRoofRise;
+        public float ShedOverhang => shedOverhang;
+        public float BenchLength => benchLength;
+        public float BridgeWidth => bridgeWidth;
+        public float BridgeRise => bridgeRise;
+        public float BridgeDeck => bridgeDeck;
+        public float BridgeBlockLength => bridgeBlockLength;
+        public float BridgeDepth => bridgeDepth;
+        public float ChapelLength => chapelLength;
+        public float ChapelWidth => chapelWidth;
+        public float ChapelWallHeight => chapelWallHeight;
+        public float ChapelTowerHeight => chapelTowerHeight;
+        public float LighthouseRadius => lighthouseRadius;
+        public float LighthouseHeight => lighthouseHeight;
         public float TrunkHeight => trunkHeight;
         public float TrunkRadius => trunkRadius;
         public int BlobCount => blobCount;

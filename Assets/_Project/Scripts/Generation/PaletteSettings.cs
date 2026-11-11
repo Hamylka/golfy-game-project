@@ -32,6 +32,23 @@ namespace IsoGolf.Generation
         [SerializeField] private Color stoneMid = new Color32(0xDA, 0xD3, 0xC3, 0xFF);
         [SerializeField] private Color stoneDark = new Color32(0xB8, 0xB0, 0xA0, 0xFF);
 
+        [Header("Built props (M4 PR 4.4)")]
+        [Tooltip("Wood: benches, doors, buckets, rakes. The mid shade is Trunk.")]
+        [SerializeField] private Color woodLight = new Color32(0x8B, 0x5A, 0x35, 0xFF);
+        [SerializeField] private Color woodDark = new Color32(0x4A, 0x2C, 0x1C, 0xFF);
+        [SerializeField] private Color tileLight = new Color32(0xD4, 0x87, 0x5E, 0xFF);
+        [SerializeField] private Color tileDark = new Color32(0xB2, 0x66, 0x3F, 0xFF);
+        [SerializeField] private Color slateLight = new Color32(0xA3, 0xA3, 0xA0, 0xFF);
+        [SerializeField] private Color slateMid = new Color32(0x7F, 0x80, 0x7E, 0xFF);
+        [SerializeField] private Color slateDark = new Color32(0x5C, 0x5D, 0x5C, 0xFF);
+        [SerializeField] private Color metal = new Color32(0x5E, 0x62, 0x5F, 0xFF);
+        [SerializeField] private Color metalDark = new Color32(0x3E, 0x42, 0x40, 0xFF);
+
+        [Header("Trace accents (traces of human presence only)")]
+        [SerializeField] private Color traceRed = new Color32(0xC8, 0x42, 0x3B, 0xFF);
+        [SerializeField] private Color traceBlue = new Color32(0x3D, 0x5E, 0x9C, 0xFF);
+        [SerializeField] private Color traceOffWhite = new Color32(0xF2, 0xEE, 0xE6, 0xFF);
+
         [Header("Clouds")]
         [SerializeField] private Color cloudLight = new Color32(0xFF, 0xFF, 0xFF, 0xFF);
         [SerializeField] private Color cloudShade = new Color32(0xD6, 0xDE, 0xED, 0xFF);
@@ -77,6 +94,18 @@ namespace IsoGolf.Generation
         public Color StoneLight => stoneLight;
         public Color StoneMid => stoneMid;
         public Color StoneDark => stoneDark;
+        public Color WoodLight => woodLight;
+        public Color WoodDark => woodDark;
+        public Color TileLight => tileLight;
+        public Color TileDark => tileDark;
+        public Color SlateLight => slateLight;
+        public Color SlateMid => slateMid;
+        public Color SlateDark => slateDark;
+        public Color Metal => metal;
+        public Color MetalDark => metalDark;
+        public Color TraceRed => traceRed;
+        public Color TraceBlue => traceBlue;
+        public Color TraceOffWhite => traceOffWhite;
         public Color CloudLight => cloudLight;
         public Color CloudShade => cloudShade;
         public Color Ball => ball;

@@ -186,6 +186,8 @@ MonoBehaviour:
     clusterRadius: 3
     memberTries: 10
     memberSpacing: 0.85
+    clusterAttempts: 3
+    cypressLineTurn: 15
     inlandWeights: {x: 45, y: 25, z: 30}
     bushShare: 80
     edgeBand: 3
@@ -203,5 +205,24 @@ MonoBehaviour:
     cypressSpacing: {x: 1.3, y: 1.7}
     wallLength: {x: 2.5, y: 4.5}
     wallBesideLine: 1.1
+    builtClustersPar3: {x: 0, y: 1}
+    builtClustersPar4: {x: 1, y: 2}
+    builtClustersPar5: {x: 1, y: 2}
+    shedShare: 50
+    builtTraceChance: 80
+    bicycleShare: 50
+    builtGreenery: {x: 0, y: 2}
+    traceMax: 2
+    rakeChance: 50
+    bridgeChance: 33
+    bridgeBank: 0.7
+    bridgeMaxSpan: 6
+    landmarkChance: 50
+    lighthouseShare: 50
+    landmarkEdgeBand: {x: 0.8, y: 2.4}
+    landmarkIslandShare: 60
+    landmarkRing: 3
+    landmarkFromCentreline: 3.5
+    builtScale: {x: 0.92, y: 1.12}
     shadowHeading: -125
     shadowLength: 0.78

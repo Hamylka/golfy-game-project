@@ -99,6 +99,44 @@ namespace IsoGolf.Generation
         [Tooltip("The wall beside a cypress line runs this far to its side.")]
         [SerializeField, Min(0f)] private float wallBesideLine = 1.1f;
 
+        [Header("Built props (M4 PR 4.4)")]
+        [Tooltip("Built clusters per par, extra to the density's clusters: a shed or a bench with its trace. Fewer if the island has no room.")]
+        [SerializeField] private Vector2Int builtClustersPar3 = new Vector2Int(0, 1);
+        [SerializeField] private Vector2Int builtClustersPar4 = new Vector2Int(1, 2);
+        [SerializeField] private Vector2Int builtClustersPar5 = new Vector2Int(1, 2);
+        [Tooltip("Chance in percent that a built cluster is a shed; the others are a bench.")]
+        [SerializeField, Range(0, 100)] private int shedShare = 50;
+        [Tooltip("Chance in percent that a shed or bench gets its trace: a bicycle or laundry by a shed, a bucket by a bench.")]
+        [SerializeField, Range(0, 100)] private int builtTraceChance = 80;
+        [Tooltip("Chance in percent that a shed's trace is a bicycle on its wall; the others hang laundry behind it.")]
+        [SerializeField, Range(0, 100)] private int bicycleShare = 50;
+        [Tooltip("Greenery (bushes, olives) around a built prop, from the fewest to the most.")]
+        [SerializeField] private Vector2Int builtGreenery = new Vector2Int(0, 2);
+        [Tooltip("Traces on the whole course, at most (shed and bench traces and the rake).")]
+        [SerializeField, Range(0, 4)] private int traceMax = 2;
+        [Tooltip("Chance in percent that a course with a bunker leaves a rake in one.")]
+        [SerializeField, Range(0, 100)] private int rakeChance = 50;
+        [Tooltip("Chance in percent, per pond with room for it, that a bridge crosses it. At most one per course.")]
+        [SerializeField, Range(0, 100)] private int bridgeChance = 33;
+        [Tooltip("The bridge's deck reaches this far past the pond's border on each bank.")]
+        [SerializeField, Min(0.3f)] private float bridgeBank = 0.7f;
+        [Tooltip("The longest span a bridge crosses, in metres, border to border.")]
+        [SerializeField, Min(0.5f)] private float bridgeMaxSpan = 6f;
+        [Tooltip("Chance in percent that a course has a landmark, a chapel or a lighthouse.")]
+        [SerializeField, Range(0, 100)] private int landmarkChance = 50;
+        [Tooltip("Chance in percent that the landmark is a lighthouse; the others are chapels.")]
+        [SerializeField, Range(0, 100)] private int lighthouseShare = 50;
+        [Tooltip("A landmark's foot stands this far inside the island's edge, from the least to the most.")]
+        [SerializeField] private Vector2 landmarkEdgeBand = new Vector2(0.8f, 2.4f);
+        [Tooltip("A promontory: at most this share, in percent, of a ring around the spot is island.")]
+        [SerializeField, Range(0, 100)] private int landmarkIslandShare = 60;
+        [Tooltip("Radius of that ring, in metres.")]
+        [SerializeField, Min(0.5f)] private float landmarkRing = 3f;
+        [Tooltip("A landmark stands at least this far from the course's centreline, the play axis.")]
+        [SerializeField, Min(0f)] private float landmarkFromCentreline = 3.5f;
+        [Tooltip("Built props' scale range, in hundredths.")]
+        [SerializeField] private Vector2 builtScale = new Vector2(0.92f, 1.12f);
+
         [Header("Shadows")]
         [Tooltip("Where shadows fall, in degrees from the course's heading (positive toward +Z), as Main's sun casts them. Read from the scene by a test.")]
         [SerializeField] private float shadowHeading = -125f;
@@ -116,6 +154,34 @@ namespace IsoGolf.Generation
             }
         }
 
+        /// <summary>Built clusters (a shed or a bench with its trace) a par gets, extra to its density's clusters.</summary>
+        public Vector2Int BuiltClusters(int par)
+        {
+            switch (par)
+            {
+                case 3: return builtClustersPar3;
+                case 4: return builtClustersPar4;
+                case 5: return builtClustersPar5;
+                default: throw new ArgumentOutOfRangeException(nameof(par), par, "A course is a par 3, 4 or 5.");
+            }
+        }
+
+        public int ShedShare => shedShare;
+        public int BuiltTraceChance => builtTraceChance;
+        public int BicycleShare => bicycleShare;
+        public Vector2Int BuiltGreenery => builtGreenery;
+        public int TraceMax => traceMax;
+        public int RakeChance => rakeChance;
+        public int BridgeChance => bridgeChance;
+        public float BridgeBank => bridgeBank;
+        public float BridgeMaxSpan => bridgeMaxSpan;
+        public int LandmarkChance => landmarkChance;
+        public int LighthouseShare => lighthouseShare;
+        public Vector2 LandmarkEdgeBand => landmarkEdgeBand;
+        public int LandmarkIslandShare => landmarkIslandShare;
+        public float LandmarkRing => landmarkRing;
+        public float LandmarkFromCentreline => landmarkFromCentreline;
+        public Vector2 BuiltScale => builtScale;
         public float TeeKeepOut => teeKeepOut;
         public float GreenKeepOut => greenKeepOut;
         public float HazardKeepOut => hazardKeepOut;

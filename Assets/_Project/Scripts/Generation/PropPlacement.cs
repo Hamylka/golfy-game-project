@@ -27,6 +27,13 @@ namespace IsoGolf.Generation
         // A wall is tested as circles this far apart along it.
         private const float WallSample = 0.25f;
 
+        // Cluster numbers and stream keys of the built props (PR 4.4), above the clusters' own 1..7. A built cluster is
+        // BuiltBase + 1 + k; the others stand alone.
+        internal const int BuiltBase = 100;
+        internal const int BridgeBase = 130;
+        internal const int RakeBase = 140;
+        internal const int LandmarkBase = 150;
+
         private enum Theme
         {
             OliveGrove,
@@ -45,6 +52,7 @@ namespace IsoGolf.Generation
             public float Scale;
             public int Seed;
             public int Cluster;
+            public float Yaw;
             public Vector3 Root3;
             public Vector3 End3;
             public PropShape[] Shapes;
@@ -110,14 +118,240 @@ namespace IsoGolf.Generation
                 }
             }
 
+            // The built props come after, each from sub-streams keyed above the clusters', so the clusters above stay exactly where
+            // they were with or without them.
+            PlaceBuilt(par, propsSeed, zones, maker, rules, density, starts, centres, placed);
+
             // Each prop was built once, without colours, when it was tried: its shapes are fitted to that mesh, and the terrain
             // view builds the same mesh from the same seed, so they are the drawn prop's own.
             foreach (Planned prop in placed)
             {
-                result.Add(new CourseProp(prop.Kind, prop.Root3, prop.End3, prop.Scale, prop.Seed, prop.Cluster, prop.Shapes));
+                result.Add(new CourseProp(prop.Kind, prop.Root3, prop.End3, prop.Scale, prop.Seed, prop.Cluster, prop.Shapes, prop.Yaw));
             }
 
             return result;
+        }
+
+        /// <summary>
+        /// The built props of M4 PR 4.4, in this order, each from its own sub-stream: built clusters (a shed or a bench, with a trace and
+        /// a little greenery), a bridge, a rake in a bunker, a landmark. Same keep-outs as every other prop; the checks play with them.
+        /// </summary>
+        private static void PlaceBuilt(int par, int propsSeed, PropZones zones, Maker maker, PropRules rules, PropDensity density,
+            List<Vector2> starts, List<Vector2> centres, List<Planned> placed)
+        {
+            int traces = 0;
+            Vector2Int range = rules.BuiltClusters(par);
+            int clusters = new SeededRandom(Stream(propsSeed, BuiltBase)).Int(range.x, range.y);
+            for (int k = 0; k < clusters; k++)
+            {
+                var sub = new SeededRandom(Stream(propsSeed, BuiltBase + 1 + k));
+                BuiltCluster(sub, zones, maker, rules, density, starts, centres, placed, BuiltBase + 1 + k, ref traces);
+            }
+
+            Bridge(new SeededRandom(Stream(propsSeed, BridgeBase)), zones, maker, rules, placed);
+            Rake(new SeededRandom(Stream(propsSeed, RakeBase)), zones, maker, rules, placed, ref traces);
+            Landmark(new SeededRandom(Stream(propsSeed, LandmarkBase)), zones, maker, rules, placed);
+        }
+
+        private static int Stream(int propsSeed, int key) => unchecked((int)CourseNoise.Hash(propsSeed, PropsStream, key));
+
+        /// <summary>A shed or a bench facing the course, then its trace and a little greenery. A start that can't hold it tries another.</summary>
+        private static void BuiltCluster(SeededRandom sub, PropZones zones, Maker maker, PropRules rules, PropDensity density,
+            List<Vector2> starts, List<Vector2> centres, List<Planned> placed, int index, ref int traces)
+        {
+            var free = new List<Vector2>();
+            foreach (Vector2 start in starts)
+            {
+                if (FarFromAll(start, centres, density.ClusterSpacing))
+                {
+                    free.Add(start);
+                }
+            }
+
+            for (int attempt = 0; attempt < rules.ClusterAttempts && free.Count > 0; attempt++)
+            {
+                Vector2 centre = free[sub.Int(0, free.Count - 1)];
+                bool shed = sub.Chance(rules.ShedShare);
+                float scale = sub.Hundredths(rules.BuiltScale);
+                int yaw = zones.HeadingToCourse(centre) - 90 + sub.Int(-15, 15);
+
+                var cluster = new List<Planned>();
+                Planned main = maker.Oriented(sub, shed ? PropKind.Shed : PropKind.Bench, centre, yaw, scale, index);
+                if (!TryAccept(sub, zones, rules, main, placed, cluster, false))
+                {
+                    continue;
+                }
+
+                if (traces < rules.TraceMax && sub.Chance(rules.BuiltTraceChance))
+                {
+                    if (BuiltTrace(sub, zones, maker, rules, main, shed, yaw, scale, placed, cluster, index))
+                    {
+                        traces++;
+                    }
+                }
+
+                int greenery = sub.Int(rules.BuiltGreenery.x, rules.BuiltGreenery.y);
+                for (int m = 0; m < greenery; m++)
+                {
+                    for (int t = 0; t < rules.MemberTries; t++)
+                    {
+                        PropKind kind = sub.Chance(40) ? PropKind.Olive : PropKind.Bush;
+                        Vector2 at = centre + (Geo.Dir(sub.Int(0, 359)) * sub.Centimetres(new Vector2(2f, 3.4f)));
+                        if (TryAccept(sub, zones, rules, maker.Single(sub, kind, at, ScaleFor(sub, rules, kind), index), placed, cluster, false))
+                        {
+                            break;
+                        }
+                    }
+                }
+
+                centres.Add(centre);
+                placed.AddRange(cluster);
+                return;
+            }
+        }
+
+        /// <summary>
+        /// The trace of a shed (a bicycle on one gable wall, or laundry on a line behind it) or of a bench (a bucket of balls at its end).
+        /// A trace stands against its built prop, so it only keeps clear of the other clusters' props.
+        /// </summary>
+        private static bool BuiltTrace(SeededRandom sub, PropZones zones, Maker maker, PropRules rules, Planned main, bool shed, int yaw,
+            float scale, List<Planned> placed, List<Planned> cluster, int index)
+        {
+            PropKitSettings kit = maker.Kit;
+            Vector2 right = Geo.Dir(yaw);
+            Vector2 forward = Geo.Left(right);
+            Vector2 root = main.Root;
+            float side = sub.Coin() ? 1f : -1f;
+
+            if (!shed)
+            {
+                Vector2 at = root + (right * (side * ((kit.BenchLength * scale * 0.5f) + 0.4f))) + (forward * 0.1f);
+                return TryAccept(sub, zones, rules, maker.Oriented(sub, PropKind.Bucket, at, 0, 1f, index), placed, cluster, false, false);
+            }
+
+            if (sub.Chance(rules.BicycleShare))
+            {
+                Vector2 at = root + (right * (side * ((kit.ShedLength * scale * 0.5f) + 0.3f)));
+                return TryAccept(sub, zones, rules, maker.Oriented(sub, PropKind.Bicycle, at, yaw + 90, 1f, index), placed, cluster, false, false);
+            }
+
+            for (int back = 0; back < 2; back++)
+            {
+                float behind = back == 0 ? -1f : 1f;
+                Vector2 at = root + (forward * (behind * ((kit.ShedWidth * scale * 0.5f) + 1.4f)));
+                if (TryAccept(sub, zones, rules, maker.Oriented(sub, PropKind.Laundry, at, yaw, 1f, index), placed, cluster, false, false))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// At most one bridge, on about one pond in three: only a pond that no shot line's corridor and no landing capsule passes over,
+        /// across its narrowest chord, border to border plus a bank each side. It never changes the pond's risk or the safe route:
+        /// every point of the span keeps clear of the corridors, the capsules and the other keep-outs.
+        /// </summary>
+        private static void Bridge(SeededRandom sub, PropZones zones, Maker maker, PropRules rules, List<Planned> placed)
+        {
+            foreach (HazardOutline pond in zones.Ponds)
+            {
+                if (!zones.PondHasRoom(pond) || !sub.Chance(rules.BridgeChance))
+                {
+                    continue;
+                }
+
+                int best = 0;
+                int bestCm = int.MaxValue;
+                for (int j = 0; j < HazardOutline.RingPoints / 2; j++)
+                {
+                    int span = Geo.Cm(Vector2.Distance(pond.Ring[j], pond.Ring[j + (HazardOutline.RingPoints / 2)]));
+                    if (span < bestCm)
+                    {
+                        bestCm = span;
+                        best = j;
+                    }
+                }
+
+                if (bestCm > Geo.Cm(rules.BridgeMaxSpan))
+                {
+                    continue;
+                }
+
+                Vector2 a = pond.Ring[best];
+                Vector2 b = pond.Ring[best + (HazardOutline.RingPoints / 2)];
+                Vector2 along = (b - a).normalized;
+                Planned bridge = maker.Line(sub, PropKind.Bridge, a - (along * rules.BridgeBank), b + (along * rules.BridgeBank), 1f, BridgeBase);
+                var cluster = new List<Planned>();
+                if (zones.FitsBridge(bridge.Circles, bridge.Radius, bridge.Height, rules) && Clears(bridge, placed, rules))
+                {
+                    cluster.Add(bridge);
+                    placed.AddRange(cluster);
+                    return;
+                }
+            }
+        }
+
+        private static bool Clears(Planned prop, List<Planned> placed, PropRules rules)
+        {
+            foreach (Vector2 circle in prop.Circles)
+            {
+                if (!Clear(circle, prop.Radius, placed, rules))
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        /// <summary>A rake lying in a bunker on about half the courses that have one: at the sand's rim farthest from the shot lines. Flat, so it never collides.</summary>
+        private static void Rake(SeededRandom sub, PropZones zones, Maker maker, PropRules rules, List<Planned> placed, ref int traces)
+        {
+            if (traces >= rules.TraceMax || zones.Bunkers.Count == 0 || !sub.Chance(rules.RakeChance))
+            {
+                return;
+            }
+
+            HazardOutline bunker = zones.Bunkers[sub.Int(0, zones.Bunkers.Count - 1)];
+            int turn = sub.Int(-25, 25);
+            if (zones.RakeSpot(bunker, turn, out Vector2 spot, out int yaw))
+            {
+                placed.Add(maker.Oriented(sub, PropKind.Rake, spot, yaw, 1f, RakeBase));
+                traces++;
+            }
+        }
+
+        /// <summary>A chapel (door toward the course) or a lighthouse on a promontory of the island's edge, away from the play axis, on about half the courses.</summary>
+        private static void Landmark(SeededRandom sub, PropZones zones, Maker maker, PropRules rules, List<Planned> placed)
+        {
+            if (!sub.Chance(rules.LandmarkChance))
+            {
+                return;
+            }
+
+            PropKitSettings kit = maker.Kit;
+            bool lighthouse = sub.Chance(rules.LighthouseShare);
+            float scale = sub.Hundredths(rules.BuiltScale);
+            float radius = lighthouse
+                ? kit.LighthouseRadius * scale * 1.1f
+                : 0.5f * Mathf.Sqrt((kit.ChapelLength * kit.ChapelLength) + (kit.ChapelWidth * kit.ChapelWidth)) * scale * 1.1f;
+            float height = lighthouse ? (kit.LighthouseHeight + 1.3f) * scale : (kit.ChapelTowerHeight + 0.9f) * scale;
+
+            List<Vector2> candidates = zones.LandmarkStarts(radius, height);
+            for (int attempt = 0; attempt < rules.ClusterAttempts && candidates.Count > 0; attempt++)
+            {
+                Vector2 at = candidates[sub.Int(0, candidates.Count - 1)];
+                int yaw = lighthouse ? sub.Int(0, 44) : zones.HeadingToCourse(at);
+                var cluster = new List<Planned>();
+                Planned landmark = maker.Oriented(sub, lighthouse ? PropKind.Lighthouse : PropKind.Chapel, at, yaw, scale, LandmarkBase);
+                if (TryAccept(sub, zones, rules, landmark, placed, cluster, false))
+                {
+                    placed.AddRange(cluster);
+                    return;
+                }
+            }
         }
 
         /// <summary>One cluster around this start: its theme, from where the start lies, then its members.</summary>
@@ -280,7 +514,7 @@ namespace IsoGolf.Generation
         /// Keeps the prop if every circle of its footprint fits the keep-outs and clears every prop already placed; then draws
         /// its mesh seed. A rim rock may stand by water, and must stand on a pond's rim.
         /// </summary>
-        private static bool TryAccept(SeededRandom sub, PropZones zones, PropRules rules, Planned prop, List<Planned> placed, List<Planned> cluster, bool rim)
+        private static bool TryAccept(SeededRandom sub, PropZones zones, PropRules rules, Planned prop, List<Planned> placed, List<Planned> cluster, bool rim, bool clearOfCluster = true)
         {
             if (prop == null)
             {
@@ -289,7 +523,7 @@ namespace IsoGolf.Generation
 
             foreach (Vector2 circle in prop.Circles)
             {
-                if (!zones.Fits(circle, prop.Radius, prop.Height, rim) || !Clear(circle, prop.Radius, placed, rules) || !Clear(circle, prop.Radius, cluster, rules))
+                if (!zones.Fits(circle, prop.Radius, prop.Height, rim) || !Clear(circle, prop.Radius, placed, rules) || (clearOfCluster && !Clear(circle, prop.Radius, cluster, rules)))
                 {
                     return false;
                 }
@@ -365,16 +599,30 @@ namespace IsoGolf.Generation
                 return _zones.Fits(from, FootRadius, 0f, false) && _zones.Fits(to, FootRadius, 0f, false) ? Make(sub, PropKind.Wall, from, to, 1f, cluster) : null;
             }
 
-            private Planned Make(SeededRandom sub, PropKind kind, Vector2 from, Vector2 to, float scale, int cluster)
+            public PropKitSettings Kit => _kit;
+
+            /// <summary>A built prop or trace facing <paramref name="yawDegrees"/>, built to be measured; the caller tests it.</summary>
+            public Planned Oriented(SeededRandom sub, PropKind kind, Vector2 at, int yawDegrees, float scale, int cluster)
             {
-                var prop = new Planned { Kind = kind, Root = from, End = to, Scale = scale, Cluster = cluster, Seed = sub.Int(0, MeshSeeds - 1) };
+                return Make(sub, kind, at, at, scale, cluster, yawDegrees);
+            }
+
+            /// <summary>A prop between two ground points (a bridge), built to be measured; the caller tests it.</summary>
+            public Planned Line(SeededRandom sub, PropKind kind, Vector2 from, Vector2 to, float scale, int cluster)
+            {
+                return Make(sub, kind, from, to, scale, cluster);
+            }
+
+            private Planned Make(SeededRandom sub, PropKind kind, Vector2 from, Vector2 to, float scale, int cluster, float yaw = 0f)
+            {
+                var prop = new Planned { Kind = kind, Root = from, End = to, Scale = scale, Cluster = cluster, Yaw = yaw, Seed = sub.Int(0, MeshSeeds - 1) };
                 prop.Root3 = new Vector3(from.x, _fields.Height(from.x, from.y), from.y);
-                prop.End3 = kind == PropKind.Wall ? new Vector3(to.x, _fields.Height(to.x, to.y), to.y) : prop.Root3;
-                prop.Shapes = new PropBuilder(_kit, null).Add(kind, prop.Root3, prop.End3, scale, prop.Seed);
+                prop.End3 = CourseProp.IsLine(kind) ? new Vector3(to.x, _fields.Height(to.x, to.y), to.y) : prop.Root3;
+                prop.Shapes = new PropBuilder(_kit, null).Add(kind, prop.Root3, prop.End3, scale, prop.Seed, yaw);
                 Reach(prop.Root3, prop.End3, prop.Shapes, out prop.Radius, out prop.Height);
 
                 float length = Vector2.Distance(from, to);
-                int samples = kind == PropKind.Wall ? Mathf.Max(1, Mathf.CeilToInt(length / WallSample)) : 0;
+                int samples = CourseProp.IsLine(kind) ? Mathf.Max(1, Mathf.CeilToInt(length / WallSample)) : 0;
                 for (int i = 0; i <= samples; i++)
                 {
                     prop.Circles.Add(samples == 0 ? from : Vector2.Lerp(from, to, (float)i / samples));
@@ -544,6 +792,30 @@ namespace IsoGolf.Generation
                 return false;
             }
 
+            if (!ClearOfPlay(p, radius, height))
+            {
+                return false;
+            }
+
+            float pondMargin = rim ? _rules.RimGap.x : _rules.HazardKeepOut;
+            foreach (HazardOutline pond in _ponds)
+            {
+                if (Geo.Cm(pond.SignedDistance(p, pondMargin + radius + 1f)) < Geo.Cm(pondMargin + radius + RingSag))
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// The part of <see cref="Fits"/> that protects play: out of the tee's circle, the +X end, every shot line's corridor (the
+        /// shadow of a prop <paramref name="height"/> tall too), every landing capsule, the green and the bunkers with their margins.
+        /// Nothing about the ground it stands on or the ponds, so a bridge can use it across water.
+        /// </summary>
+        public bool ClearOfPlay(Vector2 p, float radius, float height)
+        {
             if (Geo.Cm(Vector2.Distance(p, _layout.Tee)) < Geo.Cm(_rules.TeeKeepOut + radius))
             {
                 return false;
@@ -588,16 +860,183 @@ namespace IsoGolf.Generation
                 }
             }
 
-            float pondMargin = rim ? _rules.RimGap.x : _rules.HazardKeepOut;
-            foreach (HazardOutline pond in _ponds)
+            return true;
+        }
+
+        public IReadOnlyList<HazardOutline> Ponds => _ponds;
+
+        public IReadOnlyList<HazardOutline> Bunkers => _bunkers;
+
+        /// <summary>Which way the course lies from a point, as whole degrees from +X toward +Z: toward the nearest spot on the centreline.</summary>
+        public int HeadingToCourse(Vector2 p)
+        {
+            float along = Mathf.Clamp(_layout.Centreline.Project(p, out _), 0f, _length);
+            Vector2 to = _layout.Centreline.PointAt(along) - p;
+            return to.sqrMagnitude < 1e-6f ? 0 : Mathf.RoundToInt(Geo.HeadingOf(to));
+        }
+
+        /// <summary>
+        /// Whether no shot line's corridor and no landing capsule reaches this pond's border: a bridge may cross it only then, so the
+        /// pond's risk and the safe route stay as they are. Lines and capsules are sampled every 0.25 m.
+        /// </summary>
+        public bool PondHasRoom(HazardOutline pond)
+        {
+            foreach (Vector2[] line in _lines)
             {
-                if (Geo.Cm(pond.SignedDistance(p, pondMargin + radius + 1f)) < Geo.Cm(pondMargin + radius + RingSag))
+                if (!AwayFromPond(pond, line, _corridor))
+                {
+                    return false;
+                }
+            }
+
+            foreach (Vector2[] capsule in _capsules)
+            {
+                if (!AwayFromPond(pond, capsule, _capsuleHalfWidth))
                 {
                     return false;
                 }
             }
 
             return true;
+        }
+
+        private static bool AwayFromPond(HazardOutline pond, Vector2[] polyline, float width)
+        {
+            for (int i = 0; i + 1 < polyline.Length; i++)
+            {
+                float length = Vector2.Distance(polyline[i], polyline[i + 1]);
+                int steps = Mathf.Max(1, Mathf.CeilToInt(length / 0.25f));
+                for (int s = 0; s <= steps; s++)
+                {
+                    Vector2 q = Vector2.Lerp(polyline[i], polyline[i + 1], (float)s / steps);
+                    if (Geo.Cm(pond.SignedDistance(q, width + 1f)) < Geo.Cm(width + RingSag))
+                    {
+                        return false;
+                    }
+                }
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// Whether a bridge may stand along these circles (its footprint, 0.25 m apart, each of this radius and height): clear of play
+        /// everywhere, on the island, its two ends on rough ground just outside the pond.
+        /// </summary>
+        public bool FitsBridge(List<Vector2> circles, float radius, float height, PropRules rules)
+        {
+            for (int i = 0; i < circles.Count; i++)
+            {
+                Vector2 c = circles[i];
+                if (!ClearOfPlay(c, radius, height) || Geo.Cm(FromEdge(c)) < Geo.Cm(rules.EdgeMargin))
+                {
+                    return false;
+                }
+
+                if ((i == 0 || i == circles.Count - 1) && !Fits(c, BridgeEndRadius, 0f, true))
+                {
+                    return false;
+                }
+            }
+
+            return circles.Count > 1;
+        }
+
+        // The ground right under a bridge's last point must be free rough, as a small prop's foot is.
+        private const float BridgeEndRadius = 0.3f;
+
+        /// <summary>
+        /// Where a rake lies in a bunker: its handle runs out along the bunker's radius, turned <paramref name="turn"/> whole degrees, with
+        /// its middle <see cref="RakeInset"/> in from the border at the ring point farthest from every shot line, and the whole rake on sand.
+        /// False when no ring point holds one.
+        /// </summary>
+        public bool RakeSpot(HazardOutline bunker, int turn, out Vector2 spot, out int yaw)
+        {
+            spot = default;
+            yaw = 0;
+            int bestCm = -1;
+            for (int i = 0; i < HazardOutline.RingPoints; i++)
+            {
+                Vector2 outward = (bunker.Ring[i] - bunker.Centre).normalized;
+                int degrees = Mathf.RoundToInt(Geo.HeadingOf(outward)) + turn;
+                Vector2 along = Geo.Dir(degrees);
+                Vector2 middle = bunker.Ring[i] - (outward * RakeInset);
+                if (_fields.Surface(Geo.At(middle)) != CourseSurface.Bunker
+                    || _fields.Surface(Geo.At(middle + (along * 0.8f))) != CourseSurface.Bunker
+                    || _fields.Surface(Geo.At(middle - (along * 0.7f))) != CourseSurface.Bunker)
+                {
+                    continue;
+                }
+
+                float far = float.MaxValue;
+                foreach (Vector2[] line in _lines)
+                {
+                    far = Mathf.Min(far, Geo.DistanceToSegment(middle, line[0], line[1]));
+                }
+
+                int cm = Geo.Cm(far);
+                if (cm > bestCm)
+                {
+                    bestCm = cm;
+                    spot = middle;
+                    yaw = degrees;
+                }
+            }
+
+            return bestCm >= 0;
+        }
+
+        private const float RakeInset = 0.9f;
+
+        /// <summary>
+        /// Where a landmark of this footprint may stand: on a promontory of the island's edge (little of a ring around it is island),
+        /// <see cref="PropRules.LandmarkEdgeBand"/> in from the edge and <see cref="PropRules.LandmarkFromCentreline"/> from the play
+        /// axis, with every keep-out of <see cref="Fits"/> (its shadow too).
+        /// </summary>
+        public List<Vector2> LandmarkStarts(float radius, float height)
+        {
+            var starts = new List<Vector2>();
+            const float Grid = 0.5f;
+            Vector2 half = _layout.HalfExtent;
+            int nx = Mathf.FloorToInt(2f * half.x / Grid);
+            int nz = Mathf.FloorToInt(2f * half.y / Grid);
+            Vector2 band = _rules.LandmarkEdgeBand;
+            for (int j = 0; j < nz; j++)
+            {
+                for (int i = 0; i < nx; i++)
+                {
+                    var p = new Vector2(-half.x + ((i + 0.5f) * Grid), -half.y + ((j + 0.5f) * Grid));
+                    int edge = Geo.Cm(FromEdge(p));
+                    if (edge < Geo.Cm(band.x) || edge > Geo.Cm(band.y) || !OnPromontory(p) || !Fits(p, radius, height, false))
+                    {
+                        continue;
+                    }
+
+                    float along = Mathf.Clamp(_layout.Centreline.Project(p, out _), 0f, _length);
+                    if (Geo.Cm(Vector2.Distance(p, _layout.Centreline.PointAt(along))) >= Geo.Cm(_rules.LandmarkFromCentreline))
+                    {
+                        starts.Add(p);
+                    }
+                }
+            }
+
+            return starts;
+        }
+
+        // A ring of points around p: a promontory has little island on it.
+        private bool OnPromontory(Vector2 p)
+        {
+            const int Points = 16;
+            int land = 0;
+            for (int i = 0; i < Points; i++)
+            {
+                if (FromEdge(p + (Geo.Dir(i * 360f / Points) * _rules.LandmarkRing)) > 0f)
+                {
+                    land++;
+                }
+            }
+
+            return land * 100 <= _rules.LandmarkIslandShare * Points;
         }
 
         /// <summary>Metres from the island's edge, positive inside (the island field is a distance).</summary>

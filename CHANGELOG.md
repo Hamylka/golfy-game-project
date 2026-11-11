@@ -4,6 +4,26 @@ All notable progress on Iso Golf. The format follows [Keep a Changelog](https://
 
 ## [Unreleased]
 
+### 2026-11-11: M4 built props (`feature/m4-built-props`, PR 4.4)
+
+#### Added
+
+- Built props, traces and landmarks in the kit (`PropBuilder`, from `PropMeshKit`, palette only, flat facets, one seeded `System.Random` each): tile-roofed **shed** (whitewashed stone, wooden door, two-tone tile roof), wooden **bench**, small **stone bridge** (a row of stone blocks from below the lower bank up to a humped deck, parapets), **rake** lying flat, red **bucket** of white balls, **bicycle** (two tyre rings, blue frame), **laundry** on a line between two posts, **chapel** (nave, slate roof, bell tower) and **lighthouse** (eight-sided tapering tower, darker band, slate gallery, lantern and cap). New helpers `AddFrustum`, `AddUprightDisc`, `AddUprightRing`. Proportions in `PropKitSettings`; new `PaletteSettings` entries (wood light and dark, tile, slate, metal, red, blue, off-white), written to the assets through the Editor.
+- Collision shapes: one oriented box fitted to the mesh for the shed, bench, bicycle, chapel and the **bridge (one block from the water to the parapet top across the whole span)**; two stacked cylinders for the lighthouse; a cylinder for the bucket; the two posts of the laundry (the cloths don't collide); **none for the flat rake** (director Q11 A).
+- `CourseProp.YawDegrees` (which way a built prop faces, whole degrees), `CourseProp.IsLine`/`IsTrace`; `PropKind` gains the nine kinds. Walls and bridges still take their direction from `End`.
+- Placement (`PropPlacement`, props stream, each from sub-streams keyed above the 4.3 clusters so those stay bit-identical): **built clusters** (a shed or a bench facing the course, then its trace and up to two bushes or olives; extra to the density's clusters, `builtClusters` per par 0-1 / 1-2 / 1-2): a shed gets a bicycle on its gable wall or laundry behind it (director: the bicycle leans on the shed, the laundry hangs between two free posts), a bench a bucket; **rake** in a bunker on about half the courses that have one, at the rim farthest from the shot lines; **bridge**, at most one per course, across the narrowest chord of a pond that no corridor or capsule touches, deck 0.7 m past the banks, every point of the span kept out of the corridors, capsules, tee, green, bunkers and the +X end; **landmark** (chapel with its door toward the course, or lighthouse), at most one, on a promontory of the island's edge (a ring of 3 m around it at most 60% island), 0.8-2.4 m in from the edge, at least 3.5 m from the centreline, never in the +X end, its shadow out of the corridors. Traces at most 2 per course. Every frequency in `LevelGenSettings.props` (`PropRules`).
+- Checks: a shed or bench dropped by the checks takes its trace with it.
+- `PropShowroom` pages (Vegetation, Built, Traces) for `Sandbox_Props`.
+- Tests: `BuiltPropKitTests` (51: determinism, budgets, palette only, flat normals, colliders hold the mesh, shapes and materials, rake has none, bridge one block, and **a ball dropped onto the bridge**: 36 shots of different powers and aims onto the block's deck, none comes to rest on it, the hit cap ends the loop cleanly with perfectly bouncy stone), `BuiltPropPlacementTests` (7 + 1 explicit): 4.3 clusters bit-identical with and without the built props, determinism, frequencies over seeds 0-199, **bridge never changes the checks** (no check shot strikes it, same result with and without) and spans water between two rough banks, landmark site, rake flat on sand and rolled over by the ball, a trace beside its built prop. `PropPlacementTests` keep-out check now covers the built kinds.
+- Captures in `Docs/Screenshots/m4-built-props/`.
+
+#### Measured (EditMode)
+
+- 823 tests, 808 pass, 15 explicit skipped, 0 failed (baseline on develop: 764, 750, 14, 0).
+- Props per checked course, seeds 0-199: par 3 **7.1**, par 4 **11.6**, par 5 **17.2** (PR 4.3: 6.0 / 9.5 / 14.1). 0 props dropped by the checks.
+- Courses holding each kind, seeds 0-199 per par (3 / 4 / 5): bench 44 / 104 / 156, shed 2 / 7 / 18, rake 102 / 102 / 91, bucket 29 / 79 / 114, bicycle 1 / 1 / 8, laundry 0 / 0 / 0, chapel 9 / 15 / 36, lighthouse 28 / 27 / 35, **bridge 0 / 0 / 1**. Landmarks are on about 25% of courses (50% asked: the site rules cut it). Sheds are rare because a shed's footprint (about 2 m of free ground) rarely fits between the corridors. Bridges: 438 ponds over the 600 courses, 14 with no corridor or capsule touching them, 5 able to take a bridge.
+- Fine ace sweep, checked par 3 seeds 0-49, with props, pole and the built props: **mean 0.59%**, max 0.86% (seed 46), 0 seeds at or over 1%, full power never holes (unchanged from 4.3).
+
 ### 2026-11-11: M4 prop placement (`feature/m4-prop-placement`, PR 4.3)
 
 #### Added
