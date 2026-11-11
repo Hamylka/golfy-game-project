@@ -189,4 +189,9 @@ through a pull request that they review.
 - If unsure about device or engine behavior, say so and propose a measurement
 - The human has the final say on game feel and visual quality: describe what
   you see in captures, then ask them to playtest and validate.
-- Test cost: statistics are manual measurements (`[Explicit("Measurement")]`) quoted in PRs; rule tests in the default suite sweep seeds 0-49, each with an `Explicit` 0-199 twin run by hand before a merge
+- Test cost: statistics are manual measurements (`[Explicit("Measurement")]`) quoted in PRs; rule tests in the default suite sweep seeds 0-49, each with an `Explicit` 0-199 twin (`_FullSweep`) run by hand only when a PR changes those rules and the director asks
+- Test policy (director, 2026-11-11; this overrides "run the full suite before saying done" for single PRs):
+  - The full EditMode suite (Test Runner "Run All", about 11 min) runs only at the end of a major task group (end of M4, end of M5, before a release). The director presses Run All and reports the totals, the duration and the `TestResults.xml` path; failures found then become fix PRs.
+  - Per PR, run only targeted tests through `run_tests` with explicit `test_names`: new and changed tests, plus the tests of the classes the change touches. A PR that changes shared generation or play rules (placement, hazards, ball simulation, course checks) also runs that area's 0-49 rule tests.
+  - Never call `run_tests` by assembly or group name through the bridge: it also runs `Explicit` tests and freezes Unity for over half an hour.
+  - A PR description lists what was run (names, counts, durations) and says plainly "full suite not run, scheduled at end of <milestone>".

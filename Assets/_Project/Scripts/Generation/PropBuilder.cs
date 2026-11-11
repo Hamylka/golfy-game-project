@@ -437,7 +437,17 @@ namespace IsoGolf.Generation
         {
             float radius = 0.16f * scale;
             float height = 0.28f * scale;
-            _kit.AddPrism(root, radius, height, 8, PropMeshKit.RandomAngle(random), _red, 0.05f);
+            // A pail is a closed vessel: a tapered body, and a dark lid ring at the rim so no inside face is ever seen through the open top.
+            float start = PropMeshKit.RandomAngle(random);
+            _kit.AddFrustum(root, radius * 0.82f, radius, height, 8, start, _red, BuiltSink);
+            Vector3 rim = root + (Vector3.up * height);
+            for (int i = 0; i < 8; i++)
+            {
+                float a0 = start + (i * Mathf.PI * 2f / 8);
+                float a1 = start + ((i + 1) * Mathf.PI * 2f / 8);
+                _kit.AddTriangle(rim + (PropMeshKit.Around(a0) * radius), rim + (PropMeshKit.Around(a1) * radius), rim, Vector3.up, _metalDark);
+            }
+
 
             for (int i = 0; i < 3; i++)
             {
