@@ -17,10 +17,55 @@ namespace IsoGolf.Generation
         public const float HazardMargin = 0.5f;
 
         private readonly bool[] _bareOk;
-        private readonly Dictionary<HazardOutline, bool[]> _masks = new Dictionary<HazardOutline, bool[]>();
+
+        // The bare course's clear spots before any keep-out. Hazard masks are measured against these, so one mask is right in
+        // every world that shares the cache (a world with keep-outs only clears fewer spots).
+        private readonly bool[] _islandOk;
+        private readonly Dictionary<HazardOutline, bool[]> _masks;
+        private readonly IReadOnlyList<GroundKeepOut> _keepOuts;
+
+        /// <summary>A world with the same island and gaps, whose rest spots and final approach also keep off <paramref name="keepOuts"/>.</summary>
+        private RouteWorld(RouteWorld bare, IReadOnlyList<GroundKeepOut> keepOuts)
+        {
+            Fields = bare.Fields;
+            Path = bare.Path;
+            Settings = bare.Settings;
+            SafeTarget = bare.SafeTarget;
+            Approach = bare.Approach;
+            MaxShots = bare.MaxShots;
+            Gaps = bare.Gaps;
+            _islandOk = bare._islandOk;
+            _masks = bare._masks;
+            _keepOuts = new List<GroundKeepOut>(keepOuts);
+            _bareOk = (bool[])bare._islandOk.Clone();
+
+            float reach = Settings.SafeLandingBack + Settings.SafeLandingAhead + Settings.SafeLandingHalfWidth + 1f;
+            foreach (GroundKeepOut keepOut in _keepOuts)
+            {
+                for (int k = 0; k < _bareOk.Length; k++)
+                {
+                    float along = k * Grid;
+                    if (!_bareOk[k] || along < keepOut.From - reach || along > keepOut.To + reach)
+                    {
+                        continue;
+                    }
+
+                    foreach (Vector2 p in CapsuleSamples(along))
+                    {
+                        if (keepOut.Blocks(p, Path))
+                        {
+                            _bareOk[k] = false;
+                            break;
+                        }
+                    }
+                }
+            }
+        }
 
         public RouteWorld(CourseFields fields, CoursePath path, LevelGenSettings settings, Vector2 safeTarget, Vector2 approach, int maxShots)
         {
+            _masks = new Dictionary<HazardOutline, bool[]>();
+            _keepOuts = new GroundKeepOut[0];
             Fields = fields;
             Path = path;
             Settings = settings;
@@ -35,7 +80,21 @@ namespace IsoGolf.Generation
             {
                 _bareOk[k] = BareClear(k * Grid);
             }
+
+            _islandOk = _bareOk;
         }
+
+        /// <summary>
+        /// This world with ground the route may not land on (fairway shapes, F3.2). It shares the island, the gaps and the hazard
+        /// masks; with no keep-out it is this world itself, so a plain course routes exactly as before.
+        /// </summary>
+        public RouteWorld WithKeepOuts(IReadOnlyList<GroundKeepOut> keepOuts)
+        {
+            return keepOuts == null || keepOuts.Count == 0 ? this : new RouteWorld(this, keepOuts);
+        }
+
+        /// <summary>The ground the route keeps off, empty on a plain course.</summary>
+        public IReadOnlyList<GroundKeepOut> KeepOuts => _keepOuts;
 
         public CourseFields Fields { get; }
         public CoursePath Path { get; }
@@ -118,6 +177,14 @@ namespace IsoGolf.Generation
                 {
                     return false;
                 }
+
+                foreach (GroundKeepOut keepOut in _keepOuts)
+                {
+                    if (keepOut.Blocks(sample.Key, Path))
+                    {
+                        return false;
+                    }
+                }
             }
 
             return true;
@@ -131,11 +198,11 @@ namespace IsoGolf.Generation
                 return mask;
             }
 
-            mask = new bool[_bareOk.Length];
+            mask = new bool[_islandOk.Length];
             float reach = hazard.BoundRadius + HazardMargin + Settings.SafeLandingBack + Settings.SafeLandingHalfWidth + 1f;
             for (int k = 0; k < mask.Length; k++)
             {
-                if (!_bareOk[k] || Vector2.Distance(Path.PointAt(k * Grid), hazard.Centre) > reach)
+                if (!_islandOk[k] || Vector2.Distance(Path.PointAt(k * Grid), hazard.Centre) > reach)
                 {
                     continue;
                 }

@@ -35,7 +35,7 @@ namespace IsoGolf.Generation
         /// </param>
         public static CourseLayout Generate(int seed, int par, LevelGenSettings settings, int variant = 0, bool props = true)
         {
-            CourseLayout course = GenerateBare(seed, par, settings, variant);
+            CourseLayout course = GenerateBare(seed, par, settings, variant, out _);
             return props ? WithProps(course, seed, par, variant, settings) : course;
         }
 
@@ -45,7 +45,8 @@ namespace IsoGolf.Generation
             return settings.PropKit == null ? course : course.WithProps(PropPlacement.Place(course, seed, par, variant, settings));
         }
 
-        private static CourseLayout GenerateBare(int seed, int par, LevelGenSettings settings, int variant)
+        /// <summary>The course without props, and what the fairway shapes step drew and placed (for the measurements).</summary>
+        internal static CourseLayout GenerateBare(int seed, int par, LevelGenSettings settings, int variant, out FairwayShapeResult shapes)
         {
             ParRules rules = settings.Rules(par);
 
@@ -92,10 +93,10 @@ namespace IsoGolf.Generation
 
             float fairwayEnd = FairwayEnd(length, green, islandGreen, settings);
 
-            CourseLayout Build(IEnumerable<EllipseShape> bunkers, IEnumerable<PondLayout> ponds, CoursePlan plan) => new CourseLayout(
+            CourseLayout Build(IEnumerable<EllipseShape> bunkers, IEnumerable<PondLayout> ponds, CoursePlan plan, FairwayShapeResult shaped = null) => new CourseLayout(
                 islands,
                 path,
-                new FairwayLayout(-settings.FairwayBehindTee, fairwayEnd, settings.FairwayHalfWidth, settings.FairwayWobble, settings.StripeWidth, fairwayOffset, settings.FairwayCapDepth, settings.FairwayCapDepth),
+                new FairwayLayout(-settings.FairwayBehindTee, fairwayEnd, settings.FairwayHalfWidth, settings.FairwayWobble, settings.StripeWidth, fairwayOffset, settings.FairwayCapDepth, settings.FairwayCapDepth, shaped?.Pieces, shaped?.Ovals),
                 new[] { new GreenLayout(new EllipseShape(greenCentre, settings.GreenRadius, settings.GreenWobble), tilt) },
                 bunkers,
                 ponds,
@@ -113,8 +114,20 @@ namespace IsoGolf.Generation
 
             // The hazards read the ground without them (broad heights, the island, the green), then join it.
             CourseLayout bare = Build(new EllipseShape[0], new PondLayout[0], null);
-            HazardResult hazards = CourseHazards.Place(surfaces, bare, green, par, dogleg, islandGreen, bends, settings);
-            return Build(hazards.Bunkers, hazards.Ponds, hazards.Plan);
+
+            // The fairway shapes (split fairway plan, F3.2) draw from a third stream of their own (salt 8), after the green and the
+            // pin and before the hazards. They read the plain bare course and draw from neither other stream, so every island,
+            // slope, green, pin and hazard candidate stays as drawn. A plain result changes nothing: same layout, same route world.
+            shapes = FairwayShapePlacer.Place(seed, par, variant, bare, green, bends, dogleg, islandGreen, settings);
+            if (shapes.Plain)
+            {
+                HazardResult plain = CourseHazards.Place(surfaces, bare, green, par, dogleg, islandGreen, bends, settings);
+                return Build(plain.Bunkers, plain.Ponds, plain.Plan);
+            }
+
+            CourseLayout shapedBare = Build(new EllipseShape[0], new PondLayout[0], null, shapes);
+            HazardResult hazards = CourseHazards.Place(surfaces, shapedBare, green, par, dogleg, islandGreen, bends, settings, shapes);
+            return Build(hazards.Bunkers, hazards.Ponds, hazards.Plan, shapes);
         }
 
         /// <summary>

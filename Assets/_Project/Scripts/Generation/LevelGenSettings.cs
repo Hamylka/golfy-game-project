@@ -312,6 +312,10 @@ namespace IsoGolf.Generation
         [Tooltip("Where props may stand, how many clusters per par and what they hold.")]
         [SerializeField] private PropRules props = new PropRules();
 
+        [Header("Fairway shapes (split fairway plan, F3.2)")]
+        [Tooltip("Rough islands and splits: their weights per par, sizes, windows and clearances.")]
+        [SerializeField] private FairwayShapeRules fairwayShapes = new FairwayShapeRules();
+
         /// <summary>The rules for a par from 3 to 5.</summary>
         public ParRules Rules(int par)
         {
@@ -440,6 +444,7 @@ namespace IsoGolf.Generation
         public float GapCheckMinPower => gapCheckMinPower;
         public PropKitSettings PropKit => propKit;
         public PropRules Props => props;
+        public FairwayShapeRules FairwayShapes => fairwayShapes;
     }
 
     /// <summary>Where a drive-zone hazard sits on a straight par 4 or 5.</summary>

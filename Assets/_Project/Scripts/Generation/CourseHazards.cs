@@ -105,9 +105,9 @@ namespace IsoGolf.Generation
         /// <paramref name="surfaces"/>: the hazard target; the green guard; each cuttable bend's corner hazard; the drive zone;
         /// the second guard; the flanks.
         /// </summary>
-        public static HazardResult Place(SeededRandom surfaces, CourseLayout bare, GreenPlan green, int par, bool dogleg, bool islandGreen, IReadOnlyList<float> bends, LevelGenSettings s)
+        public static HazardResult Place(SeededRandom surfaces, CourseLayout bare, GreenPlan green, int par, bool dogleg, bool islandGreen, IReadOnlyList<float> bends, LevelGenSettings s, FairwayShapeResult shapes = null)
         {
-            return new HazardPlacer(surfaces, bare, green, par, dogleg, islandGreen, bends, s).Run();
+            return new HazardPlacer(surfaces, bare, green, par, dogleg, islandGreen, bends, s, shapes).Run();
         }
     }
 
@@ -128,6 +128,9 @@ namespace IsoGolf.Generation
         private readonly LevelGenSettings _s;
         private readonly ParRules _rules;
         private readonly RouteWorld _world;
+
+        // The fairway's rough islands and splits (F3.2), null on a plain course. Hazards keep off them.
+        private readonly FairwayShapeResult _shapes;
         private readonly HazardOutline _greenOutline;
         private readonly float _length;
         private readonly Vector2 _tee;
@@ -151,7 +154,10 @@ namespace IsoGolf.Generation
             public float ShortRadius => Radius * Aspect / 100f;
         }
 
-        public HazardPlacer(SeededRandom random, CourseLayout bare, GreenPlan green, int par, bool dogleg, bool islandGreen, IReadOnlyList<float> bends, LevelGenSettings settings)
+        /// <summary>Tests only: sees every hazard candidate as it is drawn, accepted or not. Null in play.</summary>
+        internal static Action<EllipseShape> CandidateObserver;
+
+        public HazardPlacer(SeededRandom random, CourseLayout bare, GreenPlan green, int par, bool dogleg, bool islandGreen, IReadOnlyList<float> bends, LevelGenSettings settings, FairwayShapeResult shapes = null)
         {
             _random = random;
             _bare = bare;
@@ -167,7 +173,8 @@ namespace IsoGolf.Generation
             _tee = bare.Tee;
             _hole = bare.Hole;
             _greenOutline = HazardOutline.Of(bare.Greens[0].Outline, false, HazardRole.GreenGuard);
-            _world = new RouteWorld(_fields, bare.Centreline, settings, green.SafeTarget, green.Approach, par - 1 + settings.SafeRouteExtraShots);
+            _shapes = shapes == null || shapes.Plain ? null : shapes;
+            _world = _shapes?.World ?? new RouteWorld(_fields, bare.Centreline, settings, green.SafeTarget, green.Approach, par - 1 + settings.SafeRouteExtraShots);
         }
 
         public HazardResult Run()
@@ -260,7 +267,7 @@ namespace IsoGolf.Generation
                 }
             }
 
-            result.Plan = new CoursePlan(infos, route, _lines, _missing, target, _s.GapCountsAsHazard, _green.SafeTarget, _green.Guard, _s.ShotCorridorHalfWidth, _dogleg, _islandGreen, _green.DirectOrigin);
+            result.Plan = new CoursePlan(infos, route, _lines, _missing, target, _s.GapCountsAsHazard, _green.SafeTarget, _green.Guard, _s.ShotCorridorHalfWidth, _dogleg, _islandGreen, _green.DirectOrigin, _shapes?.Shapes);
             return result;
         }
 
@@ -425,6 +432,7 @@ namespace IsoGolf.Generation
             {
                 Draw draw = DrawCandidate(water, alongRange, acrossRange);
                 HazardOutline candidate = HazardOutline.Of(build(draw), water, role);
+                CandidateObserver?.Invoke(candidate.Shape);
                 if (Accept(candidate, roleRule))
                 {
                     _placed.Add(candidate);
@@ -472,7 +480,7 @@ namespace IsoGolf.Generation
                 return false;
             }
 
-            if (!RuleOnLand(h))
+            if (!RuleOnLand(h) || !RuleOffShapes(h))
             {
                 return false;
             }
@@ -600,6 +608,58 @@ namespace IsoGolf.Generation
 
             // A third of the rim on the island is enough to give the water a level.
             return inland >= count / 3;
+        }
+
+        /// <summary>
+        /// A hazard never sits on a fairway shape (split fairway plan §3, director Q6 A), which it would erase: it keeps
+        /// <see cref="LevelGenSettings.HazardSpacing"/>, and at least the fairway kept beside it (2 m), from a rough island's outline, and no point of it lies in a band's tip reach
+        /// across the fairway's widest reach (its half width and half its wobble). Always true on a plain course.
+        /// </summary>
+        private bool RuleOffShapes(HazardOutline h)
+        {
+            if (_shapes == null)
+            {
+                return true;
+            }
+
+            float across = _s.FairwayHalfWidth + (_s.FairwayWobble * 0.5f);
+
+            // The fairway kept beside a rough island is the passage on either side: a hazard on it would close it, so it keeps
+            // that far from the oval, not only the spacing between two hazards.
+            float fromOval = Mathf.Max(_s.HazardSpacing, _s.FairwayShapes.IslandFairwaySide);
+            foreach (GroundKeepOut keepOut in _shapes.KeepOuts)
+            {
+                if (keepOut.Oval != null)
+                {
+                    if (Geo.Cm(h.Gap(keepOut.Oval)) < Geo.Cm(fromOval))
+                    {
+                        return false;
+                    }
+
+                    continue;
+                }
+
+                if (InBand(h.Centre, keepOut, across))
+                {
+                    return false;
+                }
+
+                foreach (Vector2 p in h.Ring)
+                {
+                    if (InBand(p, keepOut, across))
+                    {
+                        return false;
+                    }
+                }
+            }
+
+            return true;
+        }
+
+        private bool InBand(Vector2 p, GroundKeepOut band, float across)
+        {
+            int along = Geo.Cm(_bare.Centreline.Project(p, out float side));
+            return along >= Geo.Cm(band.From) && along <= Geo.Cm(band.To) && Geo.Cm(Mathf.Abs(side)) <= Geo.Cm(across);
         }
 
         /// <summary>No water near a gap's tips, and nothing on the safe corridor just past a gap.</summary>
