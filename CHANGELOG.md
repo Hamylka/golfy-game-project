@@ -4,6 +4,12 @@ All notable progress on Iso Golf. The format follows [Keep a Changelog](https://
 
 ## [Unreleased]
 
+### 2026-11-11: split fairway plan (`docs/split-fairway-plan`)
+
+#### Added
+
+- `Docs/Plans/split-fairway-plan.md`: the plan for varied fairway shapes (the director's idea), decided "Tout en A". Three shapes: a rough island in the passage (par 3 ~20%, par 4 and 5 ~20%), a split by a rough band (par 4 and 5 ~15%) and a fork round a spine of rough that rejoins before the end (par 4 ~20%, par 5 ~30%, where the island is already wide enough; if too rare, the director decides on a local bulge). The fairway becomes pieces in the centreline's frame plus rough ovals, one field, one centreline for the camera, elevation and stripes; plain courses stay bit-identical. On a fork the safe route rests on the wide safe branch, the direct line follows the narrow risky branch with a new `BranchGuard` hazard (replacing `DriveZone`), so no shot line crosses the spine and it holds props under the strict corridors. New stream, salt 8, after the green and before the hazards. PRs F3.1-F3.4 (all Opus), all before M4's PR 4.7.
+
 ### 2026-11-11: M4 ambient shader (`feature/m4-ambient-shader`, PR 4.5)
 
 #### Added
