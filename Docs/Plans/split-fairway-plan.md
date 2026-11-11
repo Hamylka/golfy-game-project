@@ -219,3 +219,19 @@ The hub's two notes, accepted with the A answers:
 | 7 | Combinations | A no shape across a dogleg bend, none within 6 m of tee or gap, none on an island green, forks rejoin ≥ 2.5 m before the end / B A plus forks round a dogleg corner | A |
 | 8 | Rough island feel | A plain rough, not a hazard / B deeper rough (new surface response) | A |
 | 9 | Timing against M4 | A plan, then F3.1–F3.4 all before 4.7 / B plan only before 4.7, implementation after M4 | A |
+
+### F3.2: where shapes sit (director, 2026-11-11, word for word)
+
+Relayed by the M4 hub, after F3.2 measured how often §1's windows yield a place:
+
+> C, partout
+
+§1 placed a rough island "at a full drive's landing" (26-31 m from the shot's origin) and §3 the band between a lay-up and a full carry (20-26 m). On a par 4 those windows sit exactly where the generator puts the bend and, often, the gap, and their clearances then cover the whole window. Share of courses carrying the shape, seeds 0-99, bare variant 0 (rough island / split):
+
+| Window measured from | Par 4 | Par 5 |
+|---|---|---|
+| A. the tee (§1 as written) | 1% / 2% | 7% / 12% |
+| B. the tee and every rest spot of the bare safe route | 2% / 3% | 12% / 14% |
+| **C. no window: anywhere the clearances allow** (chosen) | 17% / 14% | 30% / 16% (second shape included) |
+
+So on par 4 and par 5, as on par 3, a shape sits anywhere its clearances allow (tee, gaps, bends, fairway tips, other shapes), clear of every landing capsule and the final approach, with the safe route re-run. `LevelGenSettings.fairwayShapes.windowOrigin` is `Anywhere`; `TeeOnly` and `EveryShot` stay available. The island-edge margin stays at 1 m.

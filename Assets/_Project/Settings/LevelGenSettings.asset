@@ -228,3 +228,36 @@ MonoBehaviour:
     builtScale: {x: 0.92, y: 1.12}
     shadowHeading: -125
     shadowLength: 0.78
+  fairwayShapes:
+    par3:
+      plain: 80
+      roughIsland: 20
+      split: 0
+      fork: 0
+    par4:
+      plain: 45
+      roughIsland: 20
+      split: 15
+      fork: 20
+    par5:
+      plain: 35
+      roughIsland: 20
+      split: 15
+      fork: 30
+    secondShapeChance: 25
+    triesPerShape: 8
+    windowOrigin: 2
+    islandLength: {x: 2.5, y: 5}
+    islandWidth: {x: 1.2, y: 2}
+    islandWobble: {x: 0.12, y: 0.25}
+    islandDriveWindow: {x: 26, y: 31}
+    islandFairwaySide: 2
+    islandWidenEase: 4
+    islandEdgeMargin: 1
+    bandLength: {x: 1.5, y: 3}
+    bandWindow: {x: 20, y: 26}
+    fromTee: 6
+    fromGap: 6
+    splitFromGap: 10
+    fromFairwayTips: 2
+    betweenShapes: 6
