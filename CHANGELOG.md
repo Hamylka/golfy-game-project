@@ -12,7 +12,7 @@ All notable progress on Iso Golf. The format follows [Keep a Changelog](https://
 - `PropPlacement.BuiltTrace`: the bucket stands half a bench length, its own reach (0.16 m x 1.4 scale x the collider's 1.05) and `BucketGap` (0.3 m) of ground from the bench's centre along its length, so the clear gap is at least 0.25 m.
 - Tests: `BucketIsAClosedPail_EveryFaceLooksOutward` (numeric: body faces look away from the axis, lid faces look up and close the rim, each ball's faces look away from its own centre) and `ABucketStandsOnTheGroundBesideItsBench_NeverOverlappingIt` (seeds 0-49, every par: base at ground height within 2 cm, gap of at least 0.25 m between the bucket's collider and the bench's box).
 - Captures before and after (par 5 seed 120) in `Docs/Screenshots/m4-bucket-fix/`.
-r
+
 ### 2026-11-11: test suite cleanup (`chore/m4-test-cleanup`)
 
 #### Changed
