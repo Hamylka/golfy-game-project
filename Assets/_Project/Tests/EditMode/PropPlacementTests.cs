@@ -365,6 +365,12 @@ namespace IsoGolf.Tests
             // A bridge spans a pond: its footprint is over water by design, so the ground, pond and edge rules don't apply to it.
             bool bridge = prop.Kind == PropKind.Bridge;
             PropPlacement.Reach(prop.Root, prop.End, prop.Shapes, out float radius, out float height);
+            if (bridge)
+            {
+                // Only what stands above the higher bank casts a shadow: the block's foot is in the water.
+                height = prop.Shapes[0].Center.y + prop.Shapes[0].Extents.y - Mathf.Max(prop.Root.y, prop.End.y);
+            }
+
             var fields = new CourseFields(layout);
             CoursePlan plan = layout.Plan;
             float corridor = plan.ShotCorridorHalfWidth;
@@ -385,6 +391,20 @@ namespace IsoGolf.Tests
                 if (!bridge && fields.Surface(Geo.At(c)) != CourseSurface.Rough)
                 {
                     return "not on rough";
+                }
+
+                if (!bridge && rules.FairwayMargin >= 0f)
+                {
+                    // The whole footprint plus the margin stays off the fairway (PR 4.4, director).
+                    for (int a = 0; a < 24; a++)
+                    {
+                        float reach = radius + rules.FairwayMargin - Tolerance;
+                        if (fields.Surface(Geo.At(c + (Geo.Dir(a * 15f) * reach))) == CourseSurface.Fairway
+                            || fields.Surface(Geo.At(c + (Geo.Dir(a * 15f) * reach * 0.5f))) == CourseSurface.Fairway)
+                        {
+                            return "fairway";
+                        }
+                    }
                 }
 
                 if (-fields.Island(Geo.At(c)) < rules.EdgeMargin - Tolerance)

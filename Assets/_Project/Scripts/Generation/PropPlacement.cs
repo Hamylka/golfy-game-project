@@ -257,7 +257,7 @@ namespace IsoGolf.Generation
         {
             foreach (HazardOutline pond in zones.Ponds)
             {
-                if (!zones.PondHasRoom(pond) || !sub.Chance(rules.BridgeChance))
+                if (!sub.Chance(rules.BridgeChance))
                 {
                     continue;
                 }
@@ -620,6 +620,11 @@ namespace IsoGolf.Generation
                 prop.End3 = CourseProp.IsLine(kind) ? new Vector3(to.x, _fields.Height(to.x, to.y), to.y) : prop.Root3;
                 prop.Shapes = new PropBuilder(_kit, null).Add(kind, prop.Root3, prop.End3, scale, prop.Seed, yaw);
                 Reach(prop.Root3, prop.End3, prop.Shapes, out prop.Radius, out prop.Height);
+                if (kind == PropKind.Bridge && prop.Shapes.Length > 0)
+                {
+                    // The bridge's block reaches below the water; only what stands above the higher bank casts a shadow.
+                    prop.Height = prop.Shapes[0].Center.y + prop.Shapes[0].Extents.y - Mathf.Max(prop.Root3.y, prop.End3.y);
+                }
 
                 float length = Vector2.Distance(from, to);
                 int samples = CourseProp.IsLine(kind) ? Mathf.Max(1, Mathf.CeilToInt(length / WallSample)) : 0;
@@ -792,7 +797,7 @@ namespace IsoGolf.Generation
                 return false;
             }
 
-            if (!ClearOfPlay(p, radius, height))
+            if (!ClearOfPlay(p, radius, height) || OverFairway(p, radius))
             {
                 return false;
             }
@@ -807,6 +812,36 @@ namespace IsoGolf.Generation
             }
 
             return true;
+        }
+
+        /// <summary>
+        /// Whether a footprint of this reach, plus <see cref="PropRules.FairwayMargin"/>, touches fairway ground (director, PR 4.4): the
+        /// fairway field is sampled at the centre and on two rings of 24 points, out to the reach plus the margin, so a crown or a
+        /// shed can't overhang the fairway's edge. Off when the margin is negative.
+        /// </summary>
+        public bool OverFairway(Vector2 p, float radius)
+        {
+            if (_rules.FairwayMargin < 0f)
+            {
+                return false;
+            }
+
+            float reach = radius + _rules.FairwayMargin;
+            for (int ring = 0; ring < 3; ring++)
+            {
+                float r = ring == 0 ? 0f : (ring == 1 ? reach * 0.5f : reach);
+                int points = ring == 0 ? 1 : 24;
+                for (int i = 0; i < points; i++)
+                {
+                    Vector2 q = p + (Geo.Dir(i * 360f / points) * r);
+                    if (_fields.Surface(Geo.At(q)) == CourseSurface.Fairway)
+                    {
+                        return true;
+                    }
+                }
+            }
+
+            return false;
         }
 
         /// <summary>

@@ -43,6 +43,8 @@ namespace IsoGolf.Generation
         [SerializeField, Min(0f)] private float greenKeepOut = 1.5f;
         [Tooltip("No prop within this far of a bunker's or a pond's border (round rim rocks excepted).")]
         [SerializeField, Min(0f)] private float hazardKeepOut = 0.5f;
+        [Tooltip("The whole collision footprint of a prop, plus this margin, stays off fairway ground, besides the corridors (PR 4.4, director). Negative turns the rule off.")]
+        [SerializeField, Min(-1f)] private float fairwayMargin = 0.3f;
         [Tooltip("A prop's foot keeps at least this far inside the island's edge.")]
         [SerializeField, Min(0f)] private float edgeMargin = 0.4f;
         [Tooltip("A crown may hang this share of its radius out over the edge.")]
@@ -116,8 +118,8 @@ namespace IsoGolf.Generation
         [SerializeField, Range(0, 4)] private int traceMax = 2;
         [Tooltip("Chance in percent that a course with a bunker leaves a rake in one.")]
         [SerializeField, Range(0, 100)] private int rakeChance = 50;
-        [Tooltip("Chance in percent, per pond with room for it, that a bridge crosses it. At most one per course.")]
-        [SerializeField, Range(0, 100)] private int bridgeChance = 33;
+        [Tooltip("Chance in percent, per pond whose bridge footprint is clear of every keep-out, that a bridge crosses it. At most one per course.")]
+        [SerializeField, Range(0, 100)] private int bridgeChance = 100;
         [Tooltip("The bridge's deck reaches this far past the pond's border on each bank.")]
         [SerializeField, Min(0.3f)] private float bridgeBank = 0.7f;
         [Tooltip("The longest span a bridge crosses, in metres, border to border.")]
@@ -182,6 +184,7 @@ namespace IsoGolf.Generation
         public float LandmarkRing => landmarkRing;
         public float LandmarkFromCentreline => landmarkFromCentreline;
         public Vector2 BuiltScale => builtScale;
+        public float FairwayMargin => fairwayMargin;
         public float TeeKeepOut => teeKeepOut;
         public float GreenKeepOut => greenKeepOut;
         public float HazardKeepOut => hazardKeepOut;

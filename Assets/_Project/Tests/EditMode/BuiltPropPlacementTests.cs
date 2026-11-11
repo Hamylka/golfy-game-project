@@ -88,6 +88,113 @@ namespace IsoGolf.Tests
             }
         }
 
+        /// <summary>Whether any point of any collision shape of this prop (centre, outline rings, box corners and edge middles) is on fairway ground.</summary>
+        private static bool ShapesOverFairway(CourseFields fields, CourseProp prop)
+        {
+            foreach (PropShape shape in prop.Shapes)
+            {
+                var centre = new Vector2(shape.Center.x, shape.Center.z);
+                var points = new List<Vector2> { centre };
+                if (shape.Kind == PropShapeKind.Box)
+                {
+                    Vector2 along = new Vector2(Mathf.Cos(shape.Yaw), Mathf.Sin(shape.Yaw));
+                    Vector2 across = Geo.Left(along);
+                    for (int i = -2; i <= 2; i++)
+                    {
+                        for (int j = -2; j <= 2; j++)
+                        {
+                            points.Add(centre + (along * (shape.Extents.x * i * 0.5f)) + (across * (shape.Extents.z * j * 0.5f)));
+                        }
+                    }
+                }
+                else
+                {
+                    for (int a = 0; a < 36; a++)
+                    {
+                        Vector2 dir = Geo.Dir(a * 10f);
+                        points.Add(centre + new Vector2(dir.x * shape.Extents.x, dir.y * shape.Extents.z));
+                        points.Add(centre + new Vector2(dir.x * shape.Extents.x, dir.y * shape.Extents.z) * 0.5f);
+                    }
+                }
+
+                foreach (Vector2 q in points)
+                {
+                    if (fields.Surface(Geo.At(q)) == CourseSurface.Fairway)
+                    {
+                        return true;
+                    }
+                }
+            }
+
+            return false;
+        }
+
+        [Test, Timeout(600000)]
+        public void NoPropShapeReachesFairway_OverSeeds0To199()
+        {
+            int checkedProps = 0;
+            foreach (int par in new[] { 3, 4, 5 })
+            {
+                for (int seed = 0; seed < 200; seed++)
+                {
+                    CourseLayout layout = CourseGenerator.Generate(seed, par, Settings);
+                    var fields = new CourseFields(layout);
+                    foreach (CourseProp prop in layout.Props)
+                    {
+                        if (prop.Kind == PropKind.Bridge || prop.Kind == PropKind.Rake)
+                        {
+                            continue;
+                        }
+
+                        checkedProps++;
+                        Assert.That(ShapesOverFairway(fields, prop), Is.False, $"seed {seed} par {par} {prop.Kind} at {prop.Root}");
+                    }
+                }
+            }
+
+            Assert.That(checkedProps, Is.GreaterThan(3000));
+        }
+
+        /// <summary>Props per course and the share of props whose shapes reach fairway, without the rule and with it (logged; run by hand).</summary>
+        [Test, Explicit("Measurement"), Timeout(600000)]
+        public void FairwayRule_BeforeAndAfter()
+        {
+            LevelGenSettings off = Copy(s => s.FindProperty("props.fairwayMargin").floatValue = -1f);
+            try
+            {
+                var report = new System.Text.StringBuilder();
+                foreach (int par in new[] { 3, 4, 5 })
+                {
+                    foreach (LevelGenSettings settings in new[] { off, Settings })
+                    {
+                        int props = 0, over = 0, bridges = 0;
+                        for (int seed = 0; seed < 200; seed++)
+                        {
+                            CourseLayout layout = CourseGenerator.Generate(seed, par, settings);
+                            var fields = new CourseFields(layout);
+                            foreach (CourseProp prop in layout.Props)
+                            {
+                                props++;
+                                bridges += prop.Kind == PropKind.Bridge ? 1 : 0;
+                                if (prop.Kind != PropKind.Bridge && prop.Kind != PropKind.Rake && ShapesOverFairway(fields, prop))
+                                {
+                                    over++;
+                                }
+                            }
+                        }
+
+                        report.Append($"par {par} {(settings == off ? "before" : "after ")}: props/course {props / 200f:F1}, shapes over fairway {over} ({(props > 0 ? 100f * over / props : 0):F1}%), bridges {bridges}\n");
+                    }
+                }
+
+                Debug.Log("[FairwayRule]\n" + report);
+            }
+            finally
+            {
+                Object.DestroyImmediate(off);
+            }
+        }
+
         [Test]
         public void SameSeed_GivesTheSameBuiltProps()
         {

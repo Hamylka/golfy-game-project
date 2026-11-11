@@ -177,6 +177,7 @@ MonoBehaviour:
     teeKeepOut: 3
     greenKeepOut: 1.5
     hazardKeepOut: 0.5
+    fairwayMargin: 0.3
     edgeMargin: 0.4
     crownOverEdge: 0.5
     endPastHole: 6
@@ -214,7 +215,7 @@ MonoBehaviour:
     builtGreenery: {x: 0, y: 2}
     traceMax: 2
     rakeChance: 50
-    bridgeChance: 33
+    bridgeChance: 100
     bridgeBank: 0.7
     bridgeMaxSpan: 6
     landmarkChance: 50

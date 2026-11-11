@@ -17,12 +17,18 @@ All notable progress on Iso Golf. The format follows [Keep a Changelog](https://
 - Tests: `BuiltPropKitTests` (51: determinism, budgets, palette only, flat normals, colliders hold the mesh, shapes and materials, rake has none, bridge one block, and **a ball dropped onto the bridge**: 36 shots of different powers and aims onto the block's deck, none comes to rest on it, the hit cap ends the loop cleanly with perfectly bouncy stone), `BuiltPropPlacementTests` (7 + 1 explicit): 4.3 clusters bit-identical with and without the built props, determinism, frequencies over seeds 0-199, **bridge never changes the checks** (no check shot strikes it, same result with and without) and spans water between two rough banks, landmark site, rake flat on sand and rolled over by the ball, a trace beside its built prop. `PropPlacementTests` keep-out check now covers the built kinds.
 - Captures in `Docs/Screenshots/m4-built-props/`.
 
+#### Changed after review (director's decisions, relayed by the hub)
+
+- **Bridge rule (option A)**: only the bridge's own footprint (span, banks, shadow of what stands above the higher bank) must keep clear of every corridor, capsule and other keep-out, instead of the whole pond; `bridgeChance` 100%. Measured over seeds 0-199: bridges on 12 / 3 / 5 courses of 200 for par 3 / 4 / 5 (6% / 1.5% / 2.5%, 20 of 600), still rare because the footprint usually touches a corridor. The check that the safe route and `CourseChecks` are identical with and without the bridge stays. A bridge's shadow height was measured from its foot in the water (1.9 m); it now counts only above the higher bank.
+- **Fairway rule**: every prop's whole collision footprint plus `PropRules.fairwayMargin` (0.3 m, in `LevelGenSettings`, written through the Editor; negative turns it off) stays off fairway ground, besides the corridors: `PropZones.OverFairway` samples the fairway field at the footprint's centre and two rings of 24 points out to reach + margin. The green and bunkers keep their keep-outs. Before the rule, 11.6% / 16.0% / 17.5% of the placed props (par 3 / 4 / 5, seeds 0-199) had a collision shape reaching fairway ground (an overhanging crown or shed); after it, 0. Cost: props per course 7.1 / 11.7 / 17.2 before, **5.3 / 9.1 / 14.5 after** (generated layouts, built props included; checked courses 5.3 / 9.2 / 14.7, 0 dropped by the checks; two par 3 seeds of the ace sweep have no prop at all): the courses get sparser, which the density review will weigh.
+- Test: `NoPropShapeReachesFairway_OverSeeds0To199` (sampling each shape's own outline, independent of the zones) and the 4.3 keep-out test covers the margin; the other keep-outs are unchanged. Explicit measurement `FairwayRule_BeforeAndAfter`.
+
 #### Measured (EditMode)
 
-- 823 tests, 808 pass, 15 explicit skipped, 0 failed (baseline on develop: 764, 750, 14, 0).
+- 823 tests, 808 pass, 15 explicit skipped, 0 failed (baseline on develop: 764, 750, 14, 0), before the review changes above.
 - Props per checked course, seeds 0-199: par 3 **7.1**, par 4 **11.6**, par 5 **17.2** (PR 4.3: 6.0 / 9.5 / 14.1). 0 props dropped by the checks.
 - Courses holding each kind, seeds 0-199 per par (3 / 4 / 5): bench 44 / 104 / 156, shed 2 / 7 / 18, rake 102 / 102 / 91, bucket 29 / 79 / 114, bicycle 1 / 1 / 8, laundry 0 / 0 / 0, chapel 9 / 15 / 36, lighthouse 28 / 27 / 35, **bridge 0 / 0 / 1**. Landmarks are on about 25% of courses (50% asked: the site rules cut it). Sheds are rare because a shed's footprint (about 2 m of free ground) rarely fits between the corridors. Bridges: 438 ponds over the 600 courses, 14 with no corridor or capsule touching them, 5 able to take a bridge.
-- Fine ace sweep, checked par 3 seeds 0-49, with props, pole and the built props: **mean 0.59%**, max 0.86% (seed 46), 0 seeds at or over 1%, full power never holes (unchanged from 4.3).
+- Fine ace sweep, checked par 3 seeds 0-49, with props, pole and the built props: **mean 0.59%**, max 0.86% (seed 46), 0 seeds at or over 1%, full power never holes (unchanged from 4.3, re-run after the review changes below).
 
 ### 2026-11-11: M4 prop placement (`feature/m4-prop-placement`, PR 4.3)
 

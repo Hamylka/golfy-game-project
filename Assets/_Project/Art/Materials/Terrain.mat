@@ -54,6 +54,7 @@ Material:
     - _QueueControl: 0
     - _QueueOffset: 0
     - _XRMotionVectorsPass: 1
-    m_Colors: []
+    m_Colors:
+    - _ShadowTint: {r: 0.30499998, g: 0.30499998, b: 0.45, a: 1}
   m_BuildTextureStacks: []
   m_AllowLocking: 1
