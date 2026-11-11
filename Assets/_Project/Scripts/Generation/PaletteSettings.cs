@@ -12,6 +12,11 @@ namespace IsoGolf.Generation
         [SerializeField] private Color green = new Color32(0xA7, 0xB8, 0x6A, 0xFF);
         [SerializeField] private Color sand = new Color32(0xE8, 0xD9, 0xB5, 0xFF);
         [SerializeField] private Color water = new Color32(0x4F, 0xB0, 0xB8, 0xFF);
+        [Tooltip("Water at the rim of a pond, lighter. A facet's tone runs from here (at the bank) to Water Deep (at the middle).")]
+        [SerializeField] private Color waterShallow = new Color32(0x7F, 0xCE, 0xCB, 0xFF);
+        [SerializeField] private Color waterDeep = new Color32(0x3A, 0x95, 0xA3, 0xFF);
+        [Tooltip("Each water facet gets one of a few fixed tones, up to this much lighter or darker (a share of the colour, 0.06 is subtle).")]
+        [SerializeField, Range(0f, 0.3f)] private float waterToneVariation = 0.07f;
         [SerializeField] private Color earth = new Color32(0xBF, 0x6C, 0x43, 0xFF);
 
         [Header("Edge tufts")]
@@ -82,6 +87,9 @@ namespace IsoGolf.Generation
         public Color Green => green;
         public Color Sand => sand;
         public Color Water => water;
+        public Color WaterShallow => waterShallow;
+        public Color WaterDeep => waterDeep;
+        public float WaterToneVariation => waterToneVariation;
         public Color Earth => earth;
         public Color TuftLight => tuftLight;
         public Color TuftMid => tuftMid;

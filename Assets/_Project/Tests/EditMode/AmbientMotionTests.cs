@@ -184,6 +184,44 @@ namespace IsoGolf.Tests
         }
 
         [Test]
+        public void Water_IsDarkerAtTheMiddleThanAtTheRim_AndOneToneEach()
+        {
+            CourseLayout layout = _shape.ToLayout();
+            var fields = new CourseFields(layout);
+            TerrainMeshData water = TerrainBuilder.Build(layout, _palette).Water;
+            double deep = 0, rim = 0;
+            int deepCount = 0, rimCount = 0;
+            var tones = new HashSet<int>();
+
+            for (int i = 0; i < water.Positions.Count; i += 3)
+            {
+                Assert.That(water.Colors[i + 1], Is.EqualTo(water.Colors[i]), "one tone per facet");
+                Assert.That(water.Colors[i + 2], Is.EqualTo(water.Colors[i]), "one tone per facet");
+
+                Vector3 centre = (water.Positions[i] + water.Positions[i + 1] + water.Positions[i + 2]) / 3f;
+                float depth = Mathf.Clamp01(-fields.Pond(centre));
+                Color32 c = water.Colors[i];
+                double light = c.r + c.g + c.b;
+                tones.Add((c.r << 16) | (c.g << 8) | c.b);
+                if (depth > 0.5f)
+                {
+                    deep += light;
+                    deepCount++;
+                }
+                else
+                {
+                    rim += light;
+                    rimCount++;
+                }
+            }
+
+            Assert.That(deepCount, Is.GreaterThan(0));
+            Assert.That(rimCount, Is.GreaterThan(0));
+            Assert.That(deep / deepCount, Is.LessThan(rim / rimCount), "darker toward the middle");
+            Assert.That(tones.Count, Is.GreaterThan(3), "a mosaic of several tones, not one flat colour");
+        }
+
+        [Test]
         public void AmbientHash_IsInRange_AndSpreadsAcrossTheCycle()
         {
             int below = 0;

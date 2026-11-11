@@ -189,12 +189,14 @@ namespace IsoGolf.Generation
         private readonly Color32 _fairwayDark;
         private readonly Color32 _green;
         private readonly Color32 _sand;
-        private readonly Color32 _water;
         private readonly Color32 _earth;
+
+        private readonly PaletteSettings _palette;
 
         private TerrainBuilder(CourseLayout layout, PaletteSettings palette)
         {
             _layout = layout;
+            _palette = palette;
             _fields = new CourseFields(layout);
 
             _rough = ToVertexColor(palette.Rough);
@@ -202,7 +204,6 @@ namespace IsoGolf.Generation
             _fairwayDark = ToVertexColor(palette.FairwayDark);
             _green = ToVertexColor(palette.Green);
             _sand = ToVertexColor(palette.Sand);
-            _water = ToVertexColor(palette.Water);
             _earth = ToVertexColor(palette.Earth);
         }
 
@@ -312,9 +313,9 @@ namespace IsoGolf.Generation
 
                 foreach (Triangle water in inside)
                 {
-                    // One glint hash per facet, from its centre on the ground plane (read by the shader, never the simulation).
+                    // One glint hash per facet (UV1.y), and one fixed tone from the pond depth and a second hash.
                     Vector3 centre = water.Centroid;
-                    _result.Water.AddGlint(Lower(water.A), Lower(water.B), Lower(water.C), Vector3.up, _water, AmbientHash.Unit(centre.x, centre.z));
+                    _result.Water.AddGlint(Lower(water.A), Lower(water.B), Lower(water.C), Vector3.up, WaterColor(centre), AmbientHash.Unit(centre.x, centre.z));
                 }
             }
 
@@ -359,6 +360,27 @@ namespace IsoGolf.Generation
             }
 
             return result;
+        }
+
+        // Fixed tones a water facet can take, from the darkest to the lightest of a spread around the depth colour.
+        private const int WaterToneLevels = 5;
+
+        /// <summary>
+        /// A water facet's colour: the depth colour (lighter at the pond's rim, darker at its middle, from the pond field at the
+        /// facet's centre: 0 on the border, -1 at the middle) lifted or lowered by one of a few fixed tones picked from a hash of
+        /// the facet's position. Flat per facet and static, so the surface reads as a mosaic of facets, not a moving highlight.
+        /// </summary>
+        private Color32 WaterColor(Vector3 centre)
+        {
+            float depth = Mathf.Clamp01(-_fields.Pond(centre));
+            Color color = Color.Lerp(_palette.WaterShallow, _palette.WaterDeep, depth);
+
+            // A second hash (shifted position) so the tone never correlates with the glint hash.
+            float hash = AmbientHash.Unit(centre.x + 1000f, centre.z - 1000f);
+            int level = Mathf.Min(WaterToneLevels - 1, (int)(hash * WaterToneLevels));
+            float spread = ((level / (float)(WaterToneLevels - 1)) - 0.5f) * 2f;
+            float gain = 1f + (spread * _palette.WaterToneVariation);
+            return ToVertexColor(new Color(Mathf.Clamp01(color.r * gain), Mathf.Clamp01(color.g * gain), Mathf.Clamp01(color.b * gain), 1f));
         }
 
         /// <summary>
