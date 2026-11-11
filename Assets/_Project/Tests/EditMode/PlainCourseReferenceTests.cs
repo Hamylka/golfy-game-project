@@ -90,12 +90,21 @@ namespace IsoGolf.Tests
             Assert.That(PlainCourseReference.Generated.Length, Is.EqualTo(3 * ReferenceSeeds * 3), "The reference is not captured.");
             var clock = Stopwatch.StartNew();
             var failures = new StringBuilder();
+            int shaped = 0;
             foreach (int par in new[] { 3, 4, 5 })
             {
                 for (int seed = 0; seed < seeds; seed++)
                 {
                     int index = (((par - 3) * ReferenceSeeds) + seed) * 3;
-                    Compare(failures, $"par {par} seed {seed}", Generated(seed, par), PlainCourseReference.Generated, index);
+                    // F3.2: a course that drew a fairway shape on any variant the checks tried is no longer plain, so it is not compared.
+                    CheckedCourseResult result = CheckedCourse.Generate(seed, par, CourseGeneratorTests.Settings, CourseCheckMeasurements.Shot);
+                    if (TriedAShape(seed, par, result))
+                    {
+                        shaped++;
+                        continue;
+                    }
+
+                    Compare(failures, $"par {par} seed {seed}", Hashes(result), PlainCourseReference.Generated, index);
                 }
             }
 
@@ -104,7 +113,7 @@ namespace IsoGolf.Tests
                 Compare(failures, CameraCourse.ScenePaths[i], Fixture(CameraCourse.ScenePaths[i]), PlainCourseReference.Fixtures, i * 3);
             }
 
-            Debug.Log($"PLAIN_REFERENCE checked seeds 0-{seeds - 1} on every par and {CameraCourse.ScenePaths.Length} fixtures in {clock.Elapsed.TotalSeconds:F1} s");
+            Debug.Log($"PLAIN_REFERENCE checked seeds 0-{seeds - 1} on every par ({shaped} shaped courses skipped) and {CameraCourse.ScenePaths.Length} fixtures in {clock.Elapsed.TotalSeconds:F1} s");
             Assert.That(failures.Length, Is.Zero, failures.ToString());
         }
 
@@ -120,9 +129,25 @@ namespace IsoGolf.Tests
             }
         }
 
-        private static ulong[] Generated(int seed, int par)
+        /// <summary>Whether any variant the checks tried for this course (up to the one kept) carries a fairway shape.</summary>
+        internal static bool TriedAShape(int seed, int par, CheckedCourseResult result)
         {
-            CheckedCourseResult result = CheckedCourse.Generate(seed, par, CourseGeneratorTests.Settings, CourseCheckMeasurements.Shot);
+            for (int variant = 0; variant < result.Candidates; variant++)
+            {
+                if (CourseGenerator.Generate(seed, par, CourseGeneratorTests.Settings, variant, props: false).Plan.FairwayShapes.Count > 0)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static ulong[] Generated(int seed, int par) =>
+            Hashes(CheckedCourse.Generate(seed, par, CourseGeneratorTests.Settings, CourseCheckMeasurements.Shot));
+
+        internal static ulong[] Hashes(CheckedCourseResult result)
+        {
             CourseLayout layout = result.Layout;
             return new[]
             {
