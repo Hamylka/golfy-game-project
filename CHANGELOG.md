@@ -4,6 +4,17 @@ All notable progress on Iso Golf. The format follows [Keep a Changelog](https://
 
 ## [Unreleased]
 
+### 2026-11-11: fairway pieces (`feature/fairway-pieces`, F3.1)
+
+#### Added
+
+- `FairwayPiece` (split fairway plan §2): a strip in the main centreline's frame, from `From` to `To` along it, with an across offset and a half width that can ease in from their edge values at both ends (smoothstep), and a rounded tip (cap depth) or a flat join at each end. `FairwayLayout` gains `Pieces` and `RoughOvals` (`EllipseShape`), both optional. Given none, it holds one plain piece built from its start, end, half width and caps. `IsPlain` says whether it is that one plain strip.
+- `CourseFields.Fairway` on a generated course: one centreline projection and one edge wobble per point, then the union of the pieces (lowest field) minus the rough ovals (highest of that and each oval's field turned inside out). Hand-made courses keep their axis strip, untouched.
+- `CoursePlan.FairwayShapes` (`FairwayShapeKind` rough island, split or fork; the stretch it covers along the centreline; a fork's safe and risky branch offsets). It is empty on every course: no shape is drawn yet (stream salt 8 and `LevelGenSettings.fairwayShapes` come in F3.2).
+- Bit-identity guard `PlainCoursesAreBitIdentical` (seeds 0-49, every par, plus the hand-made par 3, gap and dogleg courses; about 88 s in the Editor) and its `Explicit` twin `_FullSweep` (0-199). `CourseFingerprint` hashes each checked course three ways: fields on a 0.37 m grid, terrain mesh, layout data with plan and props. The hashes are compared with `PlainCourseReference`, which the `Explicit` `CapturePlainCourseReference` test wrote on `develop` 88d67c1 before the change, in a commit of its own. These are Editor x64 Mono hashes: they guard against regressions, but do not prove that two platforms agree.
+- `FairwayPieceFieldTests` (9): constant and eased offset, eased width, rounded cap against flat join, union, oval cut, a point exactly on a piece's or an oval's border (field 0, rough), and an implicit plain piece giving the same bits as an explicit one.
+- Measurements (`Explicit`): `ForkFitShare` (how often a fork fits on today's islands, Q4 A) and `FairwayFieldCost`. Figures are in the PR. A 3.5 m spine with the 1 m edge margin fits on 0% of par 4s and par 5s, so the director decides on Q4 B (local bulge).
+
 ### 2026-11-11: CLAUDE.md records the fairway shapes decisions (`docs/claude-md-fairway-shapes`)
 
 #### Changed
