@@ -617,10 +617,22 @@ namespace IsoGolf.Tests
         [Test]
         public void ABucketStandsOnTheGroundBesideItsBench_NeverOverlappingIt()
         {
+            ABucketStandsOnTheGroundBesideItsBench_Run(50);
+        }
+
+        [Test]
+        [Explicit("Full sweep over seeds 0-199, run by hand before a merge")]
+        public void ABucketStandsOnTheGroundBesideItsBench_FullSweep()
+        {
+            ABucketStandsOnTheGroundBesideItsBench_Run(200);
+        }
+
+        private void ABucketStandsOnTheGroundBesideItsBench_Run(int seeds)
+        {
             int buckets = 0;
             foreach (int par in new[] { 3, 4, 5 })
             {
-                for (int seed = 0; seed < 50; seed++)
+                for (int seed = 0; seed < seeds; seed++)
                 {
                     CourseLayout layout = CourseGenerator.Generate(seed, par, Settings);
                     var fields = new CourseFields(layout);
@@ -653,7 +665,7 @@ namespace IsoGolf.Tests
                 }
             }
 
-            Assert.That(buckets, Is.GreaterThan(5), "buckets exist over seeds 0-49");
+            Assert.That(buckets, Is.GreaterThan(seeds / 10), "buckets exist");
         }
 
         [Test]
