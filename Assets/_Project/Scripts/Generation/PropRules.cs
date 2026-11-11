@@ -136,6 +136,8 @@ namespace IsoGolf.Generation
         [SerializeField, Min(0.5f)] private float landmarkRing = 3f;
         [Tooltip("A landmark stands at least this far from the course's centreline, the play axis.")]
         [SerializeField, Min(0f)] private float landmarkFromCentreline = 3.5f;
+        [Tooltip("A built prop or trace stands only where the ground, over its footprint, slopes at most this much (rise over run): a bench or a bucket on a steep bank looks like it floats.")]
+        [SerializeField, Range(0.02f, 1f)] private float builtMaxSlope = 0.3f;
         [Tooltip("Built props' scale range, in hundredths.")]
         [SerializeField] private Vector2 builtScale = new Vector2(0.92f, 1.12f);
 
@@ -184,6 +186,7 @@ namespace IsoGolf.Generation
         public float LandmarkRing => landmarkRing;
         public float LandmarkFromCentreline => landmarkFromCentreline;
         public Vector2 BuiltScale => builtScale;
+        public float BuiltMaxSlope => builtMaxSlope;
         public float FairwayMargin => fairwayMargin;
         public float TeeKeepOut => teeKeepOut;
         public float GreenKeepOut => greenKeepOut;

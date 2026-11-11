@@ -224,6 +224,7 @@ MonoBehaviour:
     landmarkIslandShare: 60
     landmarkRing: 3
     landmarkFromCentreline: 3.5
+    builtMaxSlope: 0.3
     builtScale: {x: 0.92, y: 1.12}
     shadowHeading: -125
     shadowLength: 0.78

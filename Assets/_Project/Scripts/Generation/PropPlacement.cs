@@ -59,6 +59,7 @@ namespace IsoGolf.Generation
             public List<Vector2> Circles = new List<Vector2>();
             public float Radius;
             public float Height;
+            public bool Steep;
         }
 
         /// <summary>The props of this course, or none if the settings have no prop kit or the course has no plan (hand-made).</summary>
@@ -226,7 +227,7 @@ namespace IsoGolf.Generation
             if (!shed)
             {
                 Vector2 at = root + (right * (side * ((kit.BenchLength * scale * 0.5f) + 0.4f))) + (forward * 0.1f);
-                return TryAccept(sub, zones, rules, maker.Oriented(sub, PropKind.Bucket, at, 0, 1f, index), placed, cluster, false, false);
+                return TryAccept(sub, zones, rules, maker.Oriented(sub, PropKind.Bucket, at, 0, 1.4f, index), placed, cluster, false, false);
             }
 
             if (sub.Chance(rules.BicycleShare))
@@ -516,7 +517,7 @@ namespace IsoGolf.Generation
         /// </summary>
         private static bool TryAccept(SeededRandom sub, PropZones zones, PropRules rules, Planned prop, List<Planned> placed, List<Planned> cluster, bool rim, bool clearOfCluster = true)
         {
-            if (prop == null)
+            if (prop == null || prop.Steep)
             {
                 return false;
             }
@@ -624,6 +625,20 @@ namespace IsoGolf.Generation
                 {
                     // The bridge's block reaches below the water; only what stands above the higher bank casts a shadow.
                     prop.Height = prop.Shapes[0].Center.y + prop.Shapes[0].Extents.y - Mathf.Max(prop.Root3.y, prop.End3.y);
+                }
+
+                // Built props and traces want level ground under their footprint (a bench on a steep bank looks like it floats).
+                if (kind >= PropKind.Shed && kind != PropKind.Bridge && kind != PropKind.Rake)
+                {
+                    float run = Mathf.Min(Mathf.Max(prop.Radius, 0.3f), 1.5f);
+                    float rise = 0f;
+                    for (int a = 0; a < 8; a++)
+                    {
+                        Vector2 q = from + (Geo.Dir(a * 45f) * run);
+                        rise = Mathf.Max(rise, Mathf.Abs(_fields.Height(q.x, q.y) - prop.Root3.y));
+                    }
+
+                    prop.Steep = Geo.Cm(rise) > Geo.Cm(_zones.Rules.BuiltMaxSlope * run);
                 }
 
                 float length = Vector2.Distance(from, to);
@@ -897,6 +912,8 @@ namespace IsoGolf.Generation
 
             return true;
         }
+
+        public PropRules Rules => _rules;
 
         public IReadOnlyList<HazardOutline> Ponds => _ponds;
 

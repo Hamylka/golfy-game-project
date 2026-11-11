@@ -355,7 +355,7 @@ namespace IsoGolf.Generation
 
             AddStanding(root, yaw, 0f, 0f, new Vector3(length * 0.5f, 0f, width * 0.5f), wall, _stoneLight, random);
             _kit.AddGableRoof(Local(root, yaw, 0f, wall, 0f), length + (2f * overhang), width + (2f * overhang), _settings.ShedRoofRise * scale, yaw, _tileLight, _tileDark);
-            AddStanding(root, yaw, 0f, (width * 0.5f) + 0.01f, new Vector3(0.28f * scale, 0f, 0.02f), 0.95f * scale, _woodDark, null);
+            AddStanding(root, yaw, 0f, (width * 0.5f) + 0.01f, new Vector3(0.28f * scale, 0f, 0.02f), 0.95f * scale, _trunk, null);
 
             return new[] { FitBox(first, yaw, PropMaterial.Stone) };
         }
@@ -370,7 +370,7 @@ namespace IsoGolf.Generation
             _kit.AddBox(Local(root, yaw, 0f, 0.72f * scale, -0.2f * scale), new Vector3(length * 0.5f, 0.15f * scale, 0.025f * scale), yaw, 0.008f, random, _woodLight, false);
             for (int side = -1; side <= 1; side += 2)
             {
-                AddStanding(root, yaw, side * ((length * 0.5f) - (0.12f * scale)), 0f, new Vector3(0.04f * scale, 0f, 0.2f * scale), 0.42f * scale, _woodDark, random);
+                AddStanding(root, yaw, side * ((length * 0.5f) - (0.12f * scale)), 0f, new Vector3(0.04f * scale, 0f, 0.2f * scale), 0.42f * scale, _trunk, random);
             }
 
             return new[] { FitBox(first, yaw, PropMaterial.Wood) };
@@ -509,8 +509,8 @@ namespace IsoGolf.Generation
             _kit.AddGableRoof(Local(root, yaw, 0f, wall, 0f), length + 0.2f, width + 0.2f, 0.7f * scale, yaw, _slateLight, _slateMid);
             float towerX = (-length * 0.5f) + towerHalf;
             AddStanding(root, yaw, towerX, 0f, new Vector3(towerHalf, 0f, towerHalf), tower, _stoneMid, random);
-            _kit.AddCone(Local(root, yaw, towerX, tower, 0f), towerHalf * 1.414f * 1.15f, 0.75f * scale, 4, yaw + (Mathf.PI * 0.25f), _slateDark, true);
-            AddStanding(root, yaw, (length * 0.5f) + 0.01f, 0f, new Vector3(0.02f, 0f, 0.26f * scale), 0.95f * scale, _woodDark, null);
+            _kit.AddCone(Local(root, yaw, towerX, tower, 0f), towerHalf * 1.414f * 1.15f, 0.75f * scale, 4, yaw + (Mathf.PI * 0.25f), _slateMid, true);
+            AddStanding(root, yaw, (length * 0.5f) + 0.01f, 0f, new Vector3(0.02f, 0f, 0.26f * scale), 0.95f * scale, _trunk, null);
 
             return new[] { FitBox(first, yaw, PropMaterial.Stone) };
         }
@@ -530,9 +530,21 @@ namespace IsoGolf.Generation
             _kit.AddFrustum(root + (Vector3.up * (height * 0.55f)), radius * 0.78f, radius * 0.74f, height * 0.15f, Sides, yaw, _stoneDark, 0f);
             _kit.AddFrustum(root + (Vector3.up * (height * 0.7f)), radius * 0.74f, radius * 0.62f, height * 0.3f, Sides, yaw, _stoneLight, 0f);
             Vector3 top = root + (Vector3.up * height);
-            _kit.AddFrustum(top, radius * 0.8f, radius * 0.86f, 0.12f * scale, Sides, yaw, _slateMid, 0f);
-            _kit.AddPrism(top + (Vector3.up * (0.12f * scale)), radius * 0.42f, 0.5f * scale, Sides, yaw, _slateDark, 0f);
-            _kit.AddCone(top + (Vector3.up * (0.62f * scale)), radius * 0.6f, 0.5f * scale, Sides, yaw, _slateMid, true);
+            // The gallery is a closed slab (sides, a top that slopes a little, an underside), so it never shows its inside; the lantern
+            // and the cap take the lighter slate shades, since the darkest reads near black once lit.
+            float slab = 0.14f * scale;
+            float galleryRadius = radius * 0.82f;
+            _kit.AddPrism(top, galleryRadius, slab, Sides, yaw, _slateMid, 0f);
+            _kit.AddCone(top + (Vector3.up * slab), galleryRadius, 0.04f * scale, Sides, yaw, _slateLight, false);
+            for (int i = 0; i < Sides; i++)
+            {
+                float a0 = yaw + (i * Mathf.PI * 2f / Sides);
+                float a1 = yaw + ((i + 1) * Mathf.PI * 2f / Sides);
+                _kit.AddTriangle(top, top + (PropMeshKit.Around(a0) * galleryRadius), top + (PropMeshKit.Around(a1) * galleryRadius), Vector3.down, _slateDark);
+            }
+
+            _kit.AddPrism(top + (Vector3.up * slab), radius * 0.42f, 0.5f * scale, Sides, yaw, _slateLight, 0f);
+            _kit.AddCone(top + (Vector3.up * (slab + (0.5f * scale))), radius * 0.6f, 0.5f * scale, Sides, yaw, _slateMid, true);
 
             return FitCylinders(first, root);
         }

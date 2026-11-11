@@ -26,7 +26,7 @@ namespace IsoGolf.Tests
             { PropKind.Bicycle, 140 },
             { PropKind.Laundry, 80 },
             { PropKind.Chapel, 100 },
-            { PropKind.Lighthouse, 100 },
+            { PropKind.Lighthouse, 120 },
         };
 
         private PropKitSettings _settings;
@@ -61,10 +61,10 @@ namespace IsoGolf.Tests
             switch (kind)
             {
                 case PropKind.Shed:
-                    colors = new[] { _palette.StoneLight, _palette.TileLight, _palette.TileDark, _palette.WoodDark };
+                    colors = new[] { _palette.StoneLight, _palette.TileLight, _palette.TileDark, _palette.Trunk };
                     break;
                 case PropKind.Bench:
-                    colors = new[] { _palette.WoodLight, _palette.WoodDark };
+                    colors = new[] { _palette.WoodLight, _palette.Trunk };
                     break;
                 case PropKind.Bridge:
                     colors = new[] { _palette.StoneLight, _palette.StoneMid, _palette.StoneDark };
@@ -82,10 +82,10 @@ namespace IsoGolf.Tests
                     colors = new[] { _palette.WoodLight, _palette.MetalDark, _palette.TraceOffWhite, _palette.TraceBlue };
                     break;
                 case PropKind.Chapel:
-                    colors = new[] { _palette.StoneLight, _palette.StoneMid, _palette.SlateLight, _palette.SlateMid, _palette.SlateDark, _palette.WoodDark };
+                    colors = new[] { _palette.StoneLight, _palette.StoneMid, _palette.SlateLight, _palette.SlateMid, _palette.SlateDark, _palette.Trunk };
                     break;
                 default:
-                    colors = new[] { _palette.StoneLight, _palette.StoneDark, _palette.SlateMid, _palette.SlateDark };
+                    colors = new[] { _palette.StoneLight, _palette.StoneDark, _palette.SlateLight, _palette.SlateMid, _palette.SlateDark };
                     break;
             }
 

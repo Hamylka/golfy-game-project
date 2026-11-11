@@ -195,6 +195,40 @@ namespace IsoGolf.Tests
             }
         }
 
+        [Test, Timeout(600000)]
+        public void BuiltProps_StandOnLevelGround_OverSeeds0To99()
+        {
+            PropRules rules = Settings.Props;
+            int checkedProps = 0;
+            foreach (int par in new[] { 3, 4, 5 })
+            {
+                for (int seed = 0; seed < 100; seed++)
+                {
+                    CourseLayout layout = CourseGenerator.Generate(seed, par, Settings);
+                    var fields = new CourseFields(layout);
+                    foreach (CourseProp prop in layout.Props)
+                    {
+                        if (prop.Kind < PropKind.Shed || prop.Kind == PropKind.Bridge || prop.Kind == PropKind.Rake)
+                        {
+                            continue;
+                        }
+
+                        PropPlacement.Reach(prop.Root, prop.End, prop.Shapes, out float radius, out _);
+                        float run = Mathf.Min(Mathf.Max(radius, 0.3f), 1.5f);
+                        for (int a = 0; a < 8; a++)
+                        {
+                            Vector2 q = new Vector2(prop.Root.x, prop.Root.z) + (Geo.Dir(a * 45f) * run);
+                            Assert.That(Mathf.Abs(fields.Height(q.x, q.y) - prop.Root.y), Is.LessThanOrEqualTo((rules.BuiltMaxSlope * run) + 0.011f), $"seed {seed} par {par} {prop.Kind}");
+                        }
+
+                        checkedProps++;
+                    }
+                }
+            }
+
+            Assert.That(checkedProps, Is.GreaterThan(50));
+        }
+
         [Test]
         public void SameSeed_GivesTheSameBuiltProps()
         {
