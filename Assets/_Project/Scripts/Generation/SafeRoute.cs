@@ -34,8 +34,10 @@ namespace IsoGolf.Generation
             Approach = bare.Approach;
             MaxShots = bare.MaxShots;
             Gaps = bare.Gaps;
+            Offset = bare.Offset;
             _islandOk = bare._islandOk;
             _masks = bare._masks;
+            _crossings = bare._crossings;
             _keepOuts = new List<GroundKeepOut>(keepOuts);
             _bareOk = (bool[])bare._islandOk.Clone();
 
@@ -62,10 +64,13 @@ namespace IsoGolf.Generation
             }
         }
 
-        public RouteWorld(CourseFields fields, CoursePath path, LevelGenSettings settings, Vector2 safeTarget, Vector2 approach, int maxShots)
+        /// <param name="offset">On a fork course (F3.3), where the rest spots move across onto the safe branch. None elsewhere.</param>
+        public RouteWorld(CourseFields fields, CoursePath path, LevelGenSettings settings, Vector2 safeTarget, Vector2 approach, int maxShots, RouteOffset? offset = null)
         {
             _masks = new Dictionary<HazardOutline, bool[]>();
+            _crossings = new Dictionary<long, bool>();
             _keepOuts = new GroundKeepOut[0];
+            Offset = offset;
             Fields = fields;
             Path = path;
             Settings = settings;
@@ -95,6 +100,62 @@ namespace IsoGolf.Generation
 
         /// <summary>The ground the route keeps off, empty on a plain course.</summary>
         public IReadOnlyList<GroundKeepOut> KeepOuts => _keepOuts;
+
+        /// <summary>Where the rest spots move across (a fork's safe branch), or none.</summary>
+        public RouteOffset? Offset { get; }
+
+        // Whether a step between two spots crosses a spine, by (from, to) node: it does not depend on the hazards, so every call to
+        // SafeRoute.Find on this world (and on its keep-out copies, which share the spine) reuses it.
+        private readonly Dictionary<long, bool> _crossings;
+
+        /// <summary>
+        /// The rest spot at this distance along the centreline: on it, or moved across onto a fork's safe branch. Exactly
+        /// <see cref="CoursePath.PointAt"/> where there is no offset, so plain and other shaped courses route as before.
+        /// </summary>
+        public Vector2 SpotPoint(float along)
+        {
+            float offset = Offset?.At(along) ?? 0f;
+            if (offset == 0f)
+            {
+                return Path.PointAt(along);
+            }
+
+            return Path.PointAt(along) + (Geo.Left(Geo.PathDirection(Path, along)) * offset);
+        }
+
+        /// <summary>Whether the step between two nodes of <see cref="SafeRoute.Find"/> crosses a fork's spine. Cached.</summary>
+        public bool StepCrossesSpine(int fromNode, int toNode, Vector2 from, Vector2 to)
+        {
+            bool any = false;
+            foreach (GroundKeepOut keepOut in _keepOuts)
+            {
+                any |= keepOut.IsSpine;
+            }
+
+            if (!any)
+            {
+                return false;
+            }
+
+            long key = ((long)fromNode << 32) ^ (uint)toNode;
+            if (_crossings.TryGetValue(key, out bool crosses))
+            {
+                return crosses;
+            }
+
+            crosses = false;
+            foreach (GroundKeepOut keepOut in _keepOuts)
+            {
+                if (keepOut.IsSpine && keepOut.Crosses(from, to, Path))
+                {
+                    crosses = true;
+                    break;
+                }
+            }
+
+            _crossings[key] = crosses;
+            return crosses;
+        }
 
         public CourseFields Fields { get; }
         public CoursePath Path { get; }
@@ -127,6 +188,14 @@ namespace IsoGolf.Generation
             {
                 Vector2 centre = Path.PointAt(s);
                 Vector2 side = Geo.Left(Geo.PathDirection(Path, s));
+
+                // On a fork's safe branch the capsule follows the spot across, sample row by sample row.
+                float offset = Offset?.At(s) ?? 0f;
+                if (offset != 0f)
+                {
+                    centre += side * offset;
+                }
+
                 for (float across = -Settings.SafeLandingHalfWidth; across <= Settings.SafeLandingHalfWidth + 0.001f; across += step)
                 {
                     samples.Add(centre + (side * across));
@@ -202,7 +271,7 @@ namespace IsoGolf.Generation
             float reach = hazard.BoundRadius + HazardMargin + Settings.SafeLandingBack + Settings.SafeLandingHalfWidth + 1f;
             for (int k = 0; k < mask.Length; k++)
             {
-                if (!_islandOk[k] || Vector2.Distance(Path.PointAt(k * Grid), hazard.Centre) > reach)
+                if (!_islandOk[k] || Vector2.Distance(SpotPoint(k * Grid), hazard.Centre) > reach)
                 {
                     continue;
                 }
@@ -314,10 +383,11 @@ namespace IsoGolf.Generation
             float targetAlong = world.Path.Project(world.SafeTarget, out _);
             int lastSpot = Mathf.Min(count - 1, Mathf.FloorToInt((targetAlong - 1f) / RouteWorld.Grid));
 
-            Vector2 PointOf(int node) => node < 0 ? world.Path.Start : node == targetNode ? world.SafeTarget : world.Path.PointAt(node * RouteWorld.Grid);
+            Vector2 PointOf(int node) => node < 0 ? world.Path.Start : node == targetNode ? world.SafeTarget : world.SpotPoint(node * RouteWorld.Grid);
             float AlongOf(int node) => node < 0 ? 0f : node == targetNode ? targetAlong : node * RouteWorld.Grid;
             bool Edge(int from, int to) =>
-                Geo.Cm(Vector2.Distance(PointOf(from), PointOf(to))) <= Geo.Cm(s.SafeStep) && StepOk(world, AlongOf(from), PointOf(from), AlongOf(to), PointOf(to));
+                Geo.Cm(Vector2.Distance(PointOf(from), PointOf(to))) <= Geo.Cm(s.SafeStep) && StepOk(world, AlongOf(from), PointOf(from), AlongOf(to), PointOf(to))
+                && !world.StepCrossesSpine(from, to, PointOf(from), PointOf(to));
 
             // The fewest shots from each spot to the safe target, backwards. A greedy "furthest spot first" walk dead-ends in front
             // of a gap (it can stop where no lay-up reaches the far side), so the walk is chosen with these counts.

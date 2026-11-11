@@ -141,6 +141,7 @@ namespace IsoGolf.Generation
         /// </summary>
         internal static float PieceField(FairwayPiece piece, float s, float side, float wobble)
         {
+            wobble = piece.WobbleAt(s, wobble);
             float offset = piece.OffsetAt(s);
             float across = offset == 0f ? Mathf.Abs(side) : Mathf.Abs(side - offset);
             float pathAcross = across - (piece.HalfWidthAt(s) + wobble);
@@ -389,7 +390,28 @@ namespace IsoGolf.Generation
             }
 
             float wobble = (CourseNoise.Value01((p.x * island.WidthNoiseScale) + 11f + island.NoiseOffset, 3.1f) - 0.5f) * island.WidthWobble;
+            if (island.HasBulge)
+            {
+                // A fork's bulge (F3.3): the island is locally wider on one side or both, with the same wobble and taper.
+                return Mathf.Abs(p.z) - ((island.HalfWidth + wobble + island.BulgeAt(p.x, p.z)) * Mathf.Sqrt(along));
+            }
+
             return Mathf.Abs(p.z) - ((island.HalfWidth + wobble) * Mathf.Sqrt(along));
+        }
+
+        /// <summary>
+        /// The island's field with every bulge left out (F3.3): the outline the course had before its fork widened it. The same
+        /// as <see cref="Island(Vector3)"/> on a course with no bulge.
+        /// </summary>
+        public float IslandWithoutBulge(Vector3 p)
+        {
+            float field = Nowhere;
+            foreach (IslandOutline island in _layout.Islands)
+            {
+                field = Mathf.Min(field, Island(p, new IslandOutline(island.HalfLength, island.HalfWidth, island.WidthWobble, island.WidthNoiseScale, island.CenterX, island.CenterZ, island.Heading, island.NoiseOffset)));
+            }
+
+            return field;
         }
 
         private static float Nearest(Vector3 p, IReadOnlyList<PondLayout> ponds)

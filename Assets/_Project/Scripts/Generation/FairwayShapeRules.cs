@@ -10,7 +10,6 @@ namespace IsoGolf.Generation
         [SerializeField, Min(0)] private int plain = 100;
         [SerializeField, Min(0)] private int roughIsland;
         [SerializeField, Min(0)] private int split;
-        [Tooltip("Forks come in F3.3: until then a fork draw leaves the course plain.")]
         [SerializeField, Min(0)] private int fork;
 
         public int Plain => plain;
@@ -77,6 +76,30 @@ namespace IsoGolf.Generation
         [Tooltip("The band's centre lies this far from the shot's origin: past a lay-up, short of a full carry.")]
         [SerializeField] private Vector2 bandWindow = new Vector2(20f, 26f);
 
+        [Header("Fork")]
+        [Tooltip("The spine's held length along the centreline, where both branches run at their full offset.")]
+        [SerializeField] private Vector2 spineLength = new Vector2(8f, 14f);
+        [Tooltip("The spine's width at its narrowest point between the eases (rough between the two branches).")]
+        [SerializeField] private Vector2 spineWidth = new Vector2(3.5f, 4f);
+        [Tooltip("The safe branch's width at its narrowest point (the wider branch, which carries the safe route).")]
+        [SerializeField] private Vector2 safeBranchWidth = new Vector2(2.4f, 2.6f);
+        [Tooltip("The risky branch's width at its narrowest point (the narrower one, which carries the direct line).")]
+        [SerializeField] private Vector2 riskyBranchWidth = new Vector2(2.2f, 2.4f);
+        [Tooltip("The branches open from the main strip and close back into it over this length, at each end of the spine.")]
+        [SerializeField, Min(0.5f)] private float forkEase = 4f;
+        [Tooltip("The share of the fairway's edge wobble a branch carries (director, Q2 A).")]
+        [SerializeField, Range(0f, 1f)] private float branchWobbleScale = 0.25f;
+        [Tooltip("A branch's outer edge keeps this far inside the island's edge (the bulge makes room for it).")]
+        [SerializeField, Min(0f)] private float forkEdgeMargin = 1f;
+        [Tooltip("The island bulge eases in and out over this length beyond the fork (director: \"A, renflement\").")]
+        [SerializeField, Min(0.5f)] private float bulgeEase = 4f;
+        [Tooltip("The most the island may bulge on one side; a fork needing more finds no place there (hub, Q6).")]
+        [SerializeField, Min(0f)] private float maxBulge = 1.5f;
+        [Tooltip("Chance, in percent, that the branch guard is water (falling back to sand like the other roles).")]
+        [SerializeField, Range(0, 100)] private int branchGuardWaterChance = 20;
+        [Tooltip("A fork rejoins at least this far before the fairway's end tip starts (plan §1: the cap depth).")]
+        [SerializeField, Min(0f)] private float forkBeforeEndTip = 2.5f;
+
         [Header("Clearances")]
         [SerializeField, Min(0f)] private float fromTee = 6f;
         [Tooltip("From a gap's tips along the centreline.")]
@@ -111,6 +134,17 @@ namespace IsoGolf.Generation
         public float IslandEdgeMargin => islandEdgeMargin;
         public Vector2 BandLength => bandLength;
         public Vector2 BandWindow => bandWindow;
+        public Vector2 SpineLength => spineLength;
+        public Vector2 SpineWidth => spineWidth;
+        public Vector2 SafeBranchWidth => safeBranchWidth;
+        public Vector2 RiskyBranchWidth => riskyBranchWidth;
+        public float ForkEase => forkEase;
+        public float BranchWobbleScale => branchWobbleScale;
+        public float ForkEdgeMargin => forkEdgeMargin;
+        public float BulgeEase => bulgeEase;
+        public float MaxBulge => maxBulge;
+        public int BranchGuardWaterChance => branchGuardWaterChance;
+        public float ForkBeforeEndTip => forkBeforeEndTip;
         public float FromTee => fromTee;
         public float FromGap => fromGap;
         public float SplitFromGap => splitFromGap;
@@ -128,6 +162,14 @@ namespace IsoGolf.Generation
             }
 
             secondShapeChance = secondChance;
+        }
+
+        /// <summary>Tests only: replaces the fork's bulge cap and edge margin (on a copy of the settings), for the sensitivity measurement.</summary>
+        internal void SetForkRoom(float bulge, float edgeMargin, Vector2 spine)
+        {
+            maxBulge = bulge;
+            forkEdgeMargin = edgeMargin;
+            spineWidth = spine;
         }
     }
 }

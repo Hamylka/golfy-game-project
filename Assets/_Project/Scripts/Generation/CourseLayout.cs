@@ -21,6 +21,64 @@ namespace IsoGolf.Generation
             CenterX = centerX;
             CenterZ = centerZ;
             Heading = heading;
+            BulgeFrom = 0f;
+            BulgeTo = 0f;
+            BulgeEase = 0f;
+            BulgeLeft = 0f;
+            BulgeRight = 0f;
+        }
+
+        private IslandOutline(IslandOutline island, float from, float to, float ease, float left, float right)
+            : this(island.HalfLength, island.HalfWidth, island.WidthWobble, island.WidthNoiseScale, island.CenterX, island.CenterZ, island.Heading, island.NoiseOffset)
+        {
+            BulgeFrom = from;
+            BulgeTo = to;
+            BulgeEase = ease;
+            BulgeLeft = left;
+            BulgeRight = right;
+        }
+
+        /// <summary>
+        /// This island with a local bulge (F3.3, director: "A, renflement"): its half width grows by <paramref name="left"/> on its
+        /// left (+z in its own frame) and by <paramref name="right"/> on its right, held from <paramref name="from"/> to
+        /// <paramref name="to"/> along its own X (the frame of <see cref="ToOwnFrame"/>), eased in and out over <paramref name="ease"/>.
+        /// </summary>
+        public IslandOutline WithBulge(float from, float to, float ease, float left, float right) => new IslandOutline(this, from, to, ease, left, right);
+
+        /// <summary>The bulge's held stretch along the island's own X. 0 with no bulge.</summary>
+        public float BulgeFrom { get; }
+        public float BulgeTo { get; }
+
+        /// <summary>The length over which the bulge eases in before <see cref="BulgeFrom"/> and out after <see cref="BulgeTo"/> (a smoothstep).</summary>
+        public float BulgeEase { get; }
+
+        /// <summary>How much wider the island is on its left (+z of its own frame) and its right over the held stretch.</summary>
+        public float BulgeLeft { get; }
+        public float BulgeRight { get; }
+
+        public bool HasBulge => BulgeLeft > 0f || BulgeRight > 0f;
+
+        /// <summary>The extra half width the bulge adds at a point of the island's own frame (0 with no bulge, or off its stretch).</summary>
+        public float BulgeAt(float ownX, float ownZ)
+        {
+            float extra = ownZ >= 0f ? BulgeLeft : BulgeRight;
+            if (extra <= 0f)
+            {
+                return 0f;
+            }
+
+            if (ownX >= BulgeFrom && ownX <= BulgeTo)
+            {
+                return extra;
+            }
+
+            if (BulgeEase <= 0f)
+            {
+                return 0f;
+            }
+
+            float t = 1f - ((ownX < BulgeFrom ? BulgeFrom - ownX : ownX - BulgeTo) / BulgeEase);
+            return t <= 0f ? 0f : extra * t * t * (3f - (2f * t));
         }
 
         public float CenterX { get; }
@@ -45,7 +103,7 @@ namespace IsoGolf.Generation
         {
             get
             {
-                float width = HalfWidth + (WidthWobble * 0.5f);
+                float width = HalfWidth + (WidthWobble * 0.5f) + Mathf.Max(BulgeLeft, BulgeRight);
                 if (IsOnAxis)
                 {
                     return new Vector2(Mathf.Abs(CenterX) + HalfLength, width);
@@ -326,7 +384,8 @@ namespace IsoGolf.Generation
             float offset = 0f,
             float offsetEase = 0f,
             float edgeHalfWidth = 0f,
-            float widthEase = 0f)
+            float widthEase = 0f,
+            float wobbleScale = 1f)
         {
             From = from;
             To = to;
@@ -337,6 +396,29 @@ namespace IsoGolf.Generation
             OffsetEase = offsetEase;
             EdgeHalfWidth = edgeHalfWidth;
             WidthEase = widthEase;
+
+            // Stored as what is cut from the wobble, so a default piece keeps the whole of it.
+            _wobbleCut = 1f - wobbleScale;
+        }
+
+        private readonly float _wobbleCut;
+
+        /// <summary>
+        /// The share of the fairway's edge wobble this piece carries between its width eases (F3.3: a fork's branches carry 0.25,
+        /// director Q2 A). It eases back to the whole wobble with the width, so a branch joins the main strip with no step. 1 by default.
+        /// </summary>
+        public float WobbleScale => 1f - _wobbleCut;
+
+        /// <summary>The edge wobble this piece adds at a distance along the centreline: the fairway's own unless the piece scales it.</summary>
+        public float WobbleAt(float along, float wobble)
+        {
+            if (_wobbleCut == 0f)
+            {
+                return wobble;
+            }
+
+            float ease = WidthEase <= 0f ? 1f : Ease(along, WidthEase);
+            return wobble * (1f - (_wobbleCut * ease));
         }
 
         /// <summary>The plain strip: offset 0, one half width all along, no ease.</summary>

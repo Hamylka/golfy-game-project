@@ -23,6 +23,12 @@ namespace IsoGolf.Generation
 
         /// <summary>Fills up the course beside the safe route's rest spots.</summary>
         Flank,
+
+        /// <summary>
+        /// On a fork (F3.3), beside or in the risky branch, which its centre line passes within <see cref="LevelGenSettings.GuardLineReach"/>
+        /// of. Required on every fork; it replaces <see cref="DriveZone"/> there.
+        /// </summary>
+        BranchGuard,
     }
 
     public enum ShotLineKind
