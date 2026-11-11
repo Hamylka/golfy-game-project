@@ -322,7 +322,7 @@ MonoBehaviour:
   settings: {fileID: 11400000, guid: d4e92599996250e47bc587b3f2216759, type: 2}
   palette: {fileID: 11400000, guid: f0bc7674256819e4d920b9b8f6a2df40, type: 2}
   holeMaterial: {fileID: 2100000, guid: 2a203ac7c50ff1c4ead7702d12522051, type: 2}
-  flagMaterial: {fileID: 2100000, guid: ad4e2044caef9814f9c30aa2c03bd228, type: 2}
+  flagMaterial: {fileID: 2100000, guid: 5ed148ce8ef66e84dba11a205a120244, type: 2}
 --- !u!1 &501904560
 GameObject:
   m_ObjectHideFlags: 0

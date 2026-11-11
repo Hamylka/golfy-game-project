@@ -18,11 +18,19 @@ namespace IsoGolf.Generation
         public int TriangleCount => Positions.Count / 3;
 
         /// <summary>
-        /// Per-vertex sway weight, written to UV1.x: 0 for ground, trunks, rocks and walls, up to 1 for the
-        /// tip of foliage. Null until a vertex gets a non-zero weight, so the terrain's own meshes carry no
-        /// extra channel. M4 PR 4.5 reads it in the shader; until then nothing does.
+        /// Per-vertex sway weight, written to UV1.x: 0 for ground, trunks, rocks, walls and the flag pole, up to 1
+        /// for the tip of foliage and the free end of the pennant. Null until a vertex gets a non-zero weight (or
+        /// a water glint), so the land mesh carries no extra channel.
+        ///
+        /// UV1 semantics, read by AmbientMotion.hlsl (keep the two comments in step):
+        /// x &gt; 0 is a swaying vertex and y is its phase (0..1, one value per tree);
+        /// x == 0 and y &gt; 0 is a water facet and y is its glint hash (0..1, one value per facet);
+        /// (0, 0) is static.
         /// </summary>
         public List<float> Sway { get; private set; }
+
+        /// <summary>UV1.y, see <see cref="Sway"/>: the phase of a swaying vertex, the glint hash of a water vertex, else 0.</summary>
+        public List<float> Phase { get; private set; }
 
         public void Add(Vector3 a, Vector3 b, Vector3 c, Vector3 facing, Color32 color)
         {
@@ -31,6 +39,27 @@ namespace IsoGolf.Generation
 
         /// <summary>Like the plain overload, with a sway weight per corner (given in a, b, c order).</summary>
         public void Add(Vector3 a, Vector3 b, Vector3 c, Vector3 facing, Color32 color, float swayA, float swayB, float swayC)
+        {
+            Add(a, b, c, facing, color, swayA, swayB, swayC, 0f);
+        }
+
+        /// <summary>
+        /// Like <see cref="Add(Vector3,Vector3,Vector3,Vector3,Color32,float,float,float)"/>, with the tree's phase,
+        /// kept only on corners that sway: a corner with weight 0 stays (0, 0), never mistaken for a water facet.
+        /// </summary>
+        public void Add(Vector3 a, Vector3 b, Vector3 c, Vector3 facing, Color32 color, float swayA, float swayB, float swayC, float phase)
+        {
+            AddCore(a, b, c, facing, color, swayA, swayB, swayC,
+                swayA > 0f ? phase : 0f, swayB > 0f ? phase : 0f, swayC > 0f ? phase : 0f);
+        }
+
+        /// <summary>A water facet with its glint hash (0..1, never 0) on all three corners.</summary>
+        public void AddGlint(Vector3 a, Vector3 b, Vector3 c, Vector3 facing, Color32 color, float glint)
+        {
+            AddCore(a, b, c, facing, color, 0f, 0f, 0f, glint, glint, glint);
+        }
+
+        private void AddCore(Vector3 a, Vector3 b, Vector3 c, Vector3 facing, Color32 color, float swayA, float swayB, float swayC, float phaseA, float phaseB, float phaseC)
         {
             Vector3 normal = Vector3.Cross(b - a, c - a);
 
@@ -50,9 +79,10 @@ namespace IsoGolf.Generation
             Colors.Add(color);
             Colors.Add(color);
 
-            if (Sway == null && (swayA != 0f || swayB != 0f || swayC != 0f))
+            if (Sway == null && (swayA != 0f || swayB != 0f || swayC != 0f || phaseA != 0f || phaseB != 0f || phaseC != 0f))
             {
                 Sway = new List<float>(new float[before]);
+                Phase = new List<float>(new float[before]);
             }
 
             if (Sway != null)
@@ -60,6 +90,9 @@ namespace IsoGolf.Generation
                 Sway.Add(swayA);
                 Sway.Add(flip ? swayC : swayB);
                 Sway.Add(flip ? swayB : swayC);
+                Phase.Add(phaseA);
+                Phase.Add(flip ? phaseC : phaseB);
+                Phase.Add(flip ? phaseB : phaseC);
             }
         }
 
@@ -83,9 +116,9 @@ namespace IsoGolf.Generation
             if (Sway != null)
             {
                 var uvs = new List<Vector2>(Sway.Count);
-                foreach (float weight in Sway)
+                for (int i = 0; i < Sway.Count; i++)
                 {
-                    uvs.Add(new Vector2(weight, 0f));
+                    uvs.Add(new Vector2(Sway[i], Phase[i]));
                 }
 
                 mesh.SetUVs(1, uvs);
@@ -103,7 +136,7 @@ namespace IsoGolf.Generation
     {
         public TerrainMeshData Land { get; } = new TerrainMeshData();
 
-        /// <summary>Separate from the land, so water can get its own animated material later.</summary>
+        /// <summary>Separate from the land; its facets carry a glint hash in UV1.y (see <see cref="TerrainMeshData.Sway"/>).</summary>
         public TerrainMeshData Water { get; } = new TerrainMeshData();
 
         /// <summary>Points along the island edge, top and bottom. Enough to frame the island tightly.</summary>
@@ -156,12 +189,14 @@ namespace IsoGolf.Generation
         private readonly Color32 _fairwayDark;
         private readonly Color32 _green;
         private readonly Color32 _sand;
-        private readonly Color32 _water;
         private readonly Color32 _earth;
+
+        private readonly PaletteSettings _palette;
 
         private TerrainBuilder(CourseLayout layout, PaletteSettings palette)
         {
             _layout = layout;
+            _palette = palette;
             _fields = new CourseFields(layout);
 
             _rough = ToVertexColor(palette.Rough);
@@ -169,7 +204,6 @@ namespace IsoGolf.Generation
             _fairwayDark = ToVertexColor(palette.FairwayDark);
             _green = ToVertexColor(palette.Green);
             _sand = ToVertexColor(palette.Sand);
-            _water = ToVertexColor(palette.Water);
             _earth = ToVertexColor(palette.Earth);
         }
 
@@ -279,7 +313,9 @@ namespace IsoGolf.Generation
 
                 foreach (Triangle water in inside)
                 {
-                    _result.Water.Add(Lower(water.A), Lower(water.B), Lower(water.C), Vector3.up, _water);
+                    // One glint hash per facet (UV1.y), and one fixed tone from the pond depth and a second hash.
+                    Vector3 centre = water.Centroid;
+                    _result.Water.AddGlint(Lower(water.A), Lower(water.B), Lower(water.C), Vector3.up, WaterColor(centre), AmbientHash.Unit(centre.x, centre.z));
                 }
             }
 
@@ -324,6 +360,27 @@ namespace IsoGolf.Generation
             }
 
             return result;
+        }
+
+        // Fixed tones a water facet can take, from the darkest to the lightest of a spread around the depth colour.
+        private const int WaterToneLevels = 5;
+
+        /// <summary>
+        /// A water facet's colour: the depth colour (lighter at the pond's rim, darker at its middle, from the pond field at the
+        /// facet's centre: 0 on the border, -1 at the middle) lifted or lowered by one of a few fixed tones picked from a hash of
+        /// the facet's position. Flat per facet and static, so the surface reads as a mosaic of facets, not a moving highlight.
+        /// </summary>
+        private Color32 WaterColor(Vector3 centre)
+        {
+            float depth = Mathf.Clamp01(-_fields.Pond(centre));
+            Color color = Color.Lerp(_palette.WaterShallow, _palette.WaterDeep, depth);
+
+            // A second hash (shifted position) so the tone never correlates with the glint hash.
+            float hash = AmbientHash.Unit(centre.x + 1000f, centre.z - 1000f);
+            int level = Mathf.Min(WaterToneLevels - 1, (int)(hash * WaterToneLevels));
+            float spread = ((level / (float)(WaterToneLevels - 1)) - 0.5f) * 2f;
+            float gain = 1f + (spread * _palette.WaterToneVariation);
+            return ToVertexColor(new Color(Mathf.Clamp01(color.r * gain), Mathf.Clamp01(color.g * gain), Mathf.Clamp01(color.b * gain), 1f));
         }
 
         /// <summary>

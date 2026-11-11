@@ -7,6 +7,9 @@ namespace IsoGolf.Generation
     {
         private const int PoleSides = 6;
 
+        /// <summary>Flutter weight of the pennant's crease, between the root edge (0) and the free tip (1).</summary>
+        public const float FlagCreaseSway = 0.35f;
+
         /// <summary>A faceted ball around the origin: a once-divided icosahedron, so it has 80 facets.</summary>
         public static TerrainMeshData BuildBall(PlayPieceSettings settings, PaletteSettings palette)
         {
@@ -74,11 +77,17 @@ namespace IsoGolf.Generation
             var crease = new Vector3(settings.FlagFold, middle, 0f);
             var tip = new Vector3(0f, middle, -settings.FlagLength);
 
+            // Flutter weights (UV1.x, read by AmbientMotion.hlsl): exactly 0 on the root edge (upper, lower) so the
+            // pennant never leaves the pole, a little on the crease, 1 at the free tip.
+            const float root = 0f;
+            const float fold = FlagCreaseSway;
+            const float free = 1f;
+
             // Each facet twice, once per side, because the terrain's material culls back faces.
-            mesh.Add(upper, crease, tip, Vector3.left, color);
-            mesh.Add(crease, lower, tip, Vector3.left, color);
-            mesh.Add(upper, crease, tip, Vector3.right, color);
-            mesh.Add(crease, lower, tip, Vector3.right, color);
+            mesh.Add(upper, crease, tip, Vector3.left, color, root, fold, free);
+            mesh.Add(crease, lower, tip, Vector3.left, color, fold, root, free);
+            mesh.Add(upper, crease, tip, Vector3.right, color, root, fold, free);
+            mesh.Add(crease, lower, tip, Vector3.right, color, fold, root, free);
         }
 
         private static void AddOutward(TerrainMeshData mesh, Vector3 a, Vector3 b, Vector3 c, Color32 color)

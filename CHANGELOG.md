@@ -4,6 +4,17 @@ All notable progress on Iso Golf. The format follows [Keep a Changelog](https://
 
 ## [Unreleased]
 
+### 2026-11-11: M4 ambient shader (`feature/m4-ambient-shader`, PR 4.5)
+
+#### Added
+
+- Ambient life in the land shader, visual only (the simulation never reads it, `CourseFloat` untouched, no compute, no threads, no readback): **foliage rustle** (olives, cypresses and bushes sway slowly, each tree in its own phase), **flag flutter** (the pennant waves, the pole and the pennant's root edge are exactly still) and **water** (a mosaic of flat facets: each takes one of five fixed tones from a hash, around a colour that runs from lighter at the pond rim to darker at its middle; `PaletteSettings` `waterShallow`, `waterDeep`, `waterToneVariation`). New `AmbientMotion.hlsl` (two Custom Function nodes added to `LowPolyVertexColor.shadergraph`: `AmbientSway` on `VertexDescription.Position`, `AmbientGlint` between the vertex colour and the base colour / shadow tint). Normals never move, so facets keep their tone; the shadow caster runs the same vertex code, so shadows sway with the leaves (amplitudes are a few centimetres).
+- UV1 semantics (one comment in `AmbientMotion.hlsl`, one in `TerrainMeshData`): `x > 0` swaying vertex with `y` its phase (one per tree); `x == 0, y > 0` water facet with `y` its glint hash; `(0, 0)` static. `TerrainMeshData.Phase`, `AddGlint`; `PropMeshKit.SetSway(baseY, span, phase)`; `AmbientHash` (integer hash of a ground point to the centimetre, so deterministic on every device); the flag's pennant carries weights 0 (root edge) / 0.35 (crease) / 1 (free tip). The land mesh keeps no UV1; only the water mesh gains it.
+- The shader also has a water glint (facets fading to `_GlintColor`, UV1.y hash). The director judged triangular glints unconvincing on the phone, so it is switched off (`_GlintParams` strength 0 on `Terrain.mat`) and the water uses static tones instead; the nodes stay in the graph for later.
+- Tunables are material properties: `_SwayParams` (horizontal amplitude m, vertical amplitude m, speed rad/s, time offset s), `_GlintParams` (share, speed, strength, time offset), `_GlintColor`. `Terrain.mat` carries the foliage values (0.08 m, 0.035 m, 1.4 rad/s); new `Flag.mat` (same shader) carries the flag's (0.08, 0.14, 3.2); `HoleView.flagMaterial` of `Main` and `Sandbox_Par3` now points to it. Draw calls and renderers unchanged on `Main`.
+- Tests `AmbientMotionTests` (11): pole and root edge weight 0, tip 1, weights between; one phase per tree and only on swaying vertices; stones and walls carry no channel; the land mesh carries none; every water facet one glint hash on all three corners; all deterministic.
+- Captures in `Docs/Screenshots/m4-ambient-shader/` (Editor, `Main` and `Sandbox_Island` Island Camera, time driven through the time-offset parameter).
+
 ### 2026-11-11: bucket of balls fix (`fix/m4-bucket-of-balls`)
 
 #### Fixed

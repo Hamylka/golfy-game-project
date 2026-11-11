@@ -54,6 +54,10 @@ Material:
     - _QueueControl: 0
     - _QueueOffset: 0
     - _XRMotionVectorsPass: 1
-    m_Colors: []
+    m_Colors:
+    - _GlintColor: {r: 0.62352943, g: 0.8666667, b: 0.84705883, a: 1}
+    - _GlintParams: {r: 0.18, g: 0.9, b: 0, a: 0}
+    - _ShadowTint: {r: 0.30499998, g: 0.30499998, b: 0.45, a: 1}
+    - _SwayParams: {r: 0.08, g: 0.035, b: 1.4, a: 0}
   m_BuildTextureStacks: []
   m_AllowLocking: 1

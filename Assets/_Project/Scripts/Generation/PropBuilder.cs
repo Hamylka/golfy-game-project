@@ -188,7 +188,7 @@ namespace IsoGolf.Generation
             Vector3 crown = root + (Vector3.up * trunkTop);
             int outerCount = Mathf.Max(0, _settings.BlobCount - 1);
             float startAngle = PropMeshKit.RandomAngle(random);
-            _kit.SetSway(root.y + trunkHeight, radius * CrownSwaySpan);
+            _kit.SetSway(root.y + trunkHeight, radius * CrownSwaySpan, AmbientHash.Unit(root.x, root.z));
 
             for (int i = 0; i < outerCount; i++)
             {
@@ -226,7 +226,7 @@ namespace IsoGolf.Generation
             Vector3 foot = root + (Vector3.up * trunkHeight);
             Vector3 belly = foot + (Vector3.up * (height * CypressBellyHeight));
             Vector3 tip = foot + (Vector3.up * height);
-            _kit.SetSway(foot.y, height);
+            _kit.SetSway(foot.y, height, AmbientHash.Unit(root.x, root.z));
 
             for (int i = 0; i < sides; i++)
             {
@@ -262,7 +262,7 @@ namespace IsoGolf.Generation
             float satellite = radius * _settings.BushSatelliteSize;
             float startAngle = PropMeshKit.RandomAngle(random);
             int start = _kit.Mesh.Positions.Count;
-            _kit.SetSway(root.y, radius * BushSwaySpan);
+            _kit.SetSway(root.y, radius * BushSwaySpan, AmbientHash.Unit(root.x, root.z));
 
             _kit.AddBlob(root + (Vector3.up * (radius * BushSquash * 0.7f)), radius, BushSquash, _settings.BushJitter, 1,
                 _foliageLight, _foliageMid, BushDarkFacetChance, random, null);
