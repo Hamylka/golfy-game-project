@@ -37,6 +37,47 @@ namespace IsoGolf.Generation
         Safe,
     }
 
+    /// <summary>The fairway shapes of the split fairway plan (§1). A plain fairway has none.</summary>
+    public enum FairwayShapeKind
+    {
+        /// <summary>An oval of rough inside a locally widened strip, fairway on both sides.</summary>
+        RoughIsland,
+
+        /// <summary>A rough band across the strip, between two rounded tips.</summary>
+        Split,
+
+        /// <summary>Two branches round a spine of rough, rejoining before the fairway's end.</summary>
+        Fork,
+    }
+
+    /// <summary>
+    /// One fairway shape, for the props, the tests and debug drawing: its kind, the stretch along the centreline it covers (the oval,
+    /// the band or the spine), and on a fork the across offsets of the safe and risky branches' centres (0 otherwise).
+    /// </summary>
+    public readonly struct FairwayShape
+    {
+        public FairwayShape(FairwayShapeKind kind, float from, float to, float safeOffset = 0f, float riskyOffset = 0f)
+        {
+            Kind = kind;
+            From = from;
+            To = to;
+            SafeOffset = safeOffset;
+            RiskyOffset = riskyOffset;
+        }
+
+        public FairwayShapeKind Kind { get; }
+
+        /// <summary>Where the shape starts and ends, in metres along the centreline from the tee.</summary>
+        public float From { get; }
+        public float To { get; }
+
+        /// <summary>On a fork, the safe branch's centre across the centreline (positive on its left). 0 otherwise.</summary>
+        public float SafeOffset { get; }
+
+        /// <summary>On a fork, the risky branch's centre across the centreline. 0 otherwise.</summary>
+        public float RiskyOffset { get; }
+    }
+
     /// <summary>What a hazard is for. <see cref="Index"/> is into <see cref="CourseLayout.Ponds"/> if <see cref="IsWater"/>, otherwise into <see cref="CourseLayout.Bunkers"/>.</summary>
     public readonly struct HazardInfo
     {
@@ -86,8 +127,10 @@ namespace IsoGolf.Generation
             float shotCorridorHalfWidth,
             bool dogleg,
             bool islandGreen,
-            Vector2 directOrigin)
+            Vector2 directOrigin,
+            IEnumerable<FairwayShape> fairwayShapes = null)
         {
+            FairwayShapes = fairwayShapes == null ? new List<FairwayShape>() : new List<FairwayShape>(fairwayShapes);
             Hazards = new List<HazardInfo>(hazards);
             SafeRoute = new List<Vector2>(safeRoute);
             Lines = new List<ShotLine>(lines);
@@ -135,6 +178,9 @@ namespace IsoGolf.Generation
 
         /// <summary>Where the direct line starts: the tee, or on a long par 5 where a drive leaves the ball.</summary>
         public Vector2 DirectOrigin { get; }
+
+        /// <summary>The fairway's shapes, in order along the centreline (a par 5 may get two). Empty on a plain fairway, as on every course until F3.2.</summary>
+        public IReadOnlyList<FairwayShape> FairwayShapes { get; }
 
         public bool Complete => MissingRoles.Count == 0 && SafeRoute.Count > 1;
     }
