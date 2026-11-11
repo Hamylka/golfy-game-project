@@ -4,6 +4,15 @@ All notable progress on Iso Golf. The format follows [Keep a Changelog](https://
 
 ## [Unreleased]
 
+### 2026-11-11: test suite cleanup (`chore/m4-test-cleanup`)
+
+#### Changed
+
+- Rule: statistics are manual measurements quoted in PRs (`[Explicit("Measurement")]`); rule and invariant tests in the default suite sweep seeds 0-49 and keep an `Explicit` twin over 0-199 (or 0-99 where it was 0-99), run by hand before a merge. No assertion weakened beyond the seed range (count floors scale with the seed count; the par 4 corner count floor reads "more than 1" over 50 seeds, "more than 10" over 200).
+- `BuiltPropPlacementTests`: `NoPropShapeReachesFairway`, `BuiltProps_StandOnLevelGround`, `Bridge_...`, `Landmark_...`, `Rake_...` take a seed count (50 default, 200 or 100 Explicit twin); `Frequencies_OverSeeds0To199` is now Explicit. `PropPlacementTests.KeepOuts_AreNeverBroken_EveryPar` likewise.
+- `CourseHazardTests` (8 parameterised tests), `CourseGeneratorTests.Length_TeeToHole_StaysInItsRange` and `ParThree_IsStraightAlongX`: 50 seeds by default, 200 Explicit twins.
+- Tests renamed: `..._OverSeeds0To199` and `..._OverSeeds0To99` lose the range from their names, since it is now a parameter. No production code touched.
+
 ### 2026-11-11: M4 built props (`feature/m4-built-props`, PR 4.4)
 
 #### Added

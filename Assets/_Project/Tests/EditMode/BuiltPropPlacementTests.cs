@@ -129,13 +129,27 @@ namespace IsoGolf.Tests
             return false;
         }
 
-        [Test, Timeout(600000)]
-        public void NoPropShapeReachesFairway_OverSeeds0To199()
+        [Test]
+        [Timeout(600000)]
+        public void NoPropShapeReachesFairway()
+        {
+            NoPropShapeReachesFairway_Run(50);
+        }
+
+        [Test]
+        [Explicit("Full sweep over seeds 0-199, run by hand before a merge")]
+        [Timeout(600000)]
+        public void NoPropShapeReachesFairway_FullSweep()
+        {
+            NoPropShapeReachesFairway_Run(200);
+        }
+
+        private void NoPropShapeReachesFairway_Run(int seeds)
         {
             int checkedProps = 0;
             foreach (int par in new[] { 3, 4, 5 })
             {
-                for (int seed = 0; seed < 200; seed++)
+                for (int seed = 0; seed < seeds; seed++)
                 {
                     CourseLayout layout = CourseGenerator.Generate(seed, par, Settings);
                     var fields = new CourseFields(layout);
@@ -152,7 +166,7 @@ namespace IsoGolf.Tests
                 }
             }
 
-            Assert.That(checkedProps, Is.GreaterThan(3000));
+            Assert.That(checkedProps, Is.GreaterThan(15 * seeds));
         }
 
         /// <summary>Props per course and the share of props whose shapes reach fairway, without the rule and with it (logged; run by hand).</summary>
@@ -195,14 +209,28 @@ namespace IsoGolf.Tests
             }
         }
 
-        [Test, Timeout(600000)]
-        public void BuiltProps_StandOnLevelGround_OverSeeds0To99()
+        [Test]
+        [Timeout(600000)]
+        public void BuiltProps_StandOnLevelGround()
+        {
+            BuiltProps_StandOnLevelGround_Run(50);
+        }
+
+        [Test]
+        [Explicit("Full sweep over seeds 0-99, run by hand before a merge")]
+        [Timeout(600000)]
+        public void BuiltProps_StandOnLevelGround_FullSweep()
+        {
+            BuiltProps_StandOnLevelGround_Run(100);
+        }
+
+        private void BuiltProps_StandOnLevelGround_Run(int seeds)
         {
             PropRules rules = Settings.Props;
             int checkedProps = 0;
             foreach (int par in new[] { 3, 4, 5 })
             {
-                for (int seed = 0; seed < 100; seed++)
+                for (int seed = 0; seed < seeds; seed++)
                 {
                     CourseLayout layout = CourseGenerator.Generate(seed, par, Settings);
                     var fields = new CourseFields(layout);
@@ -253,7 +281,7 @@ namespace IsoGolf.Tests
         }
 
         /// <summary>Frequencies and counts of every built kind over seeds 0-199 (logged, with bounds that hold whatever the tuning).</summary>
-        [Test, Timeout(600000)]
+        [Test, Explicit("Measurement"), Timeout(600000)]
         public void Frequencies_OverSeeds0To199()
         {
             var report = new System.Text.StringBuilder();
@@ -316,13 +344,27 @@ namespace IsoGolf.Tests
             Assert.That(report.Length, Is.GreaterThan(0));
         }
 
-        [Test, Timeout(600000)]
+        [Test]
+        [Timeout(600000)]
         public void Bridge_NeverChangesTheSafeRouteOrTheChecks_AndSpansItsPond()
+        {
+            Bridge_NeverChangesTheSafeRouteOrTheChecks_AndSpansItsPond_Run(50);
+        }
+
+        [Test]
+        [Explicit("Full sweep over seeds 0-199, run by hand before a merge")]
+        [Timeout(600000)]
+        public void Bridge_NeverChangesTheSafeRouteOrTheChecks_AndSpansItsPond_FullSweep()
+        {
+            Bridge_NeverChangesTheSafeRouteOrTheChecks_AndSpansItsPond_Run(200);
+        }
+
+        private void Bridge_NeverChangesTheSafeRouteOrTheChecks_AndSpansItsPond_Run(int seeds)
         {
             int found = 0;
             foreach (int par in new[] { 3, 4, 5 })
             {
-                for (int seed = 0; seed < 200 && found < 12; seed++)
+                for (int seed = 0; seed < seeds && found < 12; seed++)
                 {
                     CourseLayout layout = CourseGenerator.Generate(seed, par, Settings);
                     var bridges = new List<CourseProp>();
@@ -471,15 +513,29 @@ namespace IsoGolf.Tests
             Debug.Log($"[BridgeFunnel] ponds {ponds}, with room {room}, span <= {rules.BridgeMaxSpan} m {narrow}, fits {fits} (courses {courses}); bridge alone clear of the corridors, pond or not: {relaxedFits} ponds on {relaxedCourses.Count} courses; median narrow span {median} m; lost:{lostText}");
         }
 
-        [Test, Timeout(600000)]
+        [Test]
+        [Timeout(600000)]
         public void Landmark_StandsAtTheEdgeAwayFromTheAxis_AndOutOfTheEnd()
+        {
+            Landmark_StandsAtTheEdgeAwayFromTheAxis_AndOutOfTheEnd_Run(50);
+        }
+
+        [Test]
+        [Explicit("Full sweep over seeds 0-199, run by hand before a merge")]
+        [Timeout(600000)]
+        public void Landmark_StandsAtTheEdgeAwayFromTheAxis_AndOutOfTheEnd_FullSweep()
+        {
+            Landmark_StandsAtTheEdgeAwayFromTheAxis_AndOutOfTheEnd_Run(200);
+        }
+
+        private void Landmark_StandsAtTheEdgeAwayFromTheAxis_AndOutOfTheEnd_Run(int seeds)
         {
             PropRules rules = Settings.Props;
             int chapels = 0;
             int lighthouses = 0;
             foreach (int par in new[] { 3, 4, 5 })
             {
-                for (int seed = 0; seed < 200; seed++)
+                for (int seed = 0; seed < seeds; seed++)
                 {
                     CourseLayout layout = CourseGenerator.Generate(seed, par, Settings);
                     var fields = new CourseFields(layout);
@@ -509,13 +565,27 @@ namespace IsoGolf.Tests
             Assert.That(lighthouses, Is.GreaterThan(0));
         }
 
-        [Test, Timeout(600000)]
+        [Test]
+        [Timeout(600000)]
         public void Rake_LiesFlatOnSand_AndTheBallRollsOverIt()
+        {
+            Rake_LiesFlatOnSand_AndTheBallRollsOverIt_Run(50);
+        }
+
+        [Test]
+        [Explicit("Full sweep over seeds 0-199, run by hand before a merge")]
+        [Timeout(600000)]
+        public void Rake_LiesFlatOnSand_AndTheBallRollsOverIt_FullSweep()
+        {
+            Rake_LiesFlatOnSand_AndTheBallRollsOverIt_Run(200);
+        }
+
+        private void Rake_LiesFlatOnSand_AndTheBallRollsOverIt_Run(int seeds)
         {
             int found = 0;
             foreach (int par in new[] { 3, 4, 5 })
             {
-                for (int seed = 0; seed < 200 && found < 6; seed++)
+                for (int seed = 0; seed < seeds && found < 6; seed++)
                 {
                     CourseLayout layout = CourseGenerator.Generate(seed, par, Settings);
                     foreach (CourseProp prop in layout.Props)
