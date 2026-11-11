@@ -189,3 +189,4 @@ through a pull request that they review.
 - If unsure about device or engine behavior, say so and propose a measurement
 - The human has the final say on game feel and visual quality: describe what
   you see in captures, then ask them to playtest and validate.
+- Test cost: statistics are manual measurements (`[Explicit("Measurement")]`) quoted in PRs; rule tests in the default suite sweep seeds 0-49, each with an `Explicit` 0-199 twin run by hand before a merge

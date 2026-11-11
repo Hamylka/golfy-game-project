@@ -105,14 +105,28 @@ namespace IsoGolf.Tests
             }
         }
 
-        [Test, Timeout(600000)]
-        public void KeepOuts_AreNeverBroken_OverSeeds0To199_EveryPar()
+        [Test]
+        [Timeout(600000)]
+        public void KeepOuts_AreNeverBroken_EveryPar()
+        {
+            KeepOuts_AreNeverBroken_EveryPar_Run(50);
+        }
+
+        [Test]
+        [Explicit("Full sweep over seeds 0-199, run by hand before a merge")]
+        [Timeout(600000)]
+        public void KeepOuts_AreNeverBroken_EveryPar_FullSweep()
+        {
+            KeepOuts_AreNeverBroken_EveryPar_Run(200);
+        }
+
+        private void KeepOuts_AreNeverBroken_EveryPar_Run(int seeds)
         {
             var report = new System.Text.StringBuilder();
             int checkedProps = 0;
             foreach (int par in new[] { 3, 4, 5 })
             {
-                for (int seed = 0; seed < 200; seed++)
+                for (int seed = 0; seed < seeds; seed++)
                 {
                     CourseLayout layout = CourseGenerator.Generate(seed, par, Settings);
                     foreach (CourseProp prop in layout.Props)
@@ -127,7 +141,7 @@ namespace IsoGolf.Tests
                 }
             }
 
-            Assert.That(checkedProps, Is.GreaterThan(1000));
+            Assert.That(checkedProps, Is.GreaterThan(5 * seeds));
             Assert.That(report.ToString(), Is.Empty);
         }
 
