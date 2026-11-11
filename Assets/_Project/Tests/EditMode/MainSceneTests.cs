@@ -96,6 +96,20 @@ namespace IsoGolf.Tests
         }
 
         [Test]
+        public void MainPlaysItsGeneratedProps_WithCollisionsAndThePole()
+        {
+            // M4 PR 4.3: the course's props come from the placement rules (the generator's prop kit), and the ball strikes them
+            // and, in flight, the flag pole, as the course checks played them.
+            var bootstrap = new SerializedObject(Root("Level").GetComponent<LevelBootstrap>());
+            var generator = (LevelGenSettings)bootstrap.FindProperty("generator").objectReferenceValue;
+
+            Assert.That(bootstrap.FindProperty("collisions").boolValue, Is.True);
+            Assert.That(generator.PropKit, Is.Not.Null);
+            Assert.That(bootstrap.FindProperty("seed").intValue, Is.EqualTo(1));
+            Assert.That(bootstrap.FindProperty("par").intValue, Is.EqualTo(3));
+        }
+
+        [Test]
         public void SandboxPar3_KeepsTheHandMadeCourseAndItsTrees()
         {
             const string Path = "Assets/_Project/Scenes/Sandbox_Par3.unity";

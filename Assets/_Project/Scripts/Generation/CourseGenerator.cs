@@ -29,7 +29,23 @@ namespace IsoGolf.Generation
         // Salt for the surfaces stream (green, pin, hazards): its own random sequence next to the main one.
         private const int SurfacesStream = 6;
 
-        public static CourseLayout Generate(int seed, int par, LevelGenSettings settings, int variant = 0)
+        /// <param name="props">
+        /// False leaves the props out (the course checks place them only on the variant they keep, see <see cref="WithProps"/>).
+        /// Everything else is the same either way: props come last, from a stream of their own.
+        /// </param>
+        public static CourseLayout Generate(int seed, int par, LevelGenSettings settings, int variant = 0, bool props = true)
+        {
+            CourseLayout course = GenerateBare(seed, par, settings, variant);
+            return props ? WithProps(course, seed, par, variant, settings) : course;
+        }
+
+        /// <summary>The course with its props placed by <see cref="PropPlacement"/> (none without a prop kit in the settings).</summary>
+        public static CourseLayout WithProps(CourseLayout course, int seed, int par, int variant, LevelGenSettings settings)
+        {
+            return settings.PropKit == null ? course : course.WithProps(PropPlacement.Place(course, seed, par, variant, settings));
+        }
+
+        private static CourseLayout GenerateBare(int seed, int par, LevelGenSettings settings, int variant)
         {
             ParRules rules = settings.Rules(par);
 

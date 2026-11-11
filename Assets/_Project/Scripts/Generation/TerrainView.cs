@@ -23,8 +23,8 @@ namespace IsoGolf.Generation
         private readonly List<PropShape> _propShapes = new List<PropShape>();
 
         /// <summary>
-        /// The collision shapes of the props this view built, in the course's local space (the hand-placed
-        /// trees for now; M4 PR 4.3 reads them from the course's own prop list).
+        /// The collision shapes of the props this view built, in the course's local space: the hand-placed
+        /// trees, then the course's own props, fitted to the meshes drawn.
         /// </summary>
         public IReadOnlyList<PropShape> PropShapes => _propShapes;
 
@@ -44,7 +44,11 @@ namespace IsoGolf.Generation
         }
 
         /// <summary>Builds this course, a generated one say.</summary>
-        public void Build(CourseLayout layout)
+        /// <param name="courseKit">
+        /// The kit the course's own props (<see cref="CourseLayout.Props"/>) were placed with, the generator's: the same kit and the
+        /// same seeds build the same meshes, so the drawn props are the shapes the ball strikes.
+        /// </param>
+        public void Build(CourseLayout layout, PropKitSettings courseKit = null)
         {
             Clear();
             Layout = layout;
@@ -54,6 +58,12 @@ namespace IsoGolf.Generation
             if (trees != null && propKit != null)
             {
                 AddMesh("Trees", PropBuilder.BuildTrees(trees, propKit, palette, Layout, _propShapes), landMaterial);
+            }
+
+            if (courseKit != null && Layout.Props.Count > 0)
+            {
+                // One mesh on the land material, like the trees: one draw call and its shadow pass.
+                AddMesh("Props", PropBuilder.BuildCourseProps(Layout.Props, courseKit, palette, _propShapes), landMaterial);
             }
 
             if (tufts != null)

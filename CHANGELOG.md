@@ -4,6 +4,27 @@ All notable progress on Iso Golf. The format follows [Keep a Changelog](https://
 
 ## [Unreleased]
 
+### 2026-11-11: M4 prop placement (`feature/m4-prop-placement`, PR 4.3)
+
+#### Added
+
+- `PropPlacement` (`Generation`): props placed by rules on generated courses, after the hazards, from a third random stream (salt 7, from seed, par and variant), with one sub-stream per cluster. Every discrete choice is an integer draw, every accept/reject compares whole centimetres. Output: `CourseLayout.Props` (`CourseProp`: kind, foot, wall end, scale, mesh seed, cluster, collision shapes), `CourseLayout.PropShapes`, `CourseLayout.WithProps`.
+- Hard keep-outs (`PropZones`), tested on each candidate's **real collision reach**: each candidate is built from its mesh seed and measured, so no prop shape can reach into a zone. The zones: 2 m corridors either side of every direct, cut and safe line (the shadow of a tall prop too), every rest spot's landing capsule, tee 3 m, green + 1.5 m, bunkers and ponds + 0.5 m (+ 0.1 m for the 24-point ring's chords), the island edge (gaps included), and the +X end kept for M5 (past the hole, a 60° fan around +X). Round white rocks are the only props allowed by water, just outside a pond's rim.
+- Clusters: a start needs 1 m of free ground around it on the rough; the start is an even integer draw over the valid ones (director: Q2 A, instead of the plan's ranking by distance from the lines); a start that can't hold two props tries another (3 attempts). Themes: olive grove (an olive that finds no room becomes a bush), cypress line along the course with a wall beside it, bushes and rocks, edge rocks or wall (never within 3 m of a pond, so never where water meets the edge), round white rocks on a pond's rim. Density per par and every tunable in `LevelGenSettings` (`propKit`, `props`: `PropRules`, `PropDensity`), written to the asset through the Editor.
+- Shadows: generation can't see the sun, so `PropRules.shadowHeading` (-125° from the course heading, turned with the course like `SunHeading.YawFor`) and `shadowLength` (0.78 per metre of height) hold `Main`'s sun; a test reads the scene's sun against them.
+- Checks with props (`CheckedCourse`): the variant is still picked on the bare course, so props never change which island is kept; then the checks play again with the props and the flag pole, and when a check fails with them, every prop a check shot struck is dropped (director: Q1 A), up to 3 rounds, then all props go. A cluster left with one prop keeps it. `CheckedCourseResult.DroppedProps`; `BallSimulation.Struck` lists the obstacles a shot struck.
+- `Main`: the generator's prop kit builds the props mesh (one draw call on the land material, plus its shadow pass), and `LevelBootstrap.collisions` is on, so the ball strikes the props and, in flight, the pole. `TerrainView.Build(layout, courseKit)` builds the same props from the same seeds. `Sandbox_Par3` is unchanged (hand-placed trees). `COURSE_TIMING` logs the prop count and drops.
+- `PropPlacementTests` (12): determinism, props on/off/no kit leave islands, slopes, green, pin, hazards and plan equal, keep-outs never broken over seeds 0-199 of every par (checked by sampling the true outlines and the safe route's capsule samples, independently of `PropZones`), clusters within their par's counts, fewer clusters keep the first ones, display shapes equal the placement's bit for bit, every shape within its measured reach, hand-made courses without props, checked courses passing with props and pole, a struck prop dropped while an unstruck one stays, the shadow rule against `Main`'s sun. `MainSceneTests.MainPlaysItsGeneratedProps_WithCollisionsAndThePole`. `ShotSweep` takes obstacles; `CourseCheckTests.HoleInOne_OnPinnedPar3s` plays with props and pole.
+- Captures in `Docs/Screenshots/m4-prop-placement/`.
+
+#### Measured (EditMode)
+
+- 764 tests, 750 pass, 14 explicit skipped, 0 failed. No existing pin moved (variants, hazards, ace gates).
+- Props placed, seeds 0-39, variant 0: par 3 6.4 per course (2.35 clusters), par 4 9.8 (3.55), par 5 15.2 (5.6). Checked courses, seeds 0-199: par 3 6.0, par 4 9.5, par 5 14.1 per course. **0 props dropped** by the checks over the 600 courses.
+- Fine ace sweep, checked par 3 seeds 0-49, with props and pole: **mean 0.59%** (same courses bare: 0.49%), max 0.86% (seed 46), 0 seeds at or over 1%, full power never holes. Pole restitution not tuned.
+- Reroll survey, seeds 0-199: par 3 1, par 4 29, par 5 26 rerolled, 0 exhausted: unchanged, as built.
+- Time per checked course (Editor, Mono, seeds 0-14): par 3 37 → 62 ms, par 4 55 → 94 ms, par 5 65 → 119 ms (bare → with props: placement 10-24 ms on average, plus the checks played again with props). M3 PR 9 found the phone in the Editor's range for generation; not measured on the phone yet.
+
 ### 2026-11-10: M4 ball collisions (`feature/m4-ball-collisions`, PR 4.2)
 
 #### Added

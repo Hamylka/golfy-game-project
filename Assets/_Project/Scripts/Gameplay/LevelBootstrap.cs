@@ -21,7 +21,7 @@ namespace IsoGolf.Gameplay
         [Tooltip("Optional. Scenes without it keep their sun as authored.")]
         [SerializeField] private LevelSun sun;
 
-        [Tooltip("The ball strikes the props and, in flight, the flag pole. On for Sandbox_Par3's hand-placed trees; Main turns it on with its props (M4 PR 4.3), so it plays as its checks do.")]
+        [Tooltip("The ball strikes the props and, in flight, the flag pole. On for Sandbox_Par3's hand-placed trees; and for Main, whose generated props (M4 PR 4.3) and flag pole the checks play with.")]
         [SerializeField] private bool collisions;
 
         [Header("Generated course")]
@@ -52,10 +52,10 @@ namespace IsoGolf.Gameplay
                 double generateMs = clock.Elapsed.TotalMilliseconds;
                 clock.Restart();
 #endif
-                Debug.Log($"Course seed {seed} par {par}: variant {Generated.Variant} kept after {Generated.Candidates} candidate(s), failed checks: {Generated.Failed}.");
-                terrain.Build(Generated.Layout);
+                Debug.Log($"Course seed {seed} par {par}: variant {Generated.Variant} kept after {Generated.Candidates} candidate(s), failed checks: {Generated.Failed}, {Generated.Layout.Props.Count} props ({Generated.DroppedProps} dropped by the checks).");
+                terrain.Build(Generated.Layout, generator.PropKit);
 #if ISOGOLF_MEASURE
-                Debug.Log($"COURSE_TIMING seed {seed} par {par} generate+checks {generateMs:F1} ms, terrain build {clock.Elapsed.TotalMilliseconds:F1} ms, variant {Generated.Variant}, candidates {Generated.Candidates}, failed {Generated.Failed}");
+                Debug.Log($"COURSE_TIMING seed {seed} par {par} generate+checks {generateMs:F1} ms, terrain build {clock.Elapsed.TotalMilliseconds:F1} ms, variant {Generated.Variant}, candidates {Generated.Candidates}, failed {Generated.Failed}, props {Generated.Layout.Props.Count}, dropped {Generated.DroppedProps}");
 #endif
             }
             else
