@@ -4,6 +4,12 @@ All notable progress on Iso Golf. The format follows [Keep a Changelog](https://
 
 ## [Unreleased]
 
+### 2026-11-11: CLAUDE.md records the fairway shapes decisions (`docs/claude-md-fairway-shapes`)
+
+#### Changed
+
+- `CLAUDE.md`: Key systems > Level generator gains a *Fairway shapes* sub-bullet (the split fairway plan's decisions, director: all A), and the M4 milestone says the shapes (F3.1-F3.4) land before 4.7. Text proposed by the plan session, added by the hub after PR 56 merged.
+
 ### 2026-11-11: split fairway plan (`docs/split-fairway-plan`)
 
 #### Added
