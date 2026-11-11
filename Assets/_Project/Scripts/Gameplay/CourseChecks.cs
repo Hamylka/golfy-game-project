@@ -293,6 +293,21 @@ namespace IsoGolf.Gameplay
                     }
                 }
 
+                // A shed or a bench takes its trace (bicycle, laundry, bucket) with it: left alone it would stand against nothing.
+                foreach (int i in new List<int>(drop))
+                {
+                    if (layout.Props[i].Kind == PropKind.Shed || layout.Props[i].Kind == PropKind.Bench)
+                    {
+                        for (int j = 0; j < layout.Props.Count; j++)
+                        {
+                            if (layout.Props[j].Cluster == layout.Props[i].Cluster && CourseProp.IsTrace(layout.Props[j].Kind))
+                            {
+                                drop.Add(j);
+                            }
+                        }
+                    }
+                }
+
                 if (drop.Count == 0)
                 {
                     Debug.LogWarning($"Course seed {seed} par {par}: the checks fail with the flag pole alone ({failed}); props kept.");

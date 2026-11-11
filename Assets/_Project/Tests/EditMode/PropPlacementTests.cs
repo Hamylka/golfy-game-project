@@ -142,6 +142,12 @@ namespace IsoGolf.Tests
                     var members = new Dictionary<int, int>();
                     foreach (CourseProp prop in CourseGenerator.Generate(seed, par, Settings).Props)
                     {
+                        // The built props (PR 4.4) have their own cluster numbers and counts, tested apart.
+                        if (prop.Cluster >= PropPlacement.BuiltBase)
+                        {
+                            continue;
+                        }
+
                         members[prop.Cluster] = members.TryGetValue(prop.Cluster, out int n) ? n + 1 : 1;
                     }
 
@@ -167,7 +173,16 @@ namespace IsoGolf.Tests
                 for (int seed = 0; seed < 10; seed++)
                 {
                     IReadOnlyList<CourseProp> a = CourseGenerator.Generate(seed, 4, three).Props;
-                    IReadOnlyList<CourseProp> b = CourseGenerator.Generate(seed, 4, two).Props;
+                    var b = new List<CourseProp>();
+                    foreach (CourseProp prop in CourseGenerator.Generate(seed, 4, two).Props)
+                    {
+                        // The built props (PR 4.4) come after the clusters and are compared in their own test.
+                        if (prop.Cluster < PropPlacement.BuiltBase)
+                        {
+                            b.Add(prop);
+                        }
+                    }
+
                     var kept = new List<CourseProp>();
                     foreach (CourseProp prop in a)
                     {
@@ -337,10 +352,25 @@ namespace IsoGolf.Tests
         /// Which keep-out this prop breaks, or null. Sampled from the true outlines and the safe route's capsule samples, not from
         /// <see cref="PropZones"/>.
         /// </summary>
-        private static string BrokenKeepOut(CourseLayout layout, CourseProp prop)
+        internal static string BrokenKeepOut(CourseLayout layout, CourseProp prop)
         {
             PropRules rules = Settings.Props;
+
+            // A rake lies flat in a bunker and never collides (M4 PR 4.4): it keeps out of nothing.
+            if (prop.Kind == PropKind.Rake)
+            {
+                return null;
+            }
+
+            // A bridge spans a pond: its footprint is over water by design, so the ground, pond and edge rules don't apply to it.
+            bool bridge = prop.Kind == PropKind.Bridge;
             PropPlacement.Reach(prop.Root, prop.End, prop.Shapes, out float radius, out float height);
+            if (bridge)
+            {
+                // Only what stands above the higher bank casts a shadow: the block's foot is in the water.
+                height = prop.Shapes[0].Center.y + prop.Shapes[0].Extents.y - Mathf.Max(prop.Root.y, prop.End.y);
+            }
+
             var fields = new CourseFields(layout);
             CoursePlan plan = layout.Plan;
             float corridor = plan.ShotCorridorHalfWidth;
@@ -358,9 +388,23 @@ namespace IsoGolf.Tests
             Vector2 shadow = Geo.Dir(Geo.HeadingOf(layout.Centreline.Points.Count > 2 ? layout.Hole - layout.Tee : Vector2.right) + rules.ShadowHeading);
             foreach (Vector2 c in circles)
             {
-                if (fields.Surface(Geo.At(c)) != CourseSurface.Rough)
+                if (!bridge && fields.Surface(Geo.At(c)) != CourseSurface.Rough)
                 {
                     return "not on rough";
+                }
+
+                if (!bridge && rules.FairwayMargin >= 0f)
+                {
+                    // The whole footprint plus the margin stays off the fairway (PR 4.4, director).
+                    for (int a = 0; a < 24; a++)
+                    {
+                        float reach = radius + rules.FairwayMargin - Tolerance;
+                        if (fields.Surface(Geo.At(c + (Geo.Dir(a * 15f) * reach))) == CourseSurface.Fairway
+                            || fields.Surface(Geo.At(c + (Geo.Dir(a * 15f) * reach * 0.5f))) == CourseSurface.Fairway)
+                        {
+                            return "fairway";
+                        }
+                    }
                 }
 
                 if (-fields.Island(Geo.At(c)) < rules.EdgeMargin - Tolerance)
@@ -429,7 +473,7 @@ namespace IsoGolf.Tests
                     }
 
                     float pond = rim ? rules.RimGap.x : rules.HazardKeepOut;
-                    if (fields.Pond(Geo.At(c + (dir * (pond + radius - Tolerance)))) < 0f)
+                    if (!bridge && fields.Pond(Geo.At(c + (dir * (pond + radius - Tolerance)))) < 0f)
                     {
                         return "pond";
                     }

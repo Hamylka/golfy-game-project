@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace IsoGolf.Generation
 {
-    /// <summary>The prop kinds the placement uses (PR 4.3). Built props, traces and the landmark come in PR 4.4.</summary>
+    /// <summary>The prop kinds the placement uses: vegetation and stone (PR 4.3), built props, traces and landmarks (PR 4.4).</summary>
     public enum PropKind
     {
         Olive,
@@ -12,6 +12,15 @@ namespace IsoGolf.Generation
         Rock,
         RoundRock,
         Wall,
+        Shed,
+        Bench,
+        Bridge,
+        Rake,
+        Bucket,
+        Bicycle,
+        Laundry,
+        Chapel,
+        Lighthouse,
     }
 
     /// <summary>
@@ -24,8 +33,9 @@ namespace IsoGolf.Generation
     {
         private readonly PropShape[] _shapes;
 
-        public CourseProp(PropKind kind, Vector3 root, Vector3 end, float scale, int seed, int cluster, IEnumerable<PropShape> shapes)
+        public CourseProp(PropKind kind, Vector3 root, Vector3 end, float scale, int seed, int cluster, IEnumerable<PropShape> shapes, float yawDegrees = 0f)
         {
+            YawDegrees = yawDegrees;
             Kind = kind;
             Root = root;
             End = end;
@@ -40,7 +50,13 @@ namespace IsoGolf.Generation
         /// <summary>The foot of the prop on the ground (for a wall, its start).</summary>
         public Vector3 Root { get; }
 
-        /// <summary>Walls only: the other end, on the ground. Equal to <see cref="Root"/> for the other kinds.</summary>
+        /// <summary>
+        /// Built props and traces: which way the prop faces, in whole degrees from +X toward +Z (its x axis). Walls and bridges
+        /// take theirs from <see cref="End"/>.
+        /// </summary>
+        public float YawDegrees { get; }
+
+        /// <summary>Walls and bridges only: the other end, on the ground. Equal to <see cref="Root"/> for the other kinds.</summary>
         public Vector3 End { get; }
 
         /// <summary>The kit's scale for trees and bushes; the width across in metres for rocks; 1 for walls.</summary>
@@ -53,5 +69,11 @@ namespace IsoGolf.Generation
         public int Cluster { get; }
 
         public IReadOnlyList<PropShape> Shapes => _shapes ?? new PropShape[0];
+
+        /// <summary>The kinds whose footprint is a line from <see cref="Root"/> to <see cref="End"/>.</summary>
+        public static bool IsLine(PropKind kind) => kind == PropKind.Wall || kind == PropKind.Bridge;
+
+        /// <summary>The kinds that stand on the ground as part of a built prop's trace (dropped with it).</summary>
+        public static bool IsTrace(PropKind kind) => kind == PropKind.Bucket || kind == PropKind.Bicycle || kind == PropKind.Laundry || kind == PropKind.Rake;
     }
 }

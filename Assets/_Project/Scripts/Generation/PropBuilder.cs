@@ -59,6 +59,18 @@ namespace IsoGolf.Generation
         private readonly Color32 _stoneLight;
         private readonly Color32 _stoneMid;
         private readonly Color32 _stoneDark;
+        private readonly Color32 _woodLight;
+        private readonly Color32 _woodDark;
+        private readonly Color32 _tileLight;
+        private readonly Color32 _tileDark;
+        private readonly Color32 _slateLight;
+        private readonly Color32 _slateMid;
+        private readonly Color32 _slateDark;
+        private readonly Color32 _metal;
+        private readonly Color32 _metalDark;
+        private readonly Color32 _red;
+        private readonly Color32 _blue;
+        private readonly Color32 _offWhite;
 
         public PropBuilder(PropKitSettings settings, PaletteSettings palette, TerrainMeshData mesh = null)
         {
@@ -72,6 +84,18 @@ namespace IsoGolf.Generation
             _stoneLight = palette != null ? TerrainBuilder.ToVertexColor(palette.StoneLight) : default;
             _stoneMid = palette != null ? TerrainBuilder.ToVertexColor(palette.StoneMid) : default;
             _stoneDark = palette != null ? TerrainBuilder.ToVertexColor(palette.StoneDark) : default;
+            _woodLight = palette != null ? TerrainBuilder.ToVertexColor(palette.WoodLight) : default;
+            _woodDark = palette != null ? TerrainBuilder.ToVertexColor(palette.WoodDark) : default;
+            _tileLight = palette != null ? TerrainBuilder.ToVertexColor(palette.TileLight) : default;
+            _tileDark = palette != null ? TerrainBuilder.ToVertexColor(palette.TileDark) : default;
+            _slateLight = palette != null ? TerrainBuilder.ToVertexColor(palette.SlateLight) : default;
+            _slateMid = palette != null ? TerrainBuilder.ToVertexColor(palette.SlateMid) : default;
+            _slateDark = palette != null ? TerrainBuilder.ToVertexColor(palette.SlateDark) : default;
+            _metal = palette != null ? TerrainBuilder.ToVertexColor(palette.Metal) : default;
+            _metalDark = palette != null ? TerrainBuilder.ToVertexColor(palette.MetalDark) : default;
+            _red = palette != null ? TerrainBuilder.ToVertexColor(palette.TraceRed) : default;
+            _blue = palette != null ? TerrainBuilder.ToVertexColor(palette.TraceBlue) : default;
+            _offWhite = palette != null ? TerrainBuilder.ToVertexColor(palette.TraceOffWhite) : default;
         }
 
         /// <summary>Everything built so far, as one mesh for the land material.</summary>
@@ -115,19 +139,32 @@ namespace IsoGolf.Generation
             var builder = new PropBuilder(kit, palette);
             foreach (CourseProp prop in props)
             {
-                PropShape[] built = builder.Add(prop.Kind, prop.Root, prop.End, prop.Scale, prop.Seed);
+                PropShape[] built = builder.Add(prop.Kind, prop.Root, prop.End, prop.Scale, prop.Seed, prop.YawDegrees);
                 shapes?.AddRange(built);
             }
 
             return builder.Mesh;
         }
 
-        /// <summary>One prop of any kind from its seed: <paramref name="end"/> is a wall's other end, <paramref name="scale"/> a rock's width.</summary>
-        public PropShape[] Add(PropKind kind, Vector3 root, Vector3 end, float scale, int seed)
+        /// <summary>
+        /// One prop of any kind from its seed: <paramref name="end"/> is a wall's or a bridge's other end, <paramref name="scale"/> a
+        /// rock's width, <paramref name="yawDegrees"/> the way a built prop or trace faces.
+        /// </summary>
+        public PropShape[] Add(PropKind kind, Vector3 root, Vector3 end, float scale, int seed, float yawDegrees = 0f)
         {
             var random = new System.Random(seed);
+            float yaw = yawDegrees * Mathf.Deg2Rad;
             switch (kind)
             {
+                case PropKind.Shed: return AddShed(root, yaw, scale, random);
+                case PropKind.Bench: return AddBench(root, yaw, scale, random);
+                case PropKind.Bridge: return AddBridge(root, end, scale, random);
+                case PropKind.Rake: return AddRake(root, yaw, random);
+                case PropKind.Bucket: return AddBucket(root, scale, random);
+                case PropKind.Bicycle: return AddBicycle(root, yaw, random);
+                case PropKind.Laundry: return AddLaundry(root, yaw, random);
+                case PropKind.Chapel: return AddChapel(root, yaw, scale, random);
+                case PropKind.Lighthouse: return AddLighthouse(root, yaw, scale, random);
                 case PropKind.Olive: return AddOlive(root, scale, random);
                 case PropKind.Cypress: return AddCypress(root, scale, random);
                 case PropKind.Bush: return AddBush(root, scale, random);
@@ -283,6 +320,271 @@ namespace IsoGolf.Generation
             }
 
             return new[] { FitBox(first, Mathf.Atan2(end.z - start.z, end.x - start.x), PropMaterial.Stone) };
+        }
+
+        // ---- Built props, traces and landmarks (M4 PR 4.4) ----
+
+        // Walls and boxes start slightly below the ground line, like trunks: the ground mesh only follows the height field at its corners.
+        private const float BuiltSink = 0.1f;
+        private const float BoxJitter = 0.02f;
+
+        private static Vector3 Local(Vector3 root, float yaw, float x, float y, float z)
+        {
+            Vector3 right = PropMeshKit.Around(yaw);
+            Vector3 forward = new Vector3(-right.z, 0f, right.x);
+            return root + (right * x) + (Vector3.up * y) + (forward * z);
+        }
+
+        /// <summary>A box standing on the ground at local (x, z), <paramref name="height"/> tall, sunk a little into it.</summary>
+        private void AddStanding(Vector3 root, float yaw, float x, float z, Vector3 halfWidths, float height, Color32 color, System.Random random)
+        {
+            _kit.AddBox(Local(root, yaw, x, (height - BuiltSink) * 0.5f, z), new Vector3(halfWidths.x, (height + BuiltSink) * 0.5f, halfWidths.z), yaw, BoxJitter, random, color, true);
+        }
+
+        /// <summary>
+        /// Tile-roofed shed: whitewashed stone walls, a wooden door on the long side that faces the prop's +z, a two-tone tile roof.
+        /// One box collider holds walls and roof.
+        /// </summary>
+        public PropShape[] AddShed(Vector3 root, float yaw, float scale, System.Random random)
+        {
+            float length = _settings.ShedLength * scale;
+            float width = _settings.ShedWidth * scale;
+            float wall = _settings.ShedWallHeight * scale;
+            float overhang = _settings.ShedOverhang * scale;
+            int first = _kit.Mesh.Positions.Count;
+
+            AddStanding(root, yaw, 0f, 0f, new Vector3(length * 0.5f, 0f, width * 0.5f), wall, _stoneLight, random);
+            _kit.AddGableRoof(Local(root, yaw, 0f, wall, 0f), length + (2f * overhang), width + (2f * overhang), _settings.ShedRoofRise * scale, yaw, _tileLight, _tileDark);
+            AddStanding(root, yaw, 0f, (width * 0.5f) + 0.01f, new Vector3(0.28f * scale, 0f, 0.02f), 0.95f * scale, _trunk, null);
+
+            return new[] { FitBox(first, yaw, PropMaterial.Stone) };
+        }
+
+        /// <summary>Wooden bench: seat, back and two legs, its seat facing the prop's +z side.</summary>
+        public PropShape[] AddBench(Vector3 root, float yaw, float scale, System.Random random)
+        {
+            float length = _settings.BenchLength * scale;
+            int first = _kit.Mesh.Positions.Count;
+
+            _kit.AddBox(Local(root, yaw, 0f, 0.45f * scale, 0f), new Vector3(length * 0.5f, 0.035f * scale, 0.22f * scale), yaw, 0.008f, random, _woodLight, false);
+            _kit.AddBox(Local(root, yaw, 0f, 0.72f * scale, -0.2f * scale), new Vector3(length * 0.5f, 0.15f * scale, 0.025f * scale), yaw, 0.008f, random, _woodLight, false);
+            for (int side = -1; side <= 1; side += 2)
+            {
+                AddStanding(root, yaw, side * ((length * 0.5f) - (0.12f * scale)), 0f, new Vector3(0.04f * scale, 0f, 0.2f * scale), 0.42f * scale, _trunk, random);
+            }
+
+            return new[] { FitBox(first, yaw, PropMaterial.Wood) };
+        }
+
+        /// <summary>
+        /// Small stone bridge between two bank points: a row of stone blocks from well below the lower bank up to a deck that rises
+        /// to a hump in the middle, with a parapet on each side. One box collider holds the whole span (arch to deck), so the ball
+        /// never rolls on the deck and never crosses the pond on it.
+        /// </summary>
+        public PropShape[] AddBridge(Vector3 start, Vector3 end, float scale, System.Random random)
+        {
+            var flat = new Vector3(end.x - start.x, 0f, end.z - start.z);
+            float total = flat.magnitude;
+            if (total < 0.01f)
+            {
+                return new PropShape[0];
+            }
+
+            Vector3 along = flat / total;
+            Vector3 side = new Vector3(-along.z, 0f, along.x);
+            float yaw = Mathf.Atan2(along.z, along.x);
+            float width = _settings.BridgeWidth * scale;
+            int blocks = Mathf.Max(3, Mathf.RoundToInt(total / _settings.BridgeBlockLength));
+            float bottom = Mathf.Min(start.y, end.y) - _settings.BridgeDepth;
+            int first = _kit.Mesh.Positions.Count;
+
+            for (int i = 0; i < blocks; i++)
+            {
+                float t = (i + 0.5f) / blocks;
+                float top = Mathf.Lerp(start.y, end.y, t) + _settings.BridgeDeck + (_settings.BridgeRise * Mathf.Sin(Mathf.PI * t));
+                Vector3 middle = start + (along * (total * t));
+                var center = new Vector3(middle.x, (top + bottom) * 0.5f, middle.z);
+                float half = total / blocks * 0.5f;
+                _kit.AddBox(center, new Vector3(half, (top - bottom) * 0.5f, width * 0.5f), yaw, BoxJitter, random, PickStone(random), true);
+
+                for (int s = -1; s <= 1; s += 2)
+                {
+                    Vector3 parapet = center + (side * (s * ((width * 0.5f) - 0.09f))) + (Vector3.up * (((top - bottom) * 0.5f) + 0.13f));
+                    _kit.AddBox(parapet, new Vector3(half, 0.13f, 0.09f), yaw, BoxJitter, random, PickStone(random), true);
+                }
+            }
+
+            return new[] { FitBox(first, yaw, PropMaterial.Stone) };
+        }
+
+        private Color32 PickStone(System.Random random)
+        {
+            float pick = PropMeshKit.Next(random);
+            return pick < 0.35f ? _stoneLight : (pick < 0.8f ? _stoneMid : _stoneDark);
+        }
+
+        /// <summary>A rake lying flat in a bunker, handle along <paramref name="yaw"/>. It is flat on the ground, so it has no collider (director Q11 A).</summary>
+        public PropShape[] AddRake(Vector3 root, float yaw, System.Random random)
+        {
+            const float Lift = 0.05f;
+            _kit.AddBox(Local(root, yaw, 0f, Lift, 0f), new Vector3(0.65f, 0.02f, 0.022f), yaw, 0.004f, random, _woodLight, false);
+            _kit.AddBox(Local(root, yaw, 0.65f, Lift, 0f), new Vector3(0.045f, 0.022f, 0.27f), yaw, 0.004f, random, _metal, false);
+            return new PropShape[0];
+        }
+
+        /// <summary>A forgotten bucket of balls: a small red pail with three white balls in it.</summary>
+        public PropShape[] AddBucket(Vector3 root, float scale, System.Random random)
+        {
+            float radius = 0.16f * scale;
+            float height = 0.28f * scale;
+            _kit.AddPrism(root, radius, height, 8, PropMeshKit.RandomAngle(random), _red, 0.05f);
+
+            for (int i = 0; i < 3; i++)
+            {
+                float angle = PropMeshKit.RandomAngle(random);
+                Vector3 ball = root + (PropMeshKit.Around(angle) * (i == 0 ? 0f : radius * 0.5f)) + (Vector3.up * (height + (0.03f * scale)));
+                _kit.AddBlob(ball, 0.06f * scale, 0.95f, 0.05f, 0, _offWhite, _offWhite, 0f, random, null);
+            }
+
+            return new[] { PropShape.Cylinder(root, radius * 1.05f, height + (0.12f * scale), PropMaterial.Wood) };
+        }
+
+        /// <summary>A bicycle standing on its wheels, its length along <paramref name="yaw"/>: two wheels, a blue frame, a seat and handlebars.</summary>
+        public PropShape[] AddBicycle(Vector3 root, float yaw, System.Random random)
+        {
+            const float WheelRadius = 0.32f;
+            const float Base = 0.5f;
+            Vector3 along = PropMeshKit.Around(yaw);
+            int first = _kit.Mesh.Positions.Count;
+
+            _kit.AddUprightRing(Local(root, yaw, -Base, WheelRadius, 0f), along, WheelRadius, WheelRadius * 0.82f, 8, _metal);
+            _kit.AddUprightRing(Local(root, yaw, Base, WheelRadius, 0f), along, WheelRadius, WheelRadius * 0.82f, 8, _metal);
+            _kit.AddBox(Local(root, yaw, 0f, 0.62f, 0f), new Vector3(0.52f, 0.016f, 0.016f), yaw, 0f, null, _blue, false);
+            _kit.AddBox(Local(root, yaw, -0.32f, 0.5f, 0f), new Vector3(0.016f, 0.2f, 0.016f), yaw, 0f, null, _blue, false);
+            _kit.AddBox(Local(root, yaw, -0.32f, 0.74f, 0f), new Vector3(0.07f, 0.02f, 0.03f), yaw, 0f, null, _metalDark, false);
+            _kit.AddBox(Local(root, yaw, Base, 0.58f, 0f), new Vector3(0.016f, 0.28f, 0.016f), yaw, 0f, null, _blue, false);
+            _kit.AddBox(Local(root, yaw, Base, 0.88f, 0f), new Vector3(0.03f, 0.02f, 0.2f), yaw, 0f, null, _metal, false);
+
+            return new[] { FitBox(first, yaw, PropMaterial.Wood) };
+        }
+
+        /// <summary>Laundry on a line between two wooden posts, three cloths hanging from it. Only the posts collide.</summary>
+        public PropShape[] AddLaundry(Vector3 root, float yaw, System.Random random)
+        {
+            const float Half = 1.1f;
+            const float PostRadius = 0.03f;
+            const float PostHeight = 1.7f;
+            Vector3 along = PropMeshKit.Around(yaw);
+            var shapes = new PropShape[2];
+
+            for (int side = -1; side <= 1; side += 2)
+            {
+                Vector3 post = root + (along * (side * Half));
+                _kit.AddPrism(post, PostRadius, PostHeight, 6, 0f, _woodLight, BuiltSink);
+                shapes[side < 0 ? 0 : 1] = PropShape.Cylinder(post, PostRadius * 1.05f, PostHeight, PropMaterial.Wood);
+            }
+
+            _kit.AddBox(Local(root, yaw, 0f, 1.6f, 0f), new Vector3(Half, 0.008f, 0.008f), yaw, 0f, null, _metalDark, false);
+            Color32[] cloths = { _offWhite, _blue, _offWhite };
+            for (int i = 0; i < 3; i++)
+            {
+                float length = 0.4f + (PropMeshKit.Next(random) * 0.1f);
+                _kit.AddBox(Local(root, yaw, (i - 1) * 0.65f, 1.6f - 0.3f, 0f), new Vector3(length * 0.5f, 0.3f, 0.012f), yaw, 0f, null, cloths[i], false);
+            }
+
+            return shapes;
+        }
+
+        /// <summary>Small chapel: whitewashed nave under a slate gable roof, a door in the +x gable end and a square bell tower at the other end.</summary>
+        public PropShape[] AddChapel(Vector3 root, float yaw, float scale, System.Random random)
+        {
+            float length = _settings.ChapelLength * scale;
+            float width = _settings.ChapelWidth * scale;
+            float wall = _settings.ChapelWallHeight * scale;
+            float tower = _settings.ChapelTowerHeight * scale;
+            float towerHalf = 0.4f * scale;
+            int first = _kit.Mesh.Positions.Count;
+
+            AddStanding(root, yaw, 0f, 0f, new Vector3(length * 0.5f, 0f, width * 0.5f), wall, _stoneLight, random);
+            _kit.AddGableRoof(Local(root, yaw, 0f, wall, 0f), length + 0.2f, width + 0.2f, 0.7f * scale, yaw, _slateLight, _slateMid);
+            float towerX = (-length * 0.5f) + towerHalf;
+            AddStanding(root, yaw, towerX, 0f, new Vector3(towerHalf, 0f, towerHalf), tower, _stoneMid, random);
+            _kit.AddCone(Local(root, yaw, towerX, tower, 0f), towerHalf * 1.414f * 1.15f, 0.75f * scale, 4, yaw + (Mathf.PI * 0.25f), _slateMid, true);
+            AddStanding(root, yaw, (length * 0.5f) + 0.01f, 0f, new Vector3(0.02f, 0f, 0.26f * scale), 0.95f * scale, _trunk, null);
+
+            return new[] { FitBox(first, yaw, PropMaterial.Stone) };
+        }
+
+        /// <summary>
+        /// Lighthouse: an eight-sided stone tower that narrows toward the top with a darker band, a slate gallery, lantern and cap.
+        /// Two stacked cylinders hold it.
+        /// </summary>
+        public PropShape[] AddLighthouse(Vector3 root, float yaw, float scale, System.Random random)
+        {
+            float radius = _settings.LighthouseRadius * scale;
+            float height = _settings.LighthouseHeight * scale;
+            const int Sides = 8;
+            int first = _kit.Mesh.Positions.Count;
+
+            _kit.AddFrustum(root, radius, radius * 0.78f, height * 0.55f, Sides, yaw, _stoneLight, BuiltSink);
+            _kit.AddFrustum(root + (Vector3.up * (height * 0.55f)), radius * 0.78f, radius * 0.74f, height * 0.15f, Sides, yaw, _stoneDark, 0f);
+            _kit.AddFrustum(root + (Vector3.up * (height * 0.7f)), radius * 0.74f, radius * 0.62f, height * 0.3f, Sides, yaw, _stoneLight, 0f);
+            Vector3 top = root + (Vector3.up * height);
+            // The gallery is a closed slab (sides, a top that slopes a little, an underside), so it never shows its inside; the lantern
+            // and the cap take the lighter slate shades, since the darkest reads near black once lit.
+            float slab = 0.14f * scale;
+            float galleryRadius = radius * 0.82f;
+            _kit.AddPrism(top, galleryRadius, slab, Sides, yaw, _slateMid, 0f);
+            _kit.AddCone(top + (Vector3.up * slab), galleryRadius, 0.04f * scale, Sides, yaw, _slateLight, false);
+            for (int i = 0; i < Sides; i++)
+            {
+                float a0 = yaw + (i * Mathf.PI * 2f / Sides);
+                float a1 = yaw + ((i + 1) * Mathf.PI * 2f / Sides);
+                _kit.AddTriangle(top, top + (PropMeshKit.Around(a0) * galleryRadius), top + (PropMeshKit.Around(a1) * galleryRadius), Vector3.down, _slateDark);
+            }
+
+            _kit.AddPrism(top + (Vector3.up * slab), radius * 0.42f, 0.5f * scale, Sides, yaw, _slateLight, 0f);
+            _kit.AddCone(top + (Vector3.up * (slab + (0.5f * scale))), radius * 0.6f, 0.5f * scale, Sides, yaw, _slateMid, true);
+
+            return FitCylinders(first, root);
+        }
+
+        /// <summary>
+        /// Two stacked vertical cylinders, split at half the height, each as wide as the vertices in its half reach from the root:
+        /// they enclose the mesh by construction and follow a tower's taper.
+        /// </summary>
+        private PropShape[] FitCylinders(int firstVertex, Vector3 root)
+        {
+            var points = _kit.Mesh.Positions;
+            float top = root.y;
+            for (int i = firstVertex; i < points.Count; i++)
+            {
+                top = Mathf.Max(top, points[i].y);
+            }
+
+            float split = root.y + ((top - root.y) * 0.5f);
+            float lower = 0f;
+            float upper = 0f;
+            for (int i = firstVertex; i < points.Count; i++)
+            {
+                float reach = new Vector2(points[i].x - root.x, points[i].z - root.z).magnitude;
+                if (points[i].y <= split)
+                {
+                    lower = Mathf.Max(lower, reach);
+                }
+                else
+                {
+                    upper = Mathf.Max(upper, reach);
+                }
+            }
+
+            // The lower cylinder holds a face that starts in it and ends in the upper half.
+            lower = Mathf.Max(lower, upper);
+            return new[]
+            {
+                PropShape.Cylinder(root, lower, split - root.y, PropMaterial.Stone),
+                PropShape.Cylinder(new Vector3(root.x, split, root.z), Mathf.Max(upper, 0.01f), top - split, PropMaterial.Stone),
+            };
         }
 
         /// <summary>

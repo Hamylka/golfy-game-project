@@ -109,6 +109,71 @@ namespace IsoGolf.Generation
         }
 
         /// <summary>
+        /// An upright tapered prism with no caps: <paramref name="bottomRadius"/> at the root (<paramref name="sink"/> lower),
+        /// <paramref name="topRadius"/> at <paramref name="height"/> above it. Lighthouse tower and gallery.
+        /// </summary>
+        public void AddFrustum(Vector3 root, float bottomRadius, float topRadius, float height, int sides, float startAngle, Color32 color, float sink)
+        {
+            Vector3 top = root + (Vector3.up * height);
+            root += Vector3.down * sink;
+
+            for (int i = 0; i < sides; i++)
+            {
+                float a0 = startAngle + (i * Mathf.PI * 2f / sides);
+                float a1 = startAngle + ((i + 1) * Mathf.PI * 2f / sides);
+                Vector3 outward = Around((a0 + a1) * 0.5f);
+                Vector3 low0 = root + (Around(a0) * bottomRadius);
+                Vector3 low1 = root + (Around(a1) * bottomRadius);
+                Vector3 high0 = top + (Around(a0) * topRadius);
+                Vector3 high1 = top + (Around(a1) * topRadius);
+                AddTriangle(low0, high0, high1, outward, color);
+                AddTriangle(low0, high1, low1, outward, color);
+            }
+        }
+
+        /// <summary>
+        /// A flat disc standing on its edge: the wheel of a bicycle. It lies in the plane spanned by <paramref name="along"/>
+        /// (horizontal, unit) and up, with <paramref name="sides"/> corners, both faces drawn.
+        /// </summary>
+        public void AddUprightDisc(Vector3 center, Vector3 along, float radius, int sides, Color32 color)
+        {
+            Vector3 face = new Vector3(-along.z, 0f, along.x);
+            for (int i = 0; i < sides; i++)
+            {
+                float a0 = i * Mathf.PI * 2f / sides;
+                float a1 = (i + 1) * Mathf.PI * 2f / sides;
+                Vector3 p0 = center + (along * (Mathf.Cos(a0) * radius)) + (Vector3.up * (Mathf.Sin(a0) * radius));
+                Vector3 p1 = center + (along * (Mathf.Cos(a1) * radius)) + (Vector3.up * (Mathf.Sin(a1) * radius));
+                AddTriangle(center, p0, p1, face, color);
+                AddTriangle(center, p1, p0, -face, color);
+            }
+        }
+
+        /// <summary>
+        /// A flat ring standing on its edge (a tyre): like <see cref="AddUprightDisc"/> with a hole of <paramref name="innerRadius"/>,
+        /// both faces drawn.
+        /// </summary>
+        public void AddUprightRing(Vector3 center, Vector3 along, float outerRadius, float innerRadius, int sides, Color32 color)
+        {
+            Vector3 face = new Vector3(-along.z, 0f, along.x);
+            for (int i = 0; i < sides; i++)
+            {
+                float a0 = i * Mathf.PI * 2f / sides;
+                float a1 = (i + 1) * Mathf.PI * 2f / sides;
+                Vector3 d0 = (along * Mathf.Cos(a0)) + (Vector3.up * Mathf.Sin(a0));
+                Vector3 d1 = (along * Mathf.Cos(a1)) + (Vector3.up * Mathf.Sin(a1));
+                Vector3 o0 = center + (d0 * outerRadius);
+                Vector3 o1 = center + (d1 * outerRadius);
+                Vector3 i0 = center + (d0 * innerRadius);
+                Vector3 i1 = center + (d1 * innerRadius);
+                AddTriangle(o0, o1, i1, face, color);
+                AddTriangle(o0, i1, i0, face, color);
+                AddTriangle(o0, i1, o1, -face, color);
+                AddTriangle(o0, i0, i1, -face, color);
+            }
+        }
+
+        /// <summary>
         /// A box turned by <paramref name="yaw"/> about +Y (its x axis along <see cref="Around"/>), with every
         /// corner moved by up to <paramref name="jitter"/> metres on each axis, so no two read as machined. With
         /// no <paramref name="random"/> the corners stay put. The underside is left out when it sits on the ground.

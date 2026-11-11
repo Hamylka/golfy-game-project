@@ -7,6 +7,13 @@ namespace IsoGolf.Generation
     /// the game's own material, sun and camera angle. Kinds run across the screen (world +Z toward the left),
     /// seeds run up it (+X). A review tool for the director: nothing in <c>Main</c> reads it.
     /// </summary>
+    public enum ShowroomPage
+    {
+        Vegetation,
+        Built,
+        Traces,
+    }
+
     public sealed class PropShowroom : MonoBehaviour
     {
         private const int GroundSides = 28;
@@ -20,6 +27,8 @@ namespace IsoGolf.Generation
         [SerializeField] private Material landMaterial;
         [SerializeField, Range(1, 5)] private int seedsPerKind = 3;
         [SerializeField] private int seed = 100;
+        [Tooltip("Which props the showroom shows: the vegetation and stone of PR 4.1, the built props and landmarks, or the traces of human presence (PR 4.4).")]
+        [SerializeField] private ShowroomPage page = ShowroomPage.Vegetation;
 
         private Mesh _mesh;
 
@@ -42,6 +51,13 @@ namespace IsoGolf.Generation
             AddGround(data);
 
             var builder = new PropBuilder(propKit, palette, data);
+            if (page != ShowroomPage.Vegetation)
+            {
+                BuildBuilt(data, builder);
+                Finish(data);
+                return;
+            }
+
             string[] kinds = { "olive", "cypress", "bush", "rock", "round rock", "wall" };
             float zStart = (kinds.Length - 1) * KindSpacing * 0.5f;
 
@@ -70,11 +86,69 @@ namespace IsoGolf.Generation
                 }
             }
 
+            Finish(data);
+        }
+
+        private void Finish(TerrainMeshData data)
+        {
             _mesh = data.ToMesh("Props showroom");
             var child = new GameObject("Showroom");
             child.transform.SetParent(transform, false);
             child.AddComponent<MeshFilter>().sharedMesh = _mesh;
             child.AddComponent<MeshRenderer>().sharedMaterial = landMaterial;
+        }
+
+        /// <summary>
+        /// The built props (PR 4.4), one kind per row, facing the camera: the shed's door, the bench's seat and the chapel's door look
+        /// toward -X. The bridge spans a small pond drawn flat over the ground.
+        /// </summary>
+        private void BuildBuilt(TerrainMeshData data, PropBuilder builder)
+        {
+            PropKind[] kinds = page == ShowroomPage.Built
+                ? new[] { PropKind.Shed, PropKind.Bench, PropKind.Chapel, PropKind.Lighthouse, PropKind.Bridge }
+                : new[] { PropKind.Rake, PropKind.Bucket, PropKind.Bicycle, PropKind.Laundry };
+            float spacing = page == ShowroomPage.Built ? 4.6f : 3.2f;
+            float zStart = (kinds.Length - 1) * spacing * 0.5f;
+
+            for (int k = 0; k < kinds.Length; k++)
+            {
+                int perKind = kinds[k] == PropKind.Bridge ? 1 : Mathf.Min(seedsPerKind, 3);
+                for (int s = 0; s < perKind; s++)
+                {
+                    float x = (s - ((perKind - 1) * 0.5f)) * (page == ShowroomPage.Built ? 4.2f : SeedSpacing);
+                    var root = new Vector3(x, 0f, zStart - (k * spacing));
+                    int meshSeed = unchecked(seed + (k * 131) + (s * 7919));
+                    float scale = 0.92f + (s * 0.1f);
+                    switch (kinds[k])
+                    {
+                        case PropKind.Bridge:
+                            AddPond(data, root, 1.7f);
+                            builder.Add(PropKind.Bridge, root + (Vector3.back * -2.6f), root + (Vector3.back * 2.6f), 1f, meshSeed);
+                            break;
+                        case PropKind.Chapel:
+                            builder.Add(kinds[k], root, root, scale, meshSeed, 180f);
+                            break;
+                        case PropKind.Lighthouse:
+                            builder.Add(kinds[k], root, root, scale, meshSeed, 0f);
+                            break;
+                        default:
+                            builder.Add(kinds[k], root, root, scale, meshSeed, 90f);
+                            break;
+                    }
+                }
+            }
+        }
+
+        private void AddPond(TerrainMeshData data, Vector3 center, float radius)
+        {
+            Color32 color = TerrainBuilder.ToVertexColor(palette.Water);
+            Vector3 middle = center + (Vector3.up * 0.03f);
+            for (int i = 0; i < GroundSides; i++)
+            {
+                float a0 = i * Mathf.PI * 2f / GroundSides;
+                float a1 = (i + 1) * Mathf.PI * 2f / GroundSides;
+                data.Add(middle, middle + (PropMeshKit.Around(a0) * radius), middle + (PropMeshKit.Around(a1) * radius), Vector3.up, color);
+            }
         }
 
         private void AddGround(TerrainMeshData data)

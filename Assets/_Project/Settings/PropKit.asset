@@ -35,3 +35,20 @@ MonoBehaviour:
   wallBlockLengthVariation: 0.35
   wallThickness: 0.38
   wallJitter: 0.025
+  shedLength: 2.3
+  shedWidth: 1.7
+  shedWallHeight: 1.5
+  shedRoofRise: 0.7
+  shedOverhang: 0.15
+  benchLength: 1.4
+  bridgeWidth: 1.2
+  bridgeRise: 0.45
+  bridgeDeck: 0.35
+  bridgeBlockLength: 0.8
+  bridgeDepth: 0.8
+  chapelLength: 2.1
+  chapelWidth: 1.5
+  chapelWallHeight: 1.6
+  chapelTowerHeight: 2.7
+  lighthouseRadius: 0.8
+  lighthouseHeight: 3.5
