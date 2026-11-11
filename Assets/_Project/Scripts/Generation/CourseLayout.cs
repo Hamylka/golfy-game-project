@@ -352,6 +352,9 @@ namespace IsoGolf.Generation
         private readonly EllipseShape[] _bunkers;
         private readonly PondLayout[] _ponds;
         private readonly GroundSwell[] _swells;
+        private CourseProp[] _props = new CourseProp[0];
+        private PropShape[] _propShapes = new PropShape[0];
+        private int[] _propOfShape = new int[0];
 
         public CourseLayout(
             IEnumerable<IslandOutline> islands,
@@ -408,6 +411,39 @@ namespace IsoGolf.Generation
         public IReadOnlyList<EllipseShape> Bunkers => _bunkers;
         public IReadOnlyList<PondLayout> Ponds => _ponds;
         public IReadOnlyList<GroundSwell> Swells => _swells;
+
+        /// <summary>The props standing on the course (M4 PR 4.3), from <see cref="PropPlacement"/>. Empty on hand-made courses.</summary>
+        public IReadOnlyList<CourseProp> Props => _props;
+
+        /// <summary>Every prop's collision shapes in one list, prop by prop, in the order of <see cref="Props"/>.</summary>
+        public IReadOnlyList<PropShape> PropShapes => _propShapes;
+
+        /// <summary>Which prop of <see cref="Props"/> the shape at this index of <see cref="PropShapes"/> belongs to.</summary>
+        public int PropOfShape(int shape) => _propOfShape[shape];
+
+        /// <summary>
+        /// The same course with these props instead of its own. Everything else is shared, untouched: props never move an
+        /// island, a slope, the green, the pin or a hazard.
+        /// </summary>
+        public CourseLayout WithProps(IEnumerable<CourseProp> props)
+        {
+            var copy = (CourseLayout)MemberwiseClone();
+            copy._props = new List<CourseProp>(props).ToArray();
+            var shapes = new List<PropShape>();
+            var owners = new List<int>();
+            for (int i = 0; i < copy._props.Length; i++)
+            {
+                foreach (PropShape shape in copy._props[i].Shapes)
+                {
+                    shapes.Add(shape);
+                    owners.Add(i);
+                }
+            }
+
+            copy._propShapes = shapes.ToArray();
+            copy._propOfShape = owners.ToArray();
+            return copy;
+        }
 
         /// <summary>What the generator meant by this course (hazard roles, shot lines, the safe route). <c>null</c> on hand-made courses.</summary>
         public CoursePlan Plan { get; }

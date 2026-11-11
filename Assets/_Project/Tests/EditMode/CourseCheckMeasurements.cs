@@ -26,11 +26,21 @@ namespace IsoGolf.Tests
                 int rerolled = 0, exhausted = 0, maxVariant = 0;
                 int incomplete = 0, gap = 0, rest = 0;
                 long candidates = 0;
+                int props = 0, dropped = 0, withDrops = 0;
+                var drops = new StringBuilder();
                 var variants = new StringBuilder();
                 var watch = Stopwatch.StartNew();
                 for (int seed = 0; seed < 200; seed++)
                 {
                     CheckedCourseResult result = CheckedCourse.Generate(seed, par, CourseGeneratorTests.Settings, Shot);
+                    props += result.Layout.Props.Count;
+                    dropped += result.DroppedProps;
+                    withDrops += result.DroppedProps > 0 ? 1 : 0;
+                    if (result.DroppedProps > 0 && drops.Length < 300)
+                    {
+                        drops.Append($"{seed}:{result.DroppedProps} ");
+                    }
+
                     candidates += result.Candidates;
                     rerolled += result.Variant > 0 ? 1 : 0;
                     exhausted += result.Passed ? 0 : 1;
@@ -54,7 +64,8 @@ namespace IsoGolf.Tests
 
                 report.Append($"par {par}: rerolled {rerolled}/200, exhausted {exhausted}, highest variant {maxVariant}, {candidates / 200f:0.00} candidates per course, " +
                     $"{watch.ElapsedMilliseconds / 200f:0.0} ms per checked course (Editor, Mono). Variant 0 fails: incomplete plan {incomplete}, gap {gap}, no rest near hole {rest}.\n" +
-                    $"  rerolled seeds (seed:variant): {variants}\n");
+                    $"  rerolled seeds (seed:variant): {variants}\n" +
+                    $"  props: {props / 200f:0.0} per course kept, {dropped} dropped by the checks on {withDrops} courses (seed:dropped): {drops}\n");
             }
 
             Debug.Log(report.ToString());
@@ -64,7 +75,7 @@ namespace IsoGolf.Tests
         public void AceSweep_OverCheckedPar3s()
         {
             ShotSettings shot = Shot;
-            double sum = 0;
+            double sum = 0, bareSum = 0;
             float max = 0f;
             int maxSeed = -1, fullPowerAces = 0, over = 0;
             var report = new StringBuilder();
@@ -73,8 +84,13 @@ namespace IsoGolf.Tests
             {
                 CourseLayout layout = CheckedCourse.Generate(seed, 3, CourseGeneratorTests.Settings, shot).Layout;
                 var ground = new BallGround(layout);
-                ShotSweepResult fine = ShotSweep.Run(shot, ground, ground.Tee, ground.Hole, 6f, 0.1f, 0.5f, 1f, 0.01f);
-                ShotSweepResult full = ShotSweep.Run(shot, ground, ground.Tee, ground.Hole, 6f, 0.1f, 1f, 1f, 1f);
+
+                // As played since M4 PR 4.3: the course's props and the flag pole. The bare figure is the M3 baseline, for comparison.
+                BallObstacles obstacles = BallObstacles.ForCourse(layout.PropShapes, ground, shot);
+                ShotSweepResult fine = ShotSweep.Run(shot, ground, ground.Tee, ground.Hole, 6f, 0.1f, 0.5f, 1f, 0.01f, obstacles);
+                ShotSweepResult full = ShotSweep.Run(shot, ground, ground.Tee, ground.Hole, 6f, 0.1f, 1f, 1f, 1f, obstacles);
+                ShotSweepResult bare = ShotSweep.Run(shot, ground, ground.Tee, ground.Hole, 6f, 0.1f, 0.5f, 1f, 0.01f);
+                bareSum += bare.HoledShare;
                 sum += fine.HoledShare;
                 over += fine.HoledShare >= 0.01f ? 1 : 0;
                 fullPowerAces += full.Holed > 0 ? 1 : 0;
@@ -84,10 +100,10 @@ namespace IsoGolf.Tests
                     maxSeed = seed;
                 }
 
-                report.Append($"seed {seed}: {fine.HoledShare:P2} ({fine.Holed}/{fine.Shots}), full power {full.Holed}\n");
+                report.Append($"seed {seed}: {fine.HoledShare:P2} ({fine.Holed}/{fine.Shots}, bare {bare.Holed}), full power {full.Holed}, props {layout.Props.Count}\n");
             }
 
-            Debug.Log($"Ace sweep, checked par 3 seeds 0-{Seeds - 1}: mean {sum / Seeds:P2}, max {max:P2} (seed {maxSeed}), {over} seeds at or over 1%, {fullPowerAces} seeds where full power holes.\n{report}");
+            Debug.Log($"Ace sweep with props and pole, checked par 3 seeds 0-{Seeds - 1}: mean {sum / Seeds:P2} (bare {bareSum / Seeds:P2}), max {max:P2} (seed {maxSeed}), {over} seeds at or over 1%, {fullPowerAces} seeds where full power holes.\n{report}");
         }
     }
 }

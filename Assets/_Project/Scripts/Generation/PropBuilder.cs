@@ -64,14 +64,14 @@ namespace IsoGolf.Generation
         {
             _settings = settings;
             _kit = new PropMeshKit(mesh ?? new TerrainMeshData());
-            _foliageLight = TerrainBuilder.ToVertexColor(palette.FoliageLight);
-            _foliageMid = TerrainBuilder.ToVertexColor(palette.FoliageMid);
-            _foliageDark = TerrainBuilder.ToVertexColor(palette.FoliageDark);
-            _oliveLight = TerrainBuilder.ToVertexColor(palette.OliveLight);
-            _trunk = TerrainBuilder.ToVertexColor(palette.Trunk);
-            _stoneLight = TerrainBuilder.ToVertexColor(palette.StoneLight);
-            _stoneMid = TerrainBuilder.ToVertexColor(palette.StoneMid);
-            _stoneDark = TerrainBuilder.ToVertexColor(palette.StoneDark);
+            _foliageLight = palette != null ? TerrainBuilder.ToVertexColor(palette.FoliageLight) : default;
+            _foliageMid = palette != null ? TerrainBuilder.ToVertexColor(palette.FoliageMid) : default;
+            _foliageDark = palette != null ? TerrainBuilder.ToVertexColor(palette.FoliageDark) : default;
+            _oliveLight = palette != null ? TerrainBuilder.ToVertexColor(palette.OliveLight) : default;
+            _trunk = palette != null ? TerrainBuilder.ToVertexColor(palette.Trunk) : default;
+            _stoneLight = palette != null ? TerrainBuilder.ToVertexColor(palette.StoneLight) : default;
+            _stoneMid = palette != null ? TerrainBuilder.ToVertexColor(palette.StoneMid) : default;
+            _stoneDark = palette != null ? TerrainBuilder.ToVertexColor(palette.StoneDark) : default;
         }
 
         /// <summary>Everything built so far, as one mesh for the land material.</summary>
@@ -102,6 +102,39 @@ namespace IsoGolf.Generation
             }
 
             return builder.Mesh;
+        }
+
+        /// <summary>
+        /// Builds a generated course's props (<see cref="CourseLayout.Props"/>), each from its own seed, so the mesh is the one
+        /// the placement fitted the props' shapes to. Their shapes go into <paramref name="shapes"/>, when given, in the order of
+        /// <see cref="CourseLayout.PropShapes"/>.
+        /// </summary>
+        public static TerrainMeshData BuildCourseProps(System.Collections.Generic.IReadOnlyList<CourseProp> props, PropKitSettings kit, PaletteSettings palette,
+            System.Collections.Generic.List<PropShape> shapes = null)
+        {
+            var builder = new PropBuilder(kit, palette);
+            foreach (CourseProp prop in props)
+            {
+                PropShape[] built = builder.Add(prop.Kind, prop.Root, prop.End, prop.Scale, prop.Seed);
+                shapes?.AddRange(built);
+            }
+
+            return builder.Mesh;
+        }
+
+        /// <summary>One prop of any kind from its seed: <paramref name="end"/> is a wall's other end, <paramref name="scale"/> a rock's width.</summary>
+        public PropShape[] Add(PropKind kind, Vector3 root, Vector3 end, float scale, int seed)
+        {
+            var random = new System.Random(seed);
+            switch (kind)
+            {
+                case PropKind.Olive: return AddOlive(root, scale, random);
+                case PropKind.Cypress: return AddCypress(root, scale, random);
+                case PropKind.Bush: return AddBush(root, scale, random);
+                case PropKind.Rock: return AddRock(root, scale, random);
+                case PropKind.RoundRock: return AddRoundRock(root, scale, random);
+                default: return AddWall(root, end, random);
+            }
         }
 
         /// <summary>Olive tree: a short trunk and a cauliflower crown of jittered blobs, silvery light shade on top.</summary>

@@ -357,6 +357,7 @@ MonoBehaviour:
   landMaterial: {fileID: 2100000, guid: ad4e2044caef9814f9c30aa2c03bd228, type: 2}
   waterMaterial: {fileID: 2100000, guid: ad4e2044caef9814f9c30aa2c03bd228, type: 2}
   trees: {fileID: 0}
+  propKit: {fileID: 0}
   tufts: {fileID: 11400000, guid: 43a8689f55261d446ba14ec013294c8d, type: 2}
 --- !u!4 &501904562
 Transform:
@@ -1116,6 +1117,7 @@ MonoBehaviour:
   ball: {fileID: 1103648086}
   hole: {fileID: 441434113}
   sun: {fileID: 1678882217}
+  collisions: 1
   generator: {fileID: 11400000, guid: 38ed32c895a0df548a6b8030c7781e97, type: 2}
   seed: 1
   par: 3

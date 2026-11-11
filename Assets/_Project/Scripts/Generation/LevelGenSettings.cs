@@ -306,6 +306,12 @@ namespace IsoGolf.Generation
         [Tooltip("The weakest shot tried across a gap; the strongest is the lay-up power.")]
         [SerializeField, Range(0f, 1f)] private float gapCheckMinPower = 0.3f;
 
+        [Header("Props (M4 PR 4.3)")]
+        [Tooltip("The props' proportions. None: generated courses get no props.")]
+        [SerializeField] private PropKitSettings propKit;
+        [Tooltip("Where props may stand, how many clusters per par and what they hold.")]
+        [SerializeField] private PropRules props = new PropRules();
+
         /// <summary>The rules for a par from 3 to 5.</summary>
         public ParRules Rules(int par)
         {
@@ -432,6 +438,8 @@ namespace IsoGolf.Generation
         public Vector2 RestCheckPower => restCheckPower;
         public float CheckPowerStep => checkPowerStep;
         public float GapCheckMinPower => gapCheckMinPower;
+        public PropKitSettings PropKit => propKit;
+        public PropRules Props => props;
     }
 
     /// <summary>Where a drive-zone hazard sits on a straight par 4 or 5.</summary>

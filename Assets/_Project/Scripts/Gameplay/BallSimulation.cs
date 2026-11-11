@@ -76,6 +76,7 @@ namespace IsoGolf.Gameplay
         private const float RollingStandOff = 0.001f;
 
         private BallSimulation _predictor;
+        private readonly List<int> _struck = new List<int>();
 
         private ArcHit _hit;
         private bool _hasHit;
@@ -116,6 +117,9 @@ namespace IsoGolf.Gameplay
 
         /// <summary>The current shot's latest hit in flight; meaningful once <see cref="Hits"/> is above 0.</summary>
         public ArcHit LastHit { get; private set; }
+
+        /// <summary>Every obstacle the current shot has struck, in flight or rolling, by its index in <see cref="BallObstacles"/>, repeats included.</summary>
+        public IReadOnlyList<int> Struck => _struck;
 
         /// <summary>Whether a shot from here is a putt. The green's drawn border is the strict limit.</summary>
         public bool IsPutt => _ground.Surface(Position.x, Position.z) == CourseSurface.Green;
@@ -191,6 +195,7 @@ namespace IsoGolf.Gameplay
 
             _shotOrigin = Position;
             Bounces = 0;
+            _struck.Clear();
             Hits = 0;
             _ignoredObstacle = BallObstacles.None;
             _flightObstaclesOff = false;
@@ -332,6 +337,7 @@ namespace IsoGolf.Gameplay
             Position = _hit.Point;
             Vector3 velocity = _arc.VelocityAt(_hit.Time);
             Hits++;
+            _struck.Add(_hit.Index);
             LastHit = _hit;
             _ignoredObstacle = _hit.Index;
 
@@ -485,6 +491,7 @@ namespace IsoGolf.Gameplay
                 return false;
             }
 
+            _struck.Add(chord.Index);
             Vector3 contact = Vector3.Lerp(from, to, chord.Fraction) + (chord.Normal * RollingStandOff);
             x = contact.x;
             z = contact.z;

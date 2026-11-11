@@ -1,6 +1,9 @@
 using System;
+using System.Collections.Generic;
 using IsoGolf.Generation;
 using UnityEngine;
+
+[assembly: System.Runtime.CompilerServices.InternalsVisibleTo("IsoGolf.Tests.EditMode")]
 
 namespace IsoGolf.Gameplay
 {
@@ -23,13 +26,17 @@ namespace IsoGolf.Gameplay
     /// <summary>What <see cref="CheckedCourse.Generate"/> settled on.</summary>
     public sealed class CheckedCourseResult
     {
-        public CheckedCourseResult(CourseLayout layout, int variant, int candidates, CourseCheck failed)
+        public CheckedCourseResult(CourseLayout layout, int variant, int candidates, CourseCheck failed, int droppedProps = 0)
         {
             Layout = layout;
             Variant = variant;
             Candidates = candidates;
             Failed = failed;
+            DroppedProps = droppedProps;
         }
+
+        /// <summary>How many placed props were taken off the kept course because the checks failed with them (M4 PR 4.3).</summary>
+        public int DroppedProps { get; }
 
         public CourseLayout Layout { get; }
 
@@ -59,7 +66,12 @@ namespace IsoGolf.Gameplay
         // Sampling step along a safe-route leg to find where it is over open sky.
         private const float LegSample = 0.25f;
 
-        public static CourseCheck Run(CourseLayout layout, ShotSettings shot, LevelGenSettings settings)
+        /// <param name="props">
+        /// Plays the check shots against the course's props and its flag pole (M4 PR 4.3), as the game does. False plays the bare
+        /// course, which is what picks the variant, so props never decide which island is kept.
+        /// </param>
+        /// <param name="struck">Collects the obstacles every played shot struck (indices into the props' shapes; the pole comes last).</param>
+        public static CourseCheck Run(CourseLayout layout, ShotSettings shot, LevelGenSettings settings, bool props = false, List<int> struck = null)
         {
             CoursePlan plan = layout.Plan;
             if (plan == null || !plan.Complete)
@@ -69,13 +81,14 @@ namespace IsoGolf.Gameplay
             }
 
             var ground = new BallGround(layout);
+            BallObstacles obstacles = props ? BallObstacles.ForCourse(layout.PropShapes, ground, shot) : null;
             CourseCheck failed = CourseCheck.None;
-            if (!GapsClear(ground, plan, shot, settings))
+            if (!GapsClear(ground, plan, shot, settings, obstacles, struck))
             {
                 failed |= CourseCheck.GapNotCleared;
             }
 
-            if (!RestsNearHole(ground, plan, shot, settings))
+            if (!RestsNearHole(ground, plan, shot, settings, obstacles, struck))
             {
                 failed |= CourseCheck.NoRestNearHole;
             }
@@ -88,7 +101,7 @@ namespace IsoGolf.Gameplay
         /// from <see cref="LevelGenSettings.GapCheckMinPower"/> to the lay-up power leaves the ball at rest past the gap's far
         /// edge. The generator places that leg with the carry model alone; this adds the bounce, the roll and the slopes.
         /// </summary>
-        public static bool GapsClear(BallGround ground, CoursePlan plan, ShotSettings shot, LevelGenSettings settings)
+        public static bool GapsClear(BallGround ground, CoursePlan plan, ShotSettings shot, LevelGenSettings settings, BallObstacles obstacles = null, List<int> struck = null)
         {
             for (int k = 0; k + 1 < plan.SafeRoute.Count; k++)
             {
@@ -103,7 +116,7 @@ namespace IsoGolf.Gameplay
                 bool cleared = false;
                 foreach (float power in Powers(settings.GapCheckMinPower, settings.LayupPower, settings.CheckPowerStep))
                 {
-                    if (Play(ground, shot, from, direction, power, out Vector2 rest) == BallState.Resting
+                    if (Play(ground, shot, from, direction, power, obstacles, struck, out Vector2 rest) == BallState.Resting
                         && Vector2.Dot(rest - from, direction) > farEdge)
                     {
                         cleared = true;
@@ -126,7 +139,7 @@ namespace IsoGolf.Gameplay
         /// <see cref="LevelGenSettings.RestCheckPower"/> range, holes or stops on the green within
         /// <see cref="LevelGenSettings.RestNearHole"/> of it.
         /// </summary>
-        public static bool RestsNearHole(BallGround ground, CoursePlan plan, ShotSettings shot, LevelGenSettings settings)
+        public static bool RestsNearHole(BallGround ground, CoursePlan plan, ShotSettings shot, LevelGenSettings settings, BallObstacles obstacles = null, List<int> struck = null)
         {
             Vector2 from = plan.SafeRoute[plan.SafeRoute.Count - 2];
             Vector2 straight = ground.Hole - from;
@@ -139,7 +152,7 @@ namespace IsoGolf.Gameplay
                 Vector2 direction = Quaternion.Euler(0f, 0f, -angle) * (Vector3)straight;
                 foreach (float power in Powers(settings.RestCheckPower.x, settings.RestCheckPower.y, settings.CheckPowerStep))
                 {
-                    BallState end = Play(ground, shot, from, direction, power, out Vector2 rest);
+                    BallState end = Play(ground, shot, from, direction, power, obstacles, struck, out Vector2 rest);
                     if (end == BallState.Holed)
                     {
                         return true;
@@ -185,9 +198,9 @@ namespace IsoGolf.Gameplay
             }
         }
 
-        private static BallState Play(BallGround ground, ShotSettings shot, Vector2 from, Vector2 direction, float power, out Vector2 rest)
+        private static BallState Play(BallGround ground, ShotSettings shot, Vector2 from, Vector2 direction, float power, BallObstacles obstacles, List<int> struck, out Vector2 rest)
         {
-            var ball = new BallSimulation(ground, shot, from);
+            var ball = new BallSimulation(ground, shot, from, obstacles);
             ball.Shoot(direction, power);
             for (int i = 0; i < StepLimit; i++)
             {
@@ -200,6 +213,7 @@ namespace IsoGolf.Gameplay
                 ball.Step();
             }
 
+            struck?.AddRange(ball.Struck);
             rest = new Vector2(ball.Position.x, ball.Position.z);
             return ball.State;
         }
@@ -221,13 +235,15 @@ namespace IsoGolf.Gameplay
             int bestCount = int.MaxValue;
             int variants = Mathf.Max(1, settings.CheckVariants);
 
+            // The variant is picked on the bare course, as before props existed: props never decide which island is kept.
             for (int variant = 0; variant < variants; variant++)
             {
-                CourseLayout layout = CourseGenerator.Generate(seed, par, settings, variant);
+                CourseLayout layout = CourseGenerator.Generate(seed, par, settings, variant, props: false);
                 CourseCheck failed = CourseChecks.Run(layout, shot, settings);
                 if (failed == CourseCheck.None)
                 {
-                    return new CheckedCourseResult(layout, variant, variant + 1, CourseCheck.None);
+                    CourseLayout kept = KeepProps(CourseGenerator.WithProps(layout, seed, par, variant, settings), CourseCheck.None, shot, settings, seed, par, out int dropped);
+                    return new CheckedCourseResult(kept, variant, variant + 1, CourseCheck.None, dropped);
                 }
 
                 int count = Count(failed);
@@ -241,7 +257,62 @@ namespace IsoGolf.Gameplay
             }
 
             Debug.LogWarning($"Course seed {seed} par {par}: no variant of {variants} passed the checks; keeping variant {bestVariant}, which fails {bestFailed}.");
-            return new CheckedCourseResult(best, bestVariant, variants, bestFailed);
+            CourseLayout fallback = KeepProps(CourseGenerator.WithProps(best, seed, par, bestVariant, settings), bestFailed, shot, settings, seed, par, out int droppedFromFallback);
+            return new CheckedCourseResult(fallback, bestVariant, variants, bestFailed, droppedFromFallback);
+        }
+
+        // Rounds of dropping struck props before every prop goes.
+        private const int DropRounds = 3;
+
+        /// <summary>
+        /// Plays the checks again with the props and the flag pole, as the game does. A prop that makes a check fail that the bare
+        /// course passed is dropped, not the course rerolled (M4 plan §3): every prop a played shot struck goes, and the checks run
+        /// again, up to <see cref="DropRounds"/> times; after that, every prop goes. Only the struck props go (director's choice Q1 A),
+        /// so a cluster may be left with a single prop, which stays. A run that strikes nothing plays exactly like the bare one.
+        /// </summary>
+        internal static CourseLayout KeepProps(CourseLayout layout, CourseCheck bareFailed, ShotSettings shot, LevelGenSettings settings, int seed, int par, out int dropped)
+        {
+            dropped = 0;
+            int placed = layout.Props.Count;
+            for (int round = 0; layout.Props.Count > 0; round++)
+            {
+                var struck = new List<int>();
+                CourseCheck failed = CourseChecks.Run(layout, shot, settings, true, struck);
+                if ((failed & ~bareFailed) == CourseCheck.None)
+                {
+                    return layout;
+                }
+
+                var drop = new HashSet<int>();
+                foreach (int shape in struck)
+                {
+                    // The pole sits after the props' shapes; it never goes.
+                    if (shape < layout.PropShapes.Count)
+                    {
+                        drop.Add(layout.PropOfShape(shape));
+                    }
+                }
+
+                if (drop.Count == 0)
+                {
+                    Debug.LogWarning($"Course seed {seed} par {par}: the checks fail with the flag pole alone ({failed}); props kept.");
+                    return layout;
+                }
+
+                var kept = new List<CourseProp>();
+                for (int i = 0; i < layout.Props.Count; i++)
+                {
+                    if (!drop.Contains(i) && round + 1 < DropRounds)
+                    {
+                        kept.Add(layout.Props[i]);
+                    }
+                }
+
+                layout = layout.WithProps(kept);
+                dropped = placed - kept.Count;
+            }
+
+            return layout;
         }
 
         private static int Count(CourseCheck checks)

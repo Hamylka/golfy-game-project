@@ -76,6 +76,9 @@ MonoBehaviour:
   islandGreenFromTee: 10
   fairwayBehindTee: 2
   fairwayShortOfHole: 3.7
+  fairwayCapDepth: 2.5
+  fairwayIntoGreenGuardAngle: 25
+  fairwayIntoGreen: 0
   fairwayHalfWidth: 2.5
   fairwayWobble: 1.6
   stripeWidth: 1
@@ -157,3 +160,48 @@ MonoBehaviour:
   restCheckPower: {x: 0.02, y: 1}
   checkPowerStep: 0.02
   gapCheckMinPower: 0.3
+  propKit: {fileID: 11400000, guid: ddfdd4eb5bdd5184fb8ea37415a9d3ac, type: 2}
+  props:
+    par3:
+      clusters: {x: 2, y: 3}
+      members: {x: 2, y: 6}
+      clusterSpacing: 7
+    par4:
+      clusters: {x: 3, y: 5}
+      members: {x: 2, y: 6}
+      clusterSpacing: 8
+    par5:
+      clusters: {x: 4, y: 7}
+      members: {x: 2, y: 6}
+      clusterSpacing: 8
+    teeKeepOut: 3
+    greenKeepOut: 1.5
+    hazardKeepOut: 0.5
+    edgeMargin: 0.4
+    crownOverEdge: 0.5
+    endPastHole: 6
+    endFan: 60
+    clusterStartRoom: 1
+    startGrid: 1
+    clusterRadius: 3
+    memberTries: 10
+    memberSpacing: 0.85
+    inlandWeights: {x: 45, y: 25, z: 30}
+    bushShare: 80
+    edgeBand: 3
+    edgeThemeChance: 20
+    edgeFromPond: 3
+    edgeWallChance: 40
+    pondNear: 3.5
+    rimThemeChance: 80
+    rimGap: {x: 0.05, y: 0.4}
+    oliveScale: {x: 0.5, y: 0.8}
+    cypressScale: {x: 0.8, y: 1.1}
+    bushScale: {x: 0.8, y: 1.25}
+    rockSize: {x: 0.3, y: 0.9}
+    roundRockSize: {x: 0.3, y: 0.6}
+    cypressSpacing: {x: 1.3, y: 1.7}
+    wallLength: {x: 2.5, y: 4.5}
+    wallBesideLine: 1.1
+    shadowHeading: -125
+    shadowLength: 0.78

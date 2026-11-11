@@ -166,13 +166,15 @@ namespace IsoGolf.Tests
         [Test]
         public void HoleInOne_OnPinnedPar3s_StaysUnderOnePercent_AndNeverAtFullPower()
         {
-            // The fine sweep the target is defined on, on two pinned par 3s (about 3 s each). The mean over 50 seeds is an
+            // The fine sweep the target is defined on, on two pinned par 3s (about 3 s each), with their props and the flag pole as played. The mean over 50 seeds is an
             // explicit measurement (CourseCheckMeasurements.AceSweep_OverCheckedPar3s).
             foreach (int seed in new[] { 0, 9 })
             {
-                var ground = new BallGround(CheckedCourse.Generate(seed, 3, Settings, Shot).Layout);
-                ShotSweepResult fine = ShotSweep.Run(Shot, ground, ground.Tee, ground.Hole, 6f, 0.1f, 0.5f, 1f, 0.01f);
-                ShotSweepResult full = ShotSweep.Run(Shot, ground, ground.Tee, ground.Hole, 6f, 0.1f, 1f, 1f, 1f);
+                CourseLayout layout = CheckedCourse.Generate(seed, 3, Settings, Shot).Layout;
+                var ground = new BallGround(layout);
+                BallObstacles obstacles = BallObstacles.ForCourse(layout.PropShapes, ground, Shot);
+                ShotSweepResult fine = ShotSweep.Run(Shot, ground, ground.Tee, ground.Hole, 6f, 0.1f, 0.5f, 1f, 0.01f, obstacles);
+                ShotSweepResult full = ShotSweep.Run(Shot, ground, ground.Tee, ground.Hole, 6f, 0.1f, 1f, 1f, 1f, obstacles);
 
                 Assert.That(fine.HoledShare, Is.LessThan(0.01f), $"seed {seed}: {fine.HoledPowers}");
                 Assert.That(full.Holed, Is.EqualTo(0), $"seed {seed}");

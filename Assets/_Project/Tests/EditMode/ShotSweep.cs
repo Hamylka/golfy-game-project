@@ -51,7 +51,7 @@ namespace IsoGolf.Tests
         private const int StepLimit = 60 * 120;
 
         public static ShotSweepResult Run(ShotSettings settings, IBallGround ground, Vector2 tee, Vector2 hole,
-            float maxAngle = 6f, float angleStep = 0.1f, float minPower = 0.5f, float maxPower = 1f, float powerStep = 0.05f)
+            float maxAngle = 6f, float angleStep = 0.1f, float minPower = 0.5f, float maxPower = 1f, float powerStep = 0.05f, BallObstacles obstacles = null)
         {
             var result = new ShotSweepResult();
             var powers = new StringBuilder();
@@ -70,7 +70,7 @@ namespace IsoGolf.Tests
                 {
                     float angle = -maxAngle + a * angleStep;
                     Vector2 direction = Quaternion.Euler(0f, 0f, -angle) * (Vector3)straight;
-                    BallState end = PlayToEnd(settings, ground, tee, direction, power, out _, out _, out _);
+                    BallState end = PlayToEnd(settings, ground, tee, direction, power, out _, out _, out _, obstacles);
 
                     result.Shots++;
                     if (end == BallState.Holed)
@@ -123,9 +123,9 @@ namespace IsoGolf.Tests
         }
 
         private static BallState PlayToEnd(ShotSettings settings, IBallGround ground, Vector2 tee, Vector2 direction, float power,
-            out Vector3 firstLanding, out Vector3 rest, out int bounces)
+            out Vector3 firstLanding, out Vector3 rest, out int bounces, BallObstacles obstacles = null)
         {
-            var ball = new BallSimulation(ground, settings, tee);
+            var ball = new BallSimulation(ground, settings, tee, obstacles);
             firstLanding = ball.Position;
             ball.Shoot(direction, power);
             bool landed = false;
