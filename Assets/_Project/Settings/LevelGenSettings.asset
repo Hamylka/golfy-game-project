@@ -246,7 +246,7 @@ MonoBehaviour:
       fork: 30
     secondShapeChance: 25
     triesPerShape: 8
-    windowOrigin: 0
+    windowOrigin: 2
     islandLength: {x: 2.5, y: 5}
     islandWidth: {x: 1.2, y: 2}
     islandWobble: {x: 0.12, y: 0.25}

@@ -57,6 +57,10 @@ namespace IsoGolf.Generation
         public FairwayShapeKind? FirstDrawn { get; set; }
         public FairwayShapeKind? SecondDrawn { get; set; }
 
+        /// <summary>Whether the first draw's shape, and a par 5's second, found a place.</summary>
+        public bool FirstPlaced { get; set; }
+        public bool SecondPlaced { get; set; }
+
         /// <summary>Why tries failed, by reason, for the measurements.</summary>
         public Dictionary<string, int> Rejections { get; } = new Dictionary<string, int>();
 
@@ -118,12 +122,12 @@ namespace IsoGolf.Generation
             var placer = new Placer(bare, green, bends, dogleg, islandGreen, par, s, result.Rejections);
             if (kind != null)
             {
-                placer.Try(first, kind.Value, 0f);
+                result.FirstPlaced = placer.Try(first, kind.Value, 0f);
             }
 
             if (secondKind != null)
             {
-                placer.Try(second, secondKind.Value, s.FullReach);
+                result.SecondPlaced = placer.Try(second, secondKind.Value, s.FullReach);
             }
 
             return placer.Finish(result);
@@ -246,15 +250,17 @@ namespace IsoGolf.Generation
             private float Cap => _s.FairwayCapDepth;
 
             /// <param name="shift">How far the shot's origin is from the tee: 0 for the first shape, a full reach for a par 5's second.</param>
-            public void Try(SeededRandom random, FairwayShapeKind kind, float shift)
+            public bool Try(SeededRandom random, FairwayShapeKind kind, float shift)
             {
                 for (int attempt = 0; attempt < _r.TriesPerShape; attempt++)
                 {
                     if (kind == FairwayShapeKind.RoughIsland ? TryRoughIsland(random, shift) : TrySplit(random, shift))
                     {
-                        return;
+                        return true;
                     }
                 }
+
+                return false;
             }
 
             public FairwayShapeResult Finish(FairwayShapeResult result)

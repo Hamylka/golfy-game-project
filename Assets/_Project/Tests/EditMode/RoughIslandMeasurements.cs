@@ -55,19 +55,12 @@ namespace IsoGolf.Tests
                     }
 
                     secondDrawn += shapes.SecondDrawn != null && shapes.SecondDrawn != FairwayShapeKind.Fork ? 1 : 0;
-                    foreach (FairwayShape shape in layout.Plan.FairwayShapes)
+                    secondPlaced += shapes.SecondPlaced ? 1 : 0;
+                    if (shapes.FirstPlaced)
                     {
-                        // The first shape's window starts at the tee; a second (par 5) lies a full reach further on.
-                        bool second = shapes.SecondDrawn != null && shape.From > settings.FullReach + 10f;
-                        if (second)
-                        {
-                            secondPlaced++;
-                        }
-                        else
-                        {
-                            placed[shape.Kind]++;
-                            placedDogleg[shape.Kind] += dogleg ? 1 : 0;
-                        }
+                        FairwayShapeKind k = shapes.FirstDrawn.Value;
+                        placed[k]++;
+                        placedDogleg[k] += dogleg ? 1 : 0;
                     }
 
                     shapedBare += layout.Plan.FairwayShapes.Count > 0 ? 1 : 0;

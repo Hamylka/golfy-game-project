@@ -26,13 +26,13 @@ namespace IsoGolf.Generation
     /// <summary>What a par 4 or 5 shape's window is measured from. A par 3's shape has no window: anywhere its clearances allow.</summary>
     public enum ShapeWindowOrigin
     {
-        /// <summary>The tee (the plan): the drive's landing. A par 5's second shape: a full reach further on.</summary>
+        /// <summary>The tee (the plan's first wording): the drive's landing. A par 5's second shape: a full reach further on.</summary>
         TeeOnly,
 
         /// <summary>The tee and every rest spot of the bare safe route: each shot's landing.</summary>
         EveryShot,
 
-        /// <summary>No window: anywhere the clearances allow.</summary>
+        /// <summary>No window: anywhere the clearances allow (the director's choice, F3.2: "C, partout").</summary>
         Anywhere,
     }
 
@@ -53,7 +53,7 @@ namespace IsoGolf.Generation
         [SerializeField, Range(1, 32)] private int triesPerShape = 8;
 
         [Tooltip("What a par 4 or 5 shape's window (below) is measured from.")]
-        [SerializeField] private ShapeWindowOrigin windowOrigin = ShapeWindowOrigin.TeeOnly;
+        [SerializeField] private ShapeWindowOrigin windowOrigin = ShapeWindowOrigin.Anywhere;
 
         [Header("Rough island")]
         [Tooltip("The oval's length along the centreline.")]
