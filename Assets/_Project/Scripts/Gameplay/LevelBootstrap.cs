@@ -63,7 +63,9 @@ namespace IsoGolf.Gameplay
                 terrain.Build();
             }
 
-            islandCamera.SetIsland(terrain.Outline, terrain.Layout.Centreline.Points, GroundEdges(terrain.Edge));
+            // Framed on the outline without a fork's bulge (F3.3), so the zoomed-out scale stays the one every par shares; the
+            // edges, which bound where the view may go, keep the real outline.
+            islandCamera.SetIsland(new CourseFields(terrain.Layout).FramingOutline(terrain.Outline), terrain.Layout.Centreline.Points, GroundEdges(terrain.Edge));
             if (ball != null)
             {
                 // The visible ground, which the ball sits on, so the approach zoom frames a raised or lowered green right.

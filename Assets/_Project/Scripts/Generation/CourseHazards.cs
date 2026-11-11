@@ -926,30 +926,41 @@ namespace IsoGolf.Generation
 
         /// <summary>
         /// The shot that cuts a dogleg's corner: from the tee (the first bend) or from where a drive would leave the ball (the
-        /// second), to the point of the next leg a cutting shot's carry from it. False if the corner is too far to cut. Adds the
-        /// cut line to the plan once.
+        /// second), to the point of the next leg a cutting shot's carry from it. False if the corner is too far to cut. Geometry
+        /// only, no draw: the fork placement (F3.3) reads it too, so no cut line crosses a spine.
         /// </summary>
-        private bool CutLineFor(int bend, out Vector2 origin, out Vector2 cut, out float cutAlong)
+        internal static bool CutLine(CoursePath path, IReadOnlyList<float> bends, int bend, LevelGenSettings s, out Vector2 origin, out Vector2 cut, out float cutAlong)
         {
-            float carry = _s.CarryAt(_s.CutPower);
-            float bendAlong = _bends[bend];
-            origin = bend == 0 ? _tee : _bare.Centreline.PointAt(Mathf.Max(0f, bendAlong - (carry * 0.8f)));
+            float carry = s.CarryAt(s.CutPower);
+            float bendAlong = bends[bend];
+            origin = bend == 0 ? path.Start : path.PointAt(Mathf.Max(0f, bendAlong - (carry * 0.8f)));
             cut = origin;
             cutAlong = bendAlong;
-            if (Geo.Cm(Vector2.Distance(origin, _bare.Centreline.PointAt(bendAlong))) > Geo.Cm(carry))
+            if (Geo.Cm(Vector2.Distance(origin, path.PointAt(bendAlong))) > Geo.Cm(carry))
             {
                 return false;
             }
 
-            float legEnd = bend + 1 < _bends.Count ? _bends[bend + 1] : _length;
-            for (float s = bendAlong; s <= legEnd + 0.001f; s += 0.25f)
+            float legEnd = bend + 1 < bends.Count ? bends[bend + 1] : path.Length;
+            for (float t = bendAlong; t <= legEnd + 0.001f; t += 0.25f)
             {
-                cutAlong = Mathf.Min(s, legEnd);
-                cut = _bare.Centreline.PointAt(cutAlong);
+                cutAlong = Mathf.Min(t, legEnd);
+                cut = path.PointAt(cutAlong);
                 if (Geo.Cm(Vector2.Distance(origin, cut)) >= Geo.Cm(carry))
                 {
                     break;
                 }
+            }
+
+            return true;
+        }
+
+        /// <summary>The corner's cut line (<see cref="CutLine"/>), added to the plan once.</summary>
+        private bool CutLineFor(int bend, out Vector2 origin, out Vector2 cut, out float cutAlong)
+        {
+            if (!CutLine(_bare.Centreline, _bends, bend, _s, out origin, out cut, out cutAlong))
+            {
+                return false;
             }
 
             bool known = false;

@@ -400,6 +400,64 @@ namespace IsoGolf.Generation
         }
 
         /// <summary>
+        /// A point of the island's edge moved back across onto the outline without its bulge (F3.3): pulled toward its island's
+        /// axis by that point's own bulge term, so the camera can frame the course at the scale it had before the fork widened it
+        /// (CLAUDE.md, Screen: every par zooms out to the same width-set scale). The point itself where no bulge reaches.
+        /// </summary>
+        public Vector3 WithoutBulge(Vector3 p)
+        {
+            // The island whose border the point lies on: the one whose field is nearest zero there.
+            IslandOutline owner = default;
+            float best = float.MaxValue;
+            foreach (IslandOutline island in _layout.Islands)
+            {
+                float field = Mathf.Abs(Island(p, island));
+                if (field < best)
+                {
+                    best = field;
+                    owner = island;
+                }
+            }
+
+            if (!owner.HasBulge)
+            {
+                return p;
+            }
+
+            Vector3 own = owner.ToOwnFrame(p);
+            float local = (own.x - owner.CenterX) / owner.HalfLength;
+            float along = 1f - (local * local);
+            float extra = along <= 0f ? 0f : owner.BulgeAt(own.x, own.z) * Mathf.Sqrt(along);
+            if (extra <= 0f)
+            {
+                return p;
+            }
+
+            float z = own.z - (Mathf.Sign(own.z) * Mathf.Min(extra, Mathf.Abs(own.z)));
+            if (owner.IsOnAxis)
+            {
+                return new Vector3(own.x, p.y, z);
+            }
+
+            float radians = owner.Heading * Mathf.Deg2Rad;
+            float cos = Mathf.Cos(radians), sin = Mathf.Sin(radians);
+            float dx = own.x - owner.CenterX;
+            return new Vector3(owner.CenterX + (dx * cos) - (z * sin), p.y, owner.CenterZ + (dx * sin) + (z * cos));
+        }
+
+        /// <summary>The camera's framing points for a course: its outline with every bulge left out (<see cref="WithoutBulge"/>).</summary>
+        public List<Vector3> FramingOutline(IReadOnlyList<Vector3> outline)
+        {
+            var points = new List<Vector3>(outline.Count);
+            foreach (Vector3 p in outline)
+            {
+                points.Add(WithoutBulge(p));
+            }
+
+            return points;
+        }
+
+        /// <summary>
         /// The island's field with every bulge left out (F3.3): the outline the course had before its fork widened it. The same
         /// as <see cref="Island(Vector3)"/> on a course with no bulge.
         /// </summary>

@@ -452,8 +452,10 @@ namespace IsoGolf.Generation
                     }
                     else if (shape.Kind == FairwayShapeKind.Fork)
                     {
-                        pieces.Add(new FairwayPiece(from, shape.From, Fairway.HalfWidth, fromCap, 0f));
-                        from = shape.To;
+                        // The main strip overlaps each branch's eased end by half a metre: two flat cuts meeting exactly would leave a
+                        // line of zero field across the fairway, which the terrain would read as a border.
+                        pieces.Add(new FairwayPiece(from, shape.From + ForkOverlap, Fairway.HalfWidth, fromCap, 0f));
+                        from = shape.To - ForkOverlap;
                         fromCap = 0f;
                     }
                 }
@@ -608,6 +610,15 @@ namespace IsoGolf.Generation
 
                 GroundKeepOut spine = GroundKeepOut.OfSpine(fields, safe, risky, from, to);
 
+                // No dogleg's cut line may cross it either (the fork keeps off the bends, but a long cut from the tee can still reach it).
+                for (int bend = 0; _dogleg && bend < _bends.Count; bend++)
+                {
+                    if (HazardPlacer.CutLine(_path, _bends, bend, _s, out Vector2 cutFrom, out Vector2 cutTo, out _) && spine.Crosses(cutFrom, cutTo, _path))
+                    {
+                        return Reject("fork: a cut line crosses the spine");
+                    }
+                }
+
                 // The direct line follows the risky branch when it runs over the fork (plan §3, Q5 A): two segments, neither crossing the spine.
                 Vector2? waypoint = null;
                 if (Geo.Cm(originAlong) <= Geo.Cm(from))
@@ -637,6 +648,8 @@ namespace IsoGolf.Generation
                 _reaches.Add(new Vector2(from, to));
                 return true;
             }
+
+            private const float ForkOverlap = 0.5f;
 
             private static float CeilCm(float metres) => Mathf.Ceil((metres * 100f) - 0.0001f) / 100f;
 
