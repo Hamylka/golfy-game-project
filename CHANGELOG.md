@@ -4,6 +4,32 @@ All notable progress on Iso Golf. The format follows [Keep a Changelog](https://
 
 ## [Unreleased]
 
+### 2026-11-11: rough islands and splits (`feature/fairway-rough-islands`, F3.2)
+
+#### Added
+
+- Fairway shapes drawn for real (split fairway plan §1, §3, §5): **rough islands** (par 3, 4 and 5) and **splits** (par 4 and 5). `FairwayShapePlacer` draws from a new stream, **salt 8**, after `GreenAndPin` and before the hazards. It draws nothing from the main or surfaces streams, so islands, slopes, green, pin and the first hazard candidate stay bit for bit. Draw order: the kind (one integer over the par's weights), then up to `triesPerShape` (8) tries, each a fixed list: rough island length, width, wobble, start; split band length, start. The start is one even integer draw over every centimetre where the static rules hold. Sizes come before the start because the valid starts depend on them; this deviates from §5's wording. A par 5 may draw a second shape on sub-stream 2 (`secondShapeChance` 25%, director via the hub, Q3 A).
+- **Rough island**: an oval of rough 2.5-5 m long, 1.2-2 m wide, turned along the centreline, inside a widening piece eased over 4 m. Its half width is the oval's true reach plus 2 m, minus the lowest edge wobble over the oval, so 2 m of fairway hold at every point (Q1 A, whole cm). The widened edge stays 1 m inside the island.
+- **Split**: the main strip cut into two pieces whose rounded tips (`fairwayCapDepth`) meet at the centreline across a 1.5-3 m band.
+- Clearances on the rough's reach: tee 6 m, a gap's tips 6 m (split 10 m), dogleg bends `gapFromBend` and soft bends `gapFromSoftBend` (the gaps' rule), the fairway's tips 2 m, another shape 6 m, never on an island green's island. Forks are drawn (so F3.3 moves nothing) but leave the course plain until F3.3.
+- `GroundKeepOut` and `RouteWorld.WithKeepOuts`: a rest spot whose landing capsule, or the final approach, touches a shape is blocked, with no margin (Q5 A; a band blocks its whole tip reach). Each try re-runs `SafeRoute.Find`, and a shape that finds no place leaves the course plain (never a missing role). The hazards run on the same keep-out world. With no keep-out the world is unchanged, so plain courses route exactly as before.
+- Hazards keep off shapes (`RuleOffShapes`): at least `max(hazardSpacing, 2 m)` from an oval (Q6 A said `hazardSpacing`; 2 m keeps the fairway passage the rough island promises, which the ball test caught at 1.2 m), and nothing in a band's tip reach across the fairway.
+- `LevelGenSettings.fairwayShapes` (`FairwayShapeRules`): integer weights per par (par 3 80/20/0/0, par 4 45/20/15/20, par 5 35/20/15/30 plain/island/split/fork), sizes, clearances, `windowOrigin`. Written to the asset through the Editor.
+- Tests `FairwayShapeTests` (5, seeds 0-49 × variants 0-3, each with an Explicit 0-199 `_FullSweep` twin): `RoughIslandsAndBandsNeverTouchACapsule`, `ShapesKeepClearOfTeeGapsBendsAndEnds`, `ShapedCoursesKeepASafeRoute`, `ShapeStreamNeverMovesIslandsOrHazardCandidates`, `ABallOnARoughIslandIsOnRough`. Explicit measurements `RoughIslandMeasurements.ShapeShares` and `MovedPins`. `PlainCoursesAreBitIdentical` skips courses that tried a shape on any variant; its reference file is unchanged.
+- Captures in `Docs/Screenshots/fairway-rough-islands/` (Editor, `Main`'s Island Camera, 1080x2400, default zoom and fully zoomed out): par 3 seed 1 rough island, par 4 seed 3 rough island, par 4 seed 1 split.
+
+#### Changed (director's decision, relayed by the hub)
+
+- **Where shapes sit**: §1 put a rough island "at a full drive's landing" (26-31 m from the tee) and a band at 20-26 m. On par 4 those windows sit where the generator puts the bend and often the gap, so they almost never yielded a place. Director: "C, partout". `windowOrigin` is `Anywhere` (`TeeOnly` and `EveryShot` stay available). Sensitivity, seeds 0-99, share of courses (rough island / split): from the tee, par 4 1% / 2%, par 5 7% / 12%; from the tee and every rest spot, 2% / 3%, 12% / 14%; anywhere, 17% / 14%, 30% / 16%. Recorded in the plan's Decisions.
+
+#### Measured (EditMode, Editor x64 Mono, seeds 0-199 unless said)
+
+- Shares of courses, variant 0 (target in brackets): par 3 rough islands 11.5% (20%; 25 tries fail on the island-edge margin, 69 find no start); par 4 rough islands 16.5% (20%), splits 14.5% (15%); par 5 rough islands 20.5% (20%), splits 14.5% (15%), second shapes 20 drawn, 20 placed. Checked courses with a shape: 24 / 63 / 87 of 200.
+- Reroll survey: 1 / 29 / 26 rerolled, none exhausted (unchanged). Props per checked course 5.0 / 9.0 / 14.3.
+- Ace sweep, checked par 3 seeds 0-49: mean 0.59% (bare 0.49%), max 0.86% (seed 46), no seed at 1%, full power never holes.
+- Bare generation 14.6 / 28.0 / 39.0 ms per course in the Editor (no phone figure).
+- Moved pins: par 3 seed 1 (`Main`), par 5 seed 6 (F1 heading) and par 5 seed 33 (`CameraCourse.LongPath`) now carry a shape. Their tests pass unchanged, so their purposes hold and nothing is re-pinned. Par 5 seeds 120 and 103 (PR 4.4 reviews), par 4 seeds 4 and 42, par 3 seed 0 are unchanged.
+
 ### 2026-11-11: fairway pieces (`feature/fairway-pieces`, F3.1)
 
 #### Added
