@@ -239,7 +239,22 @@ namespace IsoGolf.Generation
     /// </summary>
     public readonly struct FairwayLayout
     {
-        public FairwayLayout(float start, float end, float halfWidth, float wobble, float stripeWidth, float noiseOffset = 0f, float startCap = 0f, float endCap = 0f)
+        /// <param name="pieces">
+        /// The strips the fairway is made of, on a generated course (split fairway plan §2). Null or empty gives the plain fairway:
+        /// one piece from <paramref name="start"/> to <paramref name="end"/>, offset 0, <paramref name="halfWidth"/>, the two caps.
+        /// </param>
+        /// <param name="roughOvals">Ovals of rough cut out of the pieces. Null for none.</param>
+        public FairwayLayout(
+            float start,
+            float end,
+            float halfWidth,
+            float wobble,
+            float stripeWidth,
+            float noiseOffset = 0f,
+            float startCap = 0f,
+            float endCap = 0f,
+            IEnumerable<FairwayPiece> pieces = null,
+            IEnumerable<EllipseShape> roughOvals = null)
         {
             StartCap = startCap;
             EndCap = endCap;
@@ -249,7 +264,29 @@ namespace IsoGolf.Generation
             HalfWidth = halfWidth;
             Wobble = wobble;
             StripeWidth = stripeWidth;
+
+            FairwayPiece[] given = pieces == null ? new FairwayPiece[0] : new List<FairwayPiece>(pieces).ToArray();
+            _pieces = given.Length > 0 ? given : new[] { FairwayPiece.Plain(start, end, halfWidth, startCap, endCap) };
+            _roughOvals = roughOvals == null ? new EllipseShape[0] : new List<EllipseShape>(roughOvals).ToArray();
         }
+
+        private readonly FairwayPiece[] _pieces;
+        private readonly EllipseShape[] _roughOvals;
+
+        /// <summary>
+        /// The strips whose union is the fairway, read only on a generated course (<see cref="CourseLayout.AlongCentreline"/>). One
+        /// piece on a plain course. Every piece shares the edge wobble, so where two overlap their borders carry the same noise.
+        /// </summary>
+        public IReadOnlyList<FairwayPiece> Pieces => _pieces ?? new FairwayPiece[0];
+
+        /// <summary>Ovals of rough cut out of the pieces (rough islands, F3.2). Empty on a plain course.</summary>
+        public IReadOnlyList<EllipseShape> RoughOvals => _roughOvals ?? new EllipseShape[0];
+
+        /// <summary>
+        /// True for the one-strip fairway every course had before F3.1: a single piece with no offset and no ease, and no rough
+        /// oval. Its field is the old strip's, bit for bit.
+        /// </summary>
+        public bool IsPlain => Pieces.Count == 1 && Pieces[0].IsPlain && RoughOvals.Count == 0;
 
         public float Start { get; }
         public float End { get; }
@@ -268,6 +305,112 @@ namespace IsoGolf.Generation
 
         /// <summary>The same at the end: the strip narrows to a point at <see cref="End"/> over this length. 0 is a flat cut.</summary>
         public float EndCap { get; }
+    }
+
+    /// <summary>
+    /// One strip of a generated fairway, described in the main centreline's frame (split fairway plan §2): it runs from
+    /// <see cref="From"/> to <see cref="To"/> metres along the centreline, its middle sits <see cref="Offset"/> metres across it
+    /// (positive on the left, like <see cref="CoursePath.Project"/>), and it is <see cref="HalfWidth"/> half wide, plus the fairway's
+    /// edge wobble. The offset and the half width can ease in from their edge values (0, <see cref="EdgeHalfWidth"/>) at both ends
+    /// with a smoothstep, so a branch opens and closes like a Y and a widening swells smoothly. Each end is a rounded tip reaching
+    /// its cap in along the strip, or a flat cut (cap 0) where the piece joins another one that overlaps it.
+    /// </summary>
+    public readonly struct FairwayPiece
+    {
+        public FairwayPiece(
+            float from,
+            float to,
+            float halfWidth,
+            float fromCap = 0f,
+            float toCap = 0f,
+            float offset = 0f,
+            float offsetEase = 0f,
+            float edgeHalfWidth = 0f,
+            float widthEase = 0f)
+        {
+            From = from;
+            To = to;
+            HalfWidth = halfWidth;
+            FromCap = fromCap;
+            ToCap = toCap;
+            Offset = offset;
+            OffsetEase = offsetEase;
+            EdgeHalfWidth = edgeHalfWidth;
+            WidthEase = widthEase;
+        }
+
+        /// <summary>The plain strip: offset 0, one half width all along, no ease.</summary>
+        public static FairwayPiece Plain(float from, float to, float halfWidth, float fromCap, float toCap) =>
+            new FairwayPiece(from, to, halfWidth, fromCap, toCap);
+
+        /// <summary>Where the piece starts and ends, in metres along the centreline from the tee (its tips included).</summary>
+        public float From { get; }
+        public float To { get; }
+
+        /// <summary>The half width between the eases, before the wobble is added.</summary>
+        public float HalfWidth { get; }
+
+        /// <summary>How far the rounded tip at each end reaches in along the strip (a quarter ellipse). 0 is a flat cut.</summary>
+        public float FromCap { get; }
+        public float ToCap { get; }
+
+        /// <summary>The middle's distance across the centreline between the eases, positive on its left. 0 at both ends when eased.</summary>
+        public float Offset { get; }
+
+        /// <summary>The length over which the offset eases in from 0 at each end. 0 holds the offset all along.</summary>
+        public float OffsetEase { get; }
+
+        /// <summary>The half width at both ends when <see cref="WidthEase"/> is set.</summary>
+        public float EdgeHalfWidth { get; }
+
+        /// <summary>The length over which the half width eases from <see cref="EdgeHalfWidth"/> at each end. 0 holds it all along.</summary>
+        public float WidthEase { get; }
+
+        /// <summary>No offset and no ease: the strip every course had before F3.1.</summary>
+        public bool IsPlain => Offset == 0f && OffsetEase <= 0f && WidthEase <= 0f;
+
+        /// <summary>The offset at this distance along the centreline.</summary>
+        public float OffsetAt(float along)
+        {
+            if (OffsetEase <= 0f || Offset == 0f)
+            {
+                return Offset;
+            }
+
+            float ease = Ease(along, OffsetEase);
+            return ease >= 1f ? Offset : Offset * ease;
+        }
+
+        /// <summary>The half width at this distance along the centreline, before the wobble.</summary>
+        public float HalfWidthAt(float along)
+        {
+            if (WidthEase <= 0f)
+            {
+                return HalfWidth;
+            }
+
+            // The stored value itself between the eases: Lerp(a, b, 1) is not always exactly b in floats.
+            float ease = Ease(along, WidthEase);
+            return ease >= 1f ? HalfWidth : (ease <= 0f ? EdgeHalfWidth : EdgeHalfWidth + ((HalfWidth - EdgeHalfWidth) * ease));
+        }
+
+        /// <summary>0 at both ends of the piece, 1 between the two eases, a smoothstep over each ease length.</summary>
+        private float Ease(float along, float length)
+        {
+            float into = Mathf.Min(along - From, To - along);
+            if (into >= length)
+            {
+                return 1f;
+            }
+
+            if (into <= 0f)
+            {
+                return 0f;
+            }
+
+            float t = into / length;
+            return t * t * (3f - (2f * t));
+        }
     }
 
     /// <summary>A green: its outline and its tilt, the rise per metre along X and along Z, measured from the hole.</summary>

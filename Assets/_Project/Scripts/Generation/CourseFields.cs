@@ -113,24 +113,49 @@ namespace IsoGolf.Generation
                 return Mathf.Max(across, along);
             }
 
-            // The same strip, unbent along the centreline: the distance along it plays the part of X, the distance across
-            // it the part of Z. Around the outside of a bend the edge rounds off, so the strip keeps its width there.
+            // The strips, unbent along the centreline: the distance along it plays the part of X, the distance across it the
+            // part of Z. Around the outside of a bend the edge rounds off, so a strip keeps its width there. One projection and
+            // one wobble for every piece (split fairway plan §2): the fairway is the union of its pieces (the lowest field),
+            // minus its rough ovals (the highest of that and each oval's field turned inside out).
             float s = _layout.Centreline.Project(new Vector2(p.x, p.z), out float side);
             float pathWobble = (CourseNoise.Value01((s * 0.2f) + 70f + fairway.NoiseOffset, 1.3f) - 0.5f) * fairway.Wobble;
-            float pathAcross = Mathf.Abs(side) - (fairway.HalfWidth + pathWobble);
-            if (fairway.StartCap <= 0f && fairway.EndCap <= 0f)
+            IReadOnlyList<FairwayPiece> pieces = fairway.Pieces;
+            float result = Nowhere;
+            for (int i = 0; i < pieces.Count; i++)
             {
-                return Mathf.Max(pathAcross, Mathf.Max(fairway.Start - s, s - fairway.End));
+                result = Mathf.Min(result, PieceField(pieces[i], s, side, pathWobble));
+            }
+
+            IReadOnlyList<EllipseShape> ovals = fairway.RoughOvals;
+            for (int i = 0; i < ovals.Count; i++)
+            {
+                result = Mathf.Max(result, -Ellipse(p, ovals[i]));
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// One piece's field, from the point's distance along the centreline and across it. A plain piece (offset 0, no ease) does
+        /// exactly the operations the one-strip fairway did before F3.1, in the same order, so its floats are the same bits.
+        /// </summary>
+        internal static float PieceField(FairwayPiece piece, float s, float side, float wobble)
+        {
+            float offset = piece.OffsetAt(s);
+            float across = offset == 0f ? Mathf.Abs(side) : Mathf.Abs(side - offset);
+            float pathAcross = across - (piece.HalfWidthAt(s) + wobble);
+            if (piece.FromCap <= 0f && piece.ToCap <= 0f)
+            {
+                return Mathf.Max(pathAcross, Mathf.Max(piece.From - s, s - piece.To));
             }
 
             // Rounded tips: a quarter ellipse at each capped end, so the strip never finishes in a flat cut. Where `u` (how far into
             // the cap) is positive the half width shrinks as 1 - (u/cap)^2; the field there is the across distance with the
             // along distance scaled to the same units, and it equals the plain strip's field wherever u <= 0.
-            float half = fairway.HalfWidth + pathWobble;
-            float side2 = Mathf.Abs(side);
+            float half = piece.HalfWidthAt(s) + wobble;
             float result = pathAcross;
-            result = Mathf.Max(result, CapField(fairway.StartCap, (fairway.Start + fairway.StartCap) - s, fairway.Start - s, side2, half));
-            result = Mathf.Max(result, CapField(fairway.EndCap, s - (fairway.End - fairway.EndCap), s - fairway.End, side2, half));
+            result = Mathf.Max(result, CapField(piece.FromCap, (piece.From + piece.FromCap) - s, piece.From - s, across, half));
+            result = Mathf.Max(result, CapField(piece.ToCap, s - (piece.To - piece.ToCap), s - piece.To, across, half));
             return result;
         }
 
