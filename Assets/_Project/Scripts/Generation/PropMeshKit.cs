@@ -14,6 +14,7 @@ namespace IsoGolf.Generation
     {
         private float _swayBase;
         private float _swaySpan;
+        private float _swayPhase;
 
         public PropMeshKit(TerrainMeshData mesh)
         {
@@ -24,12 +25,13 @@ namespace IsoGolf.Generation
 
         /// <summary>
         /// From now on, vertices get a sway weight (UV1.x) that rises from 0 at <paramref name="baseY"/> to 1
-        /// <paramref name="span"/> metres above it. Foliage turns it on; trunks, rocks and walls leave it off.
+        /// <paramref name="span"/> metres above it, with <paramref name="phase"/> (0..1, one per tree) in UV1.y. Foliage turns it on; trunks, rocks and walls leave it off.
         /// </summary>
-        public void SetSway(float baseY, float span)
+        public void SetSway(float baseY, float span, float phase = 0f)
         {
             _swayBase = baseY;
             _swaySpan = span;
+            _swayPhase = phase;
         }
 
         public void ClearSway()
@@ -56,7 +58,7 @@ namespace IsoGolf.Generation
         {
             if (_swaySpan > 0f)
             {
-                Mesh.Add(a, b, c, facing, color, SwayAt(a), SwayAt(b), SwayAt(c));
+                Mesh.Add(a, b, c, facing, color, SwayAt(a), SwayAt(b), SwayAt(c), _swayPhase);
             }
             else
             {
