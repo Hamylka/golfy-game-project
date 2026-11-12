@@ -8,6 +8,7 @@
         "IsoGolf.Generation",
         "IsoGolf.Gameplay",
         "IsoGolf.UI",
+        "IsoGolf.EditorTools",
         "Unity.RenderPipelines.Universal.Runtime"
     ],
     "includePlatforms": [
