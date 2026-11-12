@@ -100,7 +100,7 @@ namespace IsoGolf.Tests
             var clock = Stopwatch.StartNew();
             var failures = new StringBuilder();
             string[] parts = { "fields", "mesh", "layout" };
-            int compared = 0;
+            int compared = 0, nowForks = 0;
             for (int i = 0; i < reference.Length; i += 5)
             {
                 int par = (int)reference[i], seed = (int)reference[i + 1];
@@ -109,7 +109,17 @@ namespace IsoGolf.Tests
                     continue;
                 }
 
-                ulong[] h = PlainCourseReferenceTests.Hashes(CheckedCourse.Generate(seed, par, CourseGeneratorTests.Settings, CourseCheckMeasurements.Shot));
+                CheckedCourseResult result = CheckedCourse.Generate(seed, par, CourseGeneratorTests.Settings, CourseCheckMeasurements.Shot);
+
+                // F3.3's fork weights take plain's range from its top: a par 5 whose other draw (the first or the second shape's)
+                // was plain may now draw a fork, which is a fork course, no longer one this guard compares.
+                if (!Compared(seed, par, result))
+                {
+                    nowForks++;
+                    continue;
+                }
+
+                ulong[] h = PlainCourseReferenceTests.Hashes(result);
                 for (int k = 0; k < 3; k++)
                 {
                     if (h[k] != reference[i + 2 + k])
@@ -121,7 +131,7 @@ namespace IsoGolf.Tests
                 compared++;
             }
 
-            Debug.Log($"SHAPED_REFERENCE compared {compared} shaped courses (seeds 0-{seeds - 1}) in {clock.Elapsed.TotalSeconds:F1} s");
+            Debug.Log($"SHAPED_REFERENCE compared {compared} shaped courses (seeds 0-{seeds - 1}), {nowForks} now drawing a fork skipped, in {clock.Elapsed.TotalSeconds:F1} s");
             Assert.That(compared, Is.GreaterThan(0));
             Assert.That(failures.Length, Is.Zero, failures.ToString());
         }

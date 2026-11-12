@@ -12,14 +12,28 @@ namespace IsoGolf.Generation
         [SerializeField, Min(0)] private int split;
         [SerializeField, Min(0)] private int fork;
 
-        public int Plain => plain;
+        [Tooltip("Of plain's weight, the share at the top of its range that draws a fork instead (F3.3, director: \"A, 2,5 m\"). " +
+                 "It moves no other shape's range, so rough islands and splits stay as drawn.")]
+        [SerializeField, Min(0)] private int forkFromPlain;
+
+        /// <summary>The weight that draws plain: <see cref="PlainRange"/> less what forks take from its top.</summary>
+        public int Plain => Mathf.Max(0, plain - forkFromPlain);
         public int RoughIsland => roughIsland;
         public int Split => split;
-        public int Fork => fork;
+
+        /// <summary>The weight that draws a fork: its own range plus the top of plain's.</summary>
+        public int Fork => fork + Mathf.Min(forkFromPlain, plain);
+
+        /// <summary>Plain's whole range, the first in the draw, before forks take its top: the ranges after it never move.</summary>
+        public int PlainRange => plain;
+
+        /// <summary>How much of plain's range draws a fork.</summary>
+        public int ForkFromPlain => Mathf.Min(forkFromPlain, plain);
+
         public int Total => plain + roughIsland + split + fork;
 
-        public static FairwayShapeWeights Create(int plain, int roughIsland, int split, int fork) =>
-            new FairwayShapeWeights { plain = plain, roughIsland = roughIsland, split = split, fork = fork };
+        public static FairwayShapeWeights Create(int plain, int roughIsland, int split, int fork, int forkFromPlain = 0) =>
+            new FairwayShapeWeights { plain = plain, roughIsland = roughIsland, split = split, fork = fork, forkFromPlain = forkFromPlain };
     }
 
     /// <summary>What a par 4 or 5 shape's window is measured from. A par 3's shape has no window: anywhere its clearances allow.</summary>
@@ -44,8 +58,8 @@ namespace IsoGolf.Generation
     {
         [Header("Weights per par")]
         [SerializeField] private FairwayShapeWeights par3 = FairwayShapeWeights.Create(80, 20, 0, 0);
-        [SerializeField] private FairwayShapeWeights par4 = FairwayShapeWeights.Create(45, 20, 15, 20);
-        [SerializeField] private FairwayShapeWeights par5 = FairwayShapeWeights.Create(35, 20, 15, 30);
+        [SerializeField] private FairwayShapeWeights par4 = FairwayShapeWeights.Create(45, 20, 15, 20, 45);
+        [SerializeField] private FairwayShapeWeights par5 = FairwayShapeWeights.Create(35, 20, 15, 30, 35);
         [Tooltip("Chance, in percent, that a par 5 draws a second shape on the second shot's stretch (its own sub-stream).")]
         [SerializeField, Range(0, 100)] private int secondShapeChance = 25;
         [Tooltip("Candidates tried per shape before the course stays plain. Each draws the same fixed list of numbers.")]
@@ -93,8 +107,8 @@ namespace IsoGolf.Generation
         [SerializeField, Min(0f)] private float forkEdgeMargin = 1f;
         [Tooltip("The island bulge eases in and out over this length beyond the fork (director: \"A, renflement\").")]
         [SerializeField, Min(0.5f)] private float bulgeEase = 4f;
-        [Tooltip("The most the island may bulge on one side; a fork needing more finds no place there (hub, Q6).")]
-        [SerializeField, Min(0f)] private float maxBulge = 1.5f;
+        [Tooltip("The most the island may bulge on one side; a fork needing more finds no place there (director: \"A, 2,5 m\"; 2.0 m is the fallback if the outline reads too wide).")]
+        [SerializeField, Min(0f)] private float maxBulge = 2.5f;
         [Tooltip("Chance, in percent, that the branch guard is water (falling back to sand like the other roles).")]
         [SerializeField, Range(0, 100)] private int branchGuardWaterChance = 20;
         [Tooltip("A fork rejoins at least this far before the fairway's end tip starts (plan §1: the cap depth).")]

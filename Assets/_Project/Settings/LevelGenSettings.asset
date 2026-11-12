@@ -234,16 +234,19 @@ MonoBehaviour:
       roughIsland: 20
       split: 0
       fork: 0
+      forkFromPlain: 0
     par4:
       plain: 45
       roughIsland: 20
       split: 15
       fork: 20
+      forkFromPlain: 45
     par5:
       plain: 35
       roughIsland: 20
       split: 15
       fork: 30
+      forkFromPlain: 35
     secondShapeChance: 25
     triesPerShape: 8
     windowOrigin: 2
@@ -256,6 +259,17 @@ MonoBehaviour:
     islandEdgeMargin: 1
     bandLength: {x: 1.5, y: 3}
     bandWindow: {x: 20, y: 26}
+    spineLength: {x: 8, y: 14}
+    spineWidth: {x: 3.5, y: 4}
+    safeBranchWidth: {x: 2.4, y: 2.6}
+    riskyBranchWidth: {x: 2.2, y: 2.4}
+    forkEase: 4
+    branchWobbleScale: 0.25
+    forkEdgeMargin: 1
+    bulgeEase: 4
+    maxBulge: 2.5
+    branchGuardWaterChance: 20
+    forkBeforeEndTip: 2.5
     fromTee: 6
     fromGap: 6
     splitFromGap: 10

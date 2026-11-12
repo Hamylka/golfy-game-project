@@ -248,6 +248,23 @@ namespace IsoGolf.Generation
             return placer.Finish(result);
         }
 
+        /// <summary>Where a course's fork moves the safe route's rest spots across (none without a fork), from its plan's shapes.</summary>
+        internal static RouteOffset? RouteOffsetOf(IReadOnlyList<FairwayShape> shapes, LevelGenSettings s)
+        {
+            if (shapes != null)
+            {
+                foreach (FairwayShape shape in shapes)
+                {
+                    if (shape.Kind == FairwayShapeKind.Fork)
+                    {
+                        return new RouteOffset(shape.From, shape.To, shape.RestOffset, s.FairwayShapes.ForkEase);
+                    }
+                }
+            }
+
+            return null;
+        }
+
         /// <summary>One integer draw over the weights. Plain gives null.</summary>
         private static FairwayShapeKind? DrawKind(SeededRandom random, FairwayShapeWeights w)
         {
@@ -258,12 +275,13 @@ namespace IsoGolf.Generation
             }
 
             int pick = random.Int(0, total - 1);
-            if (pick < w.Plain)
+            if (pick < w.PlainRange)
             {
-                return null;
+                // The top of plain's range draws a fork (F3.3): the ranges after it, so every rough island and split, never move.
+                return pick < w.PlainRange - w.ForkFromPlain ? (FairwayShapeKind?)null : FairwayShapeKind.Fork;
             }
 
-            pick -= w.Plain;
+            pick -= w.PlainRange;
             if (pick < w.RoughIsland)
             {
                 return FairwayShapeKind.RoughIsland;
@@ -587,7 +605,7 @@ namespace IsoGolf.Generation
                 IReadOnlyList<IslandOutline> islands = Bulged(from, to, safeSign > 0f ? bulgeSafe : bulgeRisky, safeSign > 0f ? bulgeRisky : bulgeSafe);
 
                 // The candidate course: its bulged islands and every piece placed so far plus the fork's.
-                var shapes = new List<FairwayShape>(_shapes) { new FairwayShape(FairwayShapeKind.Fork, from, to, safeSign * safeOffset, -safeSign * riskyOffset) };
+                var shapes = new List<FairwayShape>(_shapes) { new FairwayShape(FairwayShapeKind.Fork, from, to, safeSign * safeOffset, -safeSign * riskyOffset, safeSign * rest) };
                 var candidate = new ForkPlan { Safe = safe, Risky = risky, Islands = islands, BulgeSafe = bulgeSafe, BulgeRisky = bulgeRisky };
                 CourseLayout layout = _build(islands, Pieces(shapes, candidate), new List<EllipseShape>(_ovals));
                 var fields = new CourseFields(layout);
@@ -631,7 +649,7 @@ namespace IsoGolf.Generation
                 }
 
                 // The safe route rests on the safe branch, its capsules off the spine, and no step crosses it.
-                var world = new RouteWorld(fields, _path, _s, _green.SafeTarget, _green.Approach, _par - 1 + _s.SafeRouteExtraShots, new RouteOffset(from, to, safeSign * rest, ease));
+                var world = new RouteWorld(fields, _path, _s, _green.SafeTarget, _green.Approach, _par - 1 + _s.SafeRouteExtraShots, RouteOffsetOf(shapes, _s));
                 var keepOuts = new List<GroundKeepOut>(_keepOuts) { spine };
                 if (_bareRoute && SafeRoute.Find(world.WithKeepOuts(keepOuts), new List<HazardOutline>(), out _) == null)
                 {

@@ -197,6 +197,56 @@ namespace IsoGolf.Tests
         }
 
         [Test, Timeout(900000)]
+        public void ForksKeepClearOfTeeGapsAndDoglegBends() => Check(50, KeepClear);
+
+        [Test, Explicit("Full sweep, seeds 0-199"), Timeout(3600000)]
+        public void ForksKeepClearOfTeeGapsAndDoglegBends_FullSweep() => Check(200, KeepClear);
+
+        /// <summary>
+        /// Plan §1 and Q7 A: no fork within 6 m of the tee or a gap's tips, none on an island green's island, and on a dogleg none within
+        /// the gaps' bend clearance of a bend (a soft bend may run under a fork). The islands are the bare course's, bulge aside.
+        /// </summary>
+        private static void KeepClear(Forked f, StringBuilder failures)
+        {
+            LevelGenSettings s = CourseGeneratorTests.Settings;
+            int from = Geo.Cm(f.Shape.From), to = Geo.Cm(f.Shape.To);
+            if (from < Geo.Cm(Rules.FromTee))
+            {
+                failures.AppendLine($"{f.Name}: within {Rules.FromTee} m of the tee");
+            }
+
+            foreach (Vector2 gap in CourseGeneratorTests.Gaps(f.Layout))
+            {
+                if (to > Geo.Cm(gap.x - Rules.FromGap) && from < Geo.Cm(gap.y + Rules.FromGap))
+                {
+                    failures.AppendLine($"{f.Name}: within {Rules.FromGap} m of the gap {gap.x:F2}-{gap.y:F2}");
+                }
+            }
+
+            IReadOnlyList<Vector2> points = f.Layout.Centreline.Points;
+            float along = 0f;
+            for (int i = 1; f.Layout.Plan.Dogleg && i < points.Count - 1; i++)
+            {
+                along += Vector2.Distance(points[i - 1], points[i]);
+                if (to > Geo.Cm(along - s.GapFromBend) && from < Geo.Cm(along + s.GapFromBend))
+                {
+                    failures.AppendLine($"{f.Name}: within {s.GapFromBend} m of the dogleg bend at {along:F2}");
+                }
+            }
+
+            CourseLayout bare = CourseGenerator.GenerateBare(f.Seed, f.Par, FairwayShapeTests.PlainSettings, f.Variant, out _);
+            CourseLayout unbulged = WithoutBulge(f.Layout);
+            for (int i = 0; i < bare.Islands.Count; i++)
+            {
+                IslandOutline a = bare.Islands[i], b = unbulged.Islands[i];
+                if (a.HalfLength != b.HalfLength || a.HalfWidth != b.HalfWidth || a.CenterX != b.CenterX || a.CenterZ != b.CenterZ || a.WidthWobble != b.WidthWobble || a.NoiseOffset != b.NoiseOffset)
+                {
+                    failures.AppendLine($"{f.Name}: island {i} differs from the bare course's beyond its bulge");
+                }
+            }
+        }
+
+        [Test, Timeout(900000)]
         public void NoShotLineCrossesASpine() => Check(50, LinesOffSpine);
 
         [Test, Explicit("Full sweep, seeds 0-199"), Timeout(3600000)]

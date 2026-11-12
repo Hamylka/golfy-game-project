@@ -192,8 +192,8 @@ Then 4.7 (look recheck) as planned, with the shapes in. 4.8 (waterfall) and 4.9 
 
 ## Follow-ups (not in scope)
 
-- Forks round a dogleg corner, inside branch as the cut (Q7 B).
-- Local island bulge for wider forks (Q4 B), only if F3.3's measurement calls for it.
+- **Forks round a dogleg corner**, inside branch as the cut (Q7 B). F3.3 found this is what par 4 needs to reach its 20% fork share: about half of par 4s are doglegs, and the 8 m bend clearance leaves a 40-55 m course no room for a fork beside its bend (see the F3.3 decisions below).
+- ~~Local island bulge for wider forks (Q4 B)~~: built in F3.3 (director: "A, renflement").
 - Deeper rough for spines and ovals (Q8 B).
 - Strategic obstacles on direct and cut lines (M4 Q4 B).
 
@@ -235,3 +235,26 @@ Relayed by the M4 hub, after F3.2 measured how often §1's windows yield a place
 | **C. no window: anywhere the clearances allow** (chosen) | 17% / 14% | 30% / 16% (second shape included) |
 
 So on par 4 and par 5, as on par 3, a shape sits anywhere its clearances allow (tee, gaps, bends, fairway tips, other shapes), clear of every landing capsule and the final approach, with the safe route re-run. `LevelGenSettings.fairwayShapes.windowOrigin` is `Anywhere`; `TeeOnly` and `EveryShot` stay available. The island-edge margin stays at 1 m.
+
+### F3.3: fork width, the bulge and its cap (director, 2026-11-11 and 2026-11-12, word for word)
+
+Relayed by the M4 hub. F3.1's `ForkFitShare` found that a fork fits on 0% of par 4 and par 5 islands with no outline change (Q4 A). Asked about Q4 B:
+
+> A, renflement
+
+So on a fork course only, the island bulges locally around the fork, just enough for both branches and the 1 m edge margin (and for the safe route's capsules on the island). The bulge is derived from the bare outline on the shapes stream (salt 8), with no draw of its own. It is held over the fork and eased in and out over 4 m. The main and surfaces streams never move, and plain, rough-island and split courses keep their outlines. The camera frames the outline without the bulge, so every par keeps its zoomed-out scale (CLAUDE.md, Screen).
+
+F3.3 then measured that a 1.5 m cap per side fits forks on only 2% of par 4s and par 5s (seeds 0-99, every course drawing a fork). The fit rate by cap was 2.0 m: 10% / 27%; 2.5 m: 19% / 46%; 3.0 m: 23% / 48%. The island's own wobble (up to ±1.6 m) means a typical fork needs 2-3 m. Asked for a cap and whether the fork weights may be raised without moving the other shapes:
+
+> A, 2,5 m
+
+So `fairwayShapes.maxBulge` is 2.5 m, and 2.0 m is the fallback if the outline reads too wide on the phone (a value, not code). On par 4 and par 5 the fork's weight also takes the whole of plain's range from its top (`forkFromPlain` 45 and 35, so the fork draws 65 of 100). Rough-island and split ranges are unchanged, so those courses stay bit-identical. A fork that finds no place leaves its course plain.
+
+Hub answers to the F3.3 implementation questions, accepted:
+
+- **Q1 A**: a rest spot on the safe branch sits with its capsule's inner row on the spine's widest border, 0.2-0.3 m outward of the branch centre. The strict rule holds: no capsule sample on the spine.
+- **Q2 A**: branches carry 0.25 of the fairway's edge wobble, and the drawn sizes are minimums at every point (spine at least 3.5 m wide, branches at least 2.2 / 2.4 m).
+- **Q3 A, a deviation from §3**: the risky branch is always on the green guard's side, so the safe branch always leads to the safe target. §3's "on a soft bend it is the inside branch" is not built.
+- **Q4**: par 4 and par 5 already reach past the 56.8 m shadow fade start by design (66-82 m, M3). Fork courses stay under `GeneratedShadowTests`' 75 / 85 m ceilings, and the bulge's growth of the worst framed stretch is quoted in the PR.
+- **Q5**: the bulge is derived, not drawn. **Q6**: the cap is a setting. **Q7**: `BranchGuard` is required on every fork, whether or not the direct line runs along it (a par 5 fork before the direct line's origin keeps a straight direct line).
+- Par 4 stays under its 20% fork target until forks round a dogleg corner exist (Q7 B, follow-up above).
