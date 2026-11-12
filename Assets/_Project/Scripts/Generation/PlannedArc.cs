@@ -34,6 +34,24 @@ namespace IsoGolf.Generation
             Carry = settings.CarryAt(Power);
         }
 
+        private PlannedArc(Vector2 from, float fromHeight, Vector2 direction, LevelGenSettings settings)
+        {
+            From = from;
+            FromHeight = fromHeight;
+            Direction = direction.sqrMagnitude > 1e-12f ? direction.normalized : Vector2.right;
+            _tan = Mathf.Tan(settings.LaunchAngle * Mathf.Deg2Rad);
+            Power = 1f;
+            Carry = settings.CarryAt(1f);
+            Length = Carry;
+        }
+
+        /// <summary>
+        /// The full-power flight from a point along a direction (S2, the block rule Q5): the highest arc a shot from there can fly at
+        /// every distance up to its carry, so a prop it doesn't clear can't be lofted from there. Its <see cref="Length"/> is its carry.
+        /// </summary>
+        public static PlannedArc AtFullPower(Vector2 from, float fromHeight, Vector2 direction, LevelGenSettings settings) =>
+            new PlannedArc(from, fromHeight, direction, settings);
+
         public Vector2 From { get; }
         public float FromHeight { get; }
         public float Length { get; }

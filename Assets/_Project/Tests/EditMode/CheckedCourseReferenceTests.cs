@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Text;
@@ -33,13 +34,19 @@ namespace IsoGolf.Tests
         internal static ulong Hash(int seed, int par)
         {
             CheckedCourseResult result = CheckedCourse.Generate(seed, par, CourseGeneratorTests.Settings, CourseCheckMeasurements.Shot);
+            return HashOf(result, result.Layout.Props, result.DroppedProps);
+        }
+
+        /// <summary>The same hash over a chosen set of the kept props and a dropped count (S2 leaves the strategic group out).</summary>
+        internal static ulong HashOf(CheckedCourseResult result, IReadOnlyList<CourseProp> props, int dropped)
+        {
             ulong hash = Offset;
             hash = Fold(hash, (ulong)result.Variant);
             hash = Fold(hash, (ulong)result.Candidates);
             hash = Fold(hash, (ulong)result.Failed);
-            hash = Fold(hash, (ulong)result.DroppedProps);
-            hash = Fold(hash, (ulong)result.Layout.Props.Count);
-            foreach (CourseProp prop in result.Layout.Props)
+            hash = Fold(hash, (ulong)dropped);
+            hash = Fold(hash, (ulong)props.Count);
+            foreach (CourseProp prop in props)
             {
                 hash = Fold(hash, CourseFingerprint.Prop(prop));
             }

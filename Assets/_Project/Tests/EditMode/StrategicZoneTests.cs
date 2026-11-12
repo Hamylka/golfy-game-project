@@ -242,31 +242,9 @@ namespace IsoGolf.Tests
             Assert.That(CourseChecks.Run(kept, Shot, Settings, true), Is.EqualTo(CourseCheck.None));
         }
 
-        // --- Bit identity -------------------------------------------------------------------------------------------------------
-
-        [Test]
-        public void PlainCoursesBitIdentical()
-        {
-            // Nothing strategic is placed in S1: every checked course (variant, checks, drops, every prop) is the one captured on
-            // develop b3e4a8b before any S1 change.
-            ulong[] reference = CheckedCourseReferenceBefore.Courses;
-            int seeds = CheckedCourseReferenceTests.Seeds;
-            Assert.That(reference.Length, Is.EqualTo(3 * seeds));
-            var moved = new List<string>();
-            int[] pars = { 3, 4, 5 };
-            for (int p = 0; p < pars.Length; p++)
-            {
-                for (int seed = 0; seed < seeds; seed++)
-                {
-                    if (CheckedCourseReferenceTests.Hash(seed, pars[p]) != reference[(p * seeds) + seed])
-                    {
-                        moved.Add($"par {pars[p]} seed {seed}");
-                    }
-                }
-            }
-
-            Assert.That(moved, Is.Empty, string.Join(", ", moved));
-        }
+        // S1's PlainCoursesBitIdentical held every checked course to `CheckedCourseReferenceBefore` while nothing strategic was placed.
+        // S2 places the strategic group, so that guard moved to `StrategicPropTests.OtherPropsBitIdentical`, which leaves the
+        // group (and on fork courses the spine, Q7 B) aside.
 
         // --- Measurement ------------------------------------------------------------------------------------------------------
 

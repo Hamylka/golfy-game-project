@@ -24,6 +24,20 @@ namespace IsoGolf.Generation
     }
 
     /// <summary>
+    /// Where a strategic prop stands (strategic obstacles plan §1, S2): a prop placed on the direct or cut line to make a shot a
+    /// choice. <see cref="None"/> for every other prop. A strategic prop is a prop, not a hazard: no <see cref="HazardRole"/>, not in
+    /// the hazard counts; play reads only its collision shapes.
+    /// </summary>
+    public enum StrategicZone
+    {
+        None,
+        Spine,
+        Split,
+        RoughIsland,
+        CutCorner,
+    }
+
+    /// <summary>
     /// One prop on a generated course, as plain data in the course's local space: what it is, where it stands, the seed
     /// its mesh is built from, and the collision shapes that mesh gives. The shapes are fitted to the built mesh by
     /// <see cref="PropBuilder"/>, and the terrain view builds the same mesh from the same seed, so what the ball strikes
@@ -33,8 +47,9 @@ namespace IsoGolf.Generation
     {
         private readonly PropShape[] _shapes;
 
-        public CourseProp(PropKind kind, Vector3 root, Vector3 end, float scale, int seed, int cluster, IEnumerable<PropShape> shapes, float yawDegrees = 0f)
+        public CourseProp(PropKind kind, Vector3 root, Vector3 end, float scale, int seed, int cluster, IEnumerable<PropShape> shapes, float yawDegrees = 0f, StrategicZone zone = StrategicZone.None)
         {
+            Zone = zone;
             YawDegrees = yawDegrees;
             Kind = kind;
             Root = root;
@@ -46,6 +61,12 @@ namespace IsoGolf.Generation
         }
 
         public PropKind Kind { get; }
+
+        /// <summary>The strategic zone it stands in (S2), <see cref="StrategicZone.None"/> for every other prop. Not in the prop fingerprint.</summary>
+        public StrategicZone Zone { get; }
+
+        /// <summary>True for a strategic prop (S2): placed on its own sub-stream, last, and allowed in the direct and cut corridors.</summary>
+        public bool Strategic => Zone != StrategicZone.None;
 
         /// <summary>The foot of the prop on the ground (for a wall, its start).</summary>
         public Vector3 Root { get; }
