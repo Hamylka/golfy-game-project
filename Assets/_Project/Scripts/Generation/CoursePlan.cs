@@ -23,6 +23,12 @@ namespace IsoGolf.Generation
 
         /// <summary>Fills up the course beside the safe route's rest spots.</summary>
         Flank,
+
+        /// <summary>
+        /// On a fork (F3.3), beside or in the risky branch, which its centre line passes within <see cref="LevelGenSettings.GuardLineReach"/>
+        /// of. Required on every fork; it replaces <see cref="DriveZone"/> there.
+        /// </summary>
+        BranchGuard,
     }
 
     public enum ShotLineKind
@@ -56,14 +62,21 @@ namespace IsoGolf.Generation
     /// </summary>
     public readonly struct FairwayShape
     {
-        public FairwayShape(FairwayShapeKind kind, float from, float to, float safeOffset = 0f, float riskyOffset = 0f)
+        public FairwayShape(FairwayShapeKind kind, float from, float to, float safeOffset = 0f, float riskyOffset = 0f, float restOffset = 0f)
         {
             Kind = kind;
             From = from;
             To = to;
             SafeOffset = safeOffset;
             RiskyOffset = riskyOffset;
+            RestOffset = restOffset;
         }
+
+        /// <summary>
+        /// On a fork, how far across the safe route's rest spots sit over the spine's held stretch (eased like the branches over
+        /// the fork's ends): their capsules' inner row on the spine's widest border (hub, Q1 A). 0 otherwise.
+        /// </summary>
+        public float RestOffset { get; }
 
         public FairwayShapeKind Kind { get; }
 

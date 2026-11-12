@@ -44,6 +44,19 @@ namespace IsoGolf.Tests
             }
         }
 
+        internal static bool HasFork(CoursePlan plan)
+        {
+            foreach (FairwayShape shape in plan.FairwayShapes)
+            {
+                if (shape.Kind == FairwayShapeKind.Fork)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
         internal static List<Shaped> ShapedCourses(int seeds)
         {
             var list = new List<Shaped>();
@@ -54,7 +67,9 @@ namespace IsoGolf.Tests
                     for (int variant = 0; variant < Variants; variant++)
                     {
                         CourseLayout layout = CourseGenerator.Generate(seed, par, CourseGeneratorTests.Settings, variant, props: false);
-                        if (layout.Plan.FairwayShapes.Count == 0)
+                        // Rough islands and splits only: a fork bulges the island and moves the rest spots, by design, and has rules
+                        // of its own (ForkTests, F3.3).
+                        if (layout.Plan.FairwayShapes.Count == 0 || HasFork(layout.Plan))
                         {
                             continue;
                         }

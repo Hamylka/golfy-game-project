@@ -93,10 +93,13 @@ namespace IsoGolf.Generation
 
             float fairwayEnd = FairwayEnd(length, green, islandGreen, settings);
 
-            CourseLayout Build(IEnumerable<EllipseShape> bunkers, IEnumerable<PondLayout> ponds, CoursePlan plan, FairwayShapeResult shaped = null) => new CourseLayout(
-                islands,
+            CourseLayout Build(IEnumerable<EllipseShape> bunkers, IEnumerable<PondLayout> ponds, CoursePlan plan, FairwayShapeResult shaped = null) =>
+                BuildWith(shaped?.Islands ?? islands, shaped?.Pieces, shaped?.Ovals, bunkers, ponds, plan);
+
+            CourseLayout BuildWith(IEnumerable<IslandOutline> outlines, IEnumerable<FairwayPiece> pieces, IEnumerable<EllipseShape> ovals, IEnumerable<EllipseShape> bunkers, IEnumerable<PondLayout> ponds, CoursePlan plan) => new CourseLayout(
+                outlines,
                 path,
-                new FairwayLayout(-settings.FairwayBehindTee, fairwayEnd, settings.FairwayHalfWidth, settings.FairwayWobble, settings.StripeWidth, fairwayOffset, settings.FairwayCapDepth, settings.FairwayCapDepth, shaped?.Pieces, shaped?.Ovals),
+                new FairwayLayout(-settings.FairwayBehindTee, fairwayEnd, settings.FairwayHalfWidth, settings.FairwayWobble, settings.StripeWidth, fairwayOffset, settings.FairwayCapDepth, settings.FairwayCapDepth, pieces, ovals),
                 new[] { new GreenLayout(new EllipseShape(greenCentre, settings.GreenRadius, settings.GreenWobble), tilt) },
                 bunkers,
                 ponds,
@@ -118,7 +121,10 @@ namespace IsoGolf.Generation
             // The fairway shapes (split fairway plan, F3.2) draw from a third stream of their own (salt 8), after the green and the
             // pin and before the hazards. They read the plain bare course and draw from neither other stream, so every island,
             // slope, green, pin and hazard candidate stays as drawn. A plain result changes nothing: same layout, same route world.
-            shapes = FairwayShapePlacer.Place(seed, par, variant, bare, green, bends, dogleg, islandGreen, settings);
+            // A fork (F3.3) also bulges the island around it: the placer builds its candidates with this builder, so a fork course
+            // is the only one whose outline changes, and only through what the shapes stream drew.
+            shapes = FairwayShapePlacer.Place(seed, par, variant, bare, green, bends, dogleg, islandGreen, settings,
+                (outlines, pieces, ovals) => BuildWith(outlines, pieces, ovals, new EllipseShape[0], new PondLayout[0], null));
             if (shapes.Plain)
             {
                 HazardResult plain = CourseHazards.Place(surfaces, bare, green, par, dogleg, islandGreen, bends, settings);

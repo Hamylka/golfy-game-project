@@ -56,7 +56,9 @@ namespace IsoGolf.Tests
         {
             IReadOnlyList<Vector2> points = layout.Centreline.Points;
             Vector2 approach = (points[points.Count - 1] - points[points.Count - 2]).normalized;
-            return new RouteWorld(new CourseFields(layout), layout.Centreline, Settings, layout.Plan.SafeTarget, approach, par - 1 + Settings.SafeRouteExtraShots);
+            // A fork's rest spots sit on its safe branch (F3.3), so the capsules are measured where the route rests.
+            return new RouteWorld(new CourseFields(layout), layout.Centreline, Settings, layout.Plan.SafeTarget, approach, par - 1 + Settings.SafeRouteExtraShots,
+                FairwayShapePlacer.RouteOffsetOf(layout.Plan.FairwayShapes, Settings));
         }
 
         [TestCase(3)]
@@ -309,11 +311,18 @@ namespace IsoGolf.Tests
                     Vector2 fromGreen = (hazards[i].Centre - layout.Greens[0].Outline.Center).normalized;
                     Assert.That(Vector2.Angle(fromGreen, -a), Is.LessThanOrEqualTo(60f), $"seed {seed}: guard side");
 
+                    // The direct line's last segment: on a fork it bends on the risky branch (F3.3), and the guard is measured from there.
+                    Vector2 origin = plan.DirectOrigin;
+                    foreach (ShotLine line in plan.Lines)
+                    {
+                        origin = line.Kind == ShotLineKind.Direct && line.To == layout.Hole ? line.From : origin;
+                    }
+
                     float best = float.MaxValue;
-                    float length = Vector2.Distance(plan.DirectOrigin, layout.Hole);
+                    float length = Vector2.Distance(origin, layout.Hole);
                     for (float t = 0f; t <= length; t += 0.25f)
                     {
-                        best = Mathf.Min(best, hazards[i].SignedDistance(Vector2.Lerp(plan.DirectOrigin, layout.Hole, t / length)));
+                        best = Mathf.Min(best, hazards[i].SignedDistance(Vector2.Lerp(origin, layout.Hole, t / length)));
                     }
 
                     Assert.That(best, Is.LessThanOrEqualTo(Settings.GuardLineReach + Mm), $"seed {seed}: direct line passes near the guard");

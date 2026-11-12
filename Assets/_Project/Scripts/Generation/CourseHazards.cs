@@ -187,7 +187,17 @@ namespace IsoGolf.Generation
             int upper = Mathf.Max(0, _rules.HazardCount.y - gapHazards);
             int wanted = Mathf.Max(0, target - gapHazards);
 
-            _lines.Add(new ShotLine(_green.DirectOrigin, _hole, ShotLineKind.Direct));
+            // On a fork the direct line follows the risky branch (split fairway plan §3, Q5 A): two segments that bend on its centre.
+            Vector2? directBend = _shapes?.DirectWaypoint;
+            if (directBend != null)
+            {
+                _lines.Add(new ShotLine(_green.DirectOrigin, directBend.Value, ShotLineKind.Direct));
+                _lines.Add(new ShotLine(directBend.Value, _hole, ShotLineKind.Direct));
+            }
+            else
+            {
+                _lines.Add(new ShotLine(_green.DirectOrigin, _hole, ShotLineKind.Direct));
+            }
 
             // 1. The green's guard (the gap is the guard of an island green).
             if (!_islandGreen)
@@ -214,8 +224,16 @@ namespace IsoGolf.Generation
                 }
             }
 
-            // 3. The drive zone, on a course with no corner to carry.
-            if (_par >= 4)
+            // 3. The drive zone, on a course with no corner to carry. On a fork the branch guard takes its place (F3.3): required,
+            // with no chance draw, beside the risky branch.
+            if (_shapes?.Spine != null)
+            {
+                if (_placed.Count >= upper || !PlaceBranchGuard())
+                {
+                    _missing.Add(HazardRole.BranchGuard);
+                }
+            }
+            else if (_par >= 4)
             {
                 int chance = _dogleg ? (_par == 5 ? _s.DriveZoneWithDoglegChance : 0) : _rules.DriveZoneChance;
                 if (_random.Chance(chance) && !GapInDriveZone() && (_placed.Count >= upper || !PlaceDriveZone()))
@@ -375,6 +393,47 @@ namespace IsoGolf.Generation
             }, h => RuleOnTheDrive(h, d0, lo, cross));
         }
 
+        /// <summary>
+        /// The branch guard (F3.3, plan §3): a bunker, or water <see cref="FairwayShapeRules.BranchGuardWaterChance"/> of the time
+        /// (falling back to sand), along the spine's held stretch, from 1.2 m inside the risky branch's outer edge to 0.3 m beyond it,
+        /// turned along the branch. Its role rule: the risky branch's centre line passes within <see cref="LevelGenSettings.GuardLineReach"/>.
+        /// The common rules keep it off the spine and the safe route.
+        /// </summary>
+        private bool PlaceBranchGuard()
+        {
+            FairwayPiece risky = _shapes.RiskyBranch;
+            CoursePath path = _bare.Centreline;
+            float ease = _s.FairwayShapes.ForkEase;
+            float mid = (risky.From + risky.To) * 0.5f;
+            float half = Mathf.Max(0f, ((risky.To - risky.From) * 0.5f) - ease);
+            float outward = Mathf.Sign(risky.Offset);
+            bool water = _random.Chance(_s.FairwayShapes.BranchGuardWaterChance);
+
+            return SlotWithFallback(HazardRole.BranchGuard, water, new Vector2(-half, half), w => new Vector2(-1.2f, 0.3f), draw =>
+            {
+                float along = mid + draw.Along;
+                Vector2 direction = Geo.PathDirection(path, along);
+                Vector2 branch = path.PointAt(along) + (Geo.Left(direction) * risky.OffsetAt(along));
+                Vector2 centre = branch + (Geo.Left(direction) * (outward * (risky.HalfWidthAt(along) + draw.ShortRadius + draw.Across)));
+                return new EllipseShape(centre, new Vector2(draw.Radius, draw.ShortRadius), draw.Wobble, Geo.HeadingOf(direction) + draw.Turn);
+            }, RuleNearRiskyBranch);
+        }
+
+        /// <summary>The risky branch's centre line, sampled every 25 cm over the fork, passes within the guard line reach (whole cm).</summary>
+        private bool RuleNearRiskyBranch(HazardOutline h)
+        {
+            FairwayPiece risky = _shapes.RiskyBranch;
+            CoursePath path = _bare.Centreline;
+            float best = float.MaxValue;
+            for (float s = risky.From; s <= risky.To + 0.001f; s += 0.25f)
+            {
+                Vector2 p = path.PointAt(s) + (Geo.Left(Geo.PathDirection(path, s)) * risky.OffsetAt(s));
+                best = Mathf.Min(best, h.SignedDistance(p, _s.GuardLineReach + 1f));
+            }
+
+            return Geo.Cm(best) <= Geo.Cm(_s.GuardLineReach);
+        }
+
         private void PlaceFlank(List<float> zones)
         {
             bool water = _random.Chance(_s.FlankWaterChance);
@@ -382,7 +441,9 @@ namespace IsoGolf.Generation
             SlotWithFallback(HazardRole.Flank, water, new Vector2(-4f, 4f), w => w ? new Vector2(-0.5f, 1.5f) : new Vector2(0f, 1f), draw =>
             {
                 float along = zones[zone] + draw.Along;
-                Vector2 centreline = _bare.Centreline.PointAt(along);
+
+                // Beside the rest spot itself, which a fork moves onto its safe branch (exactly the centreline elsewhere).
+                Vector2 centreline = _world.SpotPoint(along);
                 Vector2 direction = Geo.PathDirection(_bare.Centreline, along);
                 float side = draw.Flip ? 1f : -1f;
                 Vector2 centre = centreline + (Geo.Left(direction) * (side * (_s.SafeLandingHalfWidth + RouteWorld.HazardMargin + draw.ShortRadius + draw.Across)));
@@ -639,6 +700,17 @@ namespace IsoGolf.Generation
                     continue;
                 }
 
+                if (keepOut.IsSpine)
+                {
+                    // A fork's spine (F3.3): no point of the hazard on it, and no spine sample inside the hazard.
+                    if (!OffSpine(h, keepOut))
+                    {
+                        return false;
+                    }
+
+                    continue;
+                }
+
                 if (InBand(h.Centre, keepOut, across))
                 {
                     return false;
@@ -650,6 +722,33 @@ namespace IsoGolf.Generation
                     {
                         return false;
                     }
+                }
+            }
+
+            return true;
+        }
+
+        private bool OffSpine(HazardOutline h, GroundKeepOut spine)
+        {
+            CoursePath path = _bare.Centreline;
+            if (spine.Blocks(h.Centre, path))
+            {
+                return false;
+            }
+
+            foreach (Vector2 p in h.Ring)
+            {
+                if (spine.Blocks(p, path))
+                {
+                    return false;
+                }
+            }
+
+            foreach (Vector2 p in spine.SpineSamples(path))
+            {
+                if (h.Contains(p))
+                {
+                    return false;
                 }
             }
 
@@ -759,7 +858,8 @@ namespace IsoGolf.Generation
         /// <summary>A green guard is a hazard the direct line to the pin risks: it passes within a metre and a half of it.</summary>
         private bool RuleGuardNearDirectLine(HazardOutline h)
         {
-            Vector2 a = _green.DirectOrigin;
+            // On a fork, the direct line's last segment: from its bend on the risky branch.
+            Vector2 a = _shapes?.DirectWaypoint ?? _green.DirectOrigin;
             Vector2 b = _hole;
             float best = float.MaxValue;
             float length = Vector2.Distance(a, b);
@@ -826,30 +926,41 @@ namespace IsoGolf.Generation
 
         /// <summary>
         /// The shot that cuts a dogleg's corner: from the tee (the first bend) or from where a drive would leave the ball (the
-        /// second), to the point of the next leg a cutting shot's carry from it. False if the corner is too far to cut. Adds the
-        /// cut line to the plan once.
+        /// second), to the point of the next leg a cutting shot's carry from it. False if the corner is too far to cut. Geometry
+        /// only, no draw: the fork placement (F3.3) reads it too, so no cut line crosses a spine.
         /// </summary>
-        private bool CutLineFor(int bend, out Vector2 origin, out Vector2 cut, out float cutAlong)
+        internal static bool CutLine(CoursePath path, IReadOnlyList<float> bends, int bend, LevelGenSettings s, out Vector2 origin, out Vector2 cut, out float cutAlong)
         {
-            float carry = _s.CarryAt(_s.CutPower);
-            float bendAlong = _bends[bend];
-            origin = bend == 0 ? _tee : _bare.Centreline.PointAt(Mathf.Max(0f, bendAlong - (carry * 0.8f)));
+            float carry = s.CarryAt(s.CutPower);
+            float bendAlong = bends[bend];
+            origin = bend == 0 ? path.Start : path.PointAt(Mathf.Max(0f, bendAlong - (carry * 0.8f)));
             cut = origin;
             cutAlong = bendAlong;
-            if (Geo.Cm(Vector2.Distance(origin, _bare.Centreline.PointAt(bendAlong))) > Geo.Cm(carry))
+            if (Geo.Cm(Vector2.Distance(origin, path.PointAt(bendAlong))) > Geo.Cm(carry))
             {
                 return false;
             }
 
-            float legEnd = bend + 1 < _bends.Count ? _bends[bend + 1] : _length;
-            for (float s = bendAlong; s <= legEnd + 0.001f; s += 0.25f)
+            float legEnd = bend + 1 < bends.Count ? bends[bend + 1] : path.Length;
+            for (float t = bendAlong; t <= legEnd + 0.001f; t += 0.25f)
             {
-                cutAlong = Mathf.Min(s, legEnd);
-                cut = _bare.Centreline.PointAt(cutAlong);
+                cutAlong = Mathf.Min(t, legEnd);
+                cut = path.PointAt(cutAlong);
                 if (Geo.Cm(Vector2.Distance(origin, cut)) >= Geo.Cm(carry))
                 {
                     break;
                 }
+            }
+
+            return true;
+        }
+
+        /// <summary>The corner's cut line (<see cref="CutLine"/>), added to the plan once.</summary>
+        private bool CutLineFor(int bend, out Vector2 origin, out Vector2 cut, out float cutAlong)
+        {
+            if (!CutLine(_bare.Centreline, _bends, bend, _s, out origin, out cut, out cutAlong))
+            {
+                return false;
             }
 
             bool known = false;

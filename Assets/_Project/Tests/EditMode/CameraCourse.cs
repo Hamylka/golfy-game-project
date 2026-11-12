@@ -74,7 +74,8 @@ namespace IsoGolf.Tests
                 ? IsoCameraConvention.Rotation
                 : IsoCameraConvention.RotationAt(StartYaw);
             View = new CameraView(rotation, IsoCameraConvention.VerticalFieldOfView, aspect);
-            Home = CameraFraming.FitCourse(Outline, Centreline, View, Rig.ScreenFill, Rig.FramedLength);
+            // Framed as LevelBootstrap frames it: on the outline without a fork's bulge (F3.3).
+            Home = CameraFraming.FitCourse(new CourseFields(Layout).FramingOutline(Outline), Centreline, View, Rig.ScreenFill, Rig.FramedLength);
         }
 
         public CameraRigSettings Rig { get; }

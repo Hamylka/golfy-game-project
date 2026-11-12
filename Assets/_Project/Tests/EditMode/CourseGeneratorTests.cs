@@ -328,9 +328,23 @@ namespace IsoGolf.Tests
                 Vector2 start = layout.Centreline.PointAt(layout.Fairway.Start);
                 Assert.That(fields.Island(new Vector3(start.x, 0f, start.y)), Is.LessThan(-1f), $"seed {seed}: fairway start");
 
-                // Every point of the centreline from the tee to the green's front is fairway where there is land.
+                // Every point of the centreline from the tee to the green's front is fairway where there is land, except under a
+                // fairway shape (F3.2, F3.3), which puts rough there by design: a rough island's oval, a split's band and the tips
+                // either side of it, a fork's spine.
                 for (float s = 0f; s < layout.Fairway.End; s += 0.5f)
                 {
+                    bool underShape = false;
+                    foreach (FairwayShape shape in layout.Plan.FairwayShapes)
+                    {
+                        float reach = shape.Kind == FairwayShapeKind.Split ? Settings.FairwayCapDepth : 0f;
+                        underShape |= s >= shape.From - reach && s <= shape.To + reach;
+                    }
+
+                    if (underShape)
+                    {
+                        continue;
+                    }
+
                     Vector2 p = layout.Centreline.PointAt(s);
                     CourseSurface surface = fields.Surface(new Vector3(p.x, 0f, p.y));
                     Assert.That(surface, Is.EqualTo(CourseSurface.Fairway).Or.EqualTo(CourseSurface.OffIsland).Or.EqualTo(CourseSurface.Green).Or.EqualTo(CourseSurface.Bunker).Or.EqualTo(CourseSurface.Water), $"seed {seed} at {s} m");
