@@ -4,6 +4,34 @@ All notable progress on Iso Golf. The format follows [Keep a Changelog](https://
 
 ## [Unreleased]
 
+### 2026-11-12: fairway forks and the island bulge (`feature/fairway-forks`, F3.3)
+
+#### Added
+
+- **Forks** (split fairway plan §1, §3) on par 4 and 5, drawn on the salt-8 shapes stream where F3.2 fell back to plain. Each try draws, in whole cm: spine length 8-14 m, spine width 3.5-4 m, safe branch 2.4-2.6 m, risky branch 2.2-2.4 m (always narrower), then the start (one even draw over the valid starts). The branches are two `FairwayPiece`s whose offset and width ease out of the main strip over 4 m at each end (a Y opening and closing). They carry 0.25 of the edge wobble (`FairwayPiece.WobbleScale`), and the drawn sizes are minimums at every point (hub, Q2 A). The main strip overlaps each branch end by 0.5 m, so no seam of zero field crosses the fairway. A fork stays 6 m from the tee and the gaps, never near a dogleg bend (soft bends may run under it), never on an island green, and rejoins at least 2.5 m before the fairway's end tip.
+- **Island bulge** (director: "A, renflement"). On a fork course only, each island under the fork gets a local bulge (`IslandOutline.WithBulge`, held over the fork, eased over 4 m, per side). It is derived from the bare outline, with no draw: just enough for each branch plus 1 m of rough to the edge, and for the safe capsules on the island. It is capped at `fairwayShapes.maxBulge` (2.5 m, director: "A, 2,5 m"; 2.0 m is the fallback). The tufted edge, earth band and edge segments follow it through the island field. A course without a bulge runs the old field code exactly.
+- **Camera scale**: `LevelBootstrap` frames `CourseFields.FramingOutline`, the drawn outline moved back onto the outline without the bulge, so every par keeps its zoomed-out scale. The camera limits keep the real outline.
+- **Safe route on the safe branch** (green's safe side): `RouteWorld` gets a `RouteOffset`. A rest spot sits with its capsule's inner row on the spine's widest border (Q1 A); capsule, mask and flank all use the moved spot. `GroundKeepOut.OfSpine` reads the spine from the shaped field: no capsule or final-approach sample on it, and no route step across it.
+- **Direct line on the risky branch**: two `Direct` shot lines bending on the risky branch's centre at mid-spine (when the fork lies past the line's origin). The green guard rule uses the last segment. A fork whose direct or cut line would cross the spine finds no place there.
+- **`BranchGuard`** (`HazardRole`, required on every fork, replacing `DriveZone`): a bunker, or water 20%, beside or in the risky branch within 1.5 m of its centre line. No hazard sits on a spine (ring, centre and a 25 cm spine grid tested).
+- **Fork weights**: the fork's weight takes plain's range from its top (`FairwayShapeWeights.forkFromPlain`, par 4 45, par 5 35, so forks draw 65 of 100). Rough-island and split ranges are unchanged (director: "A, 2,5 m").
+- Tests: `ForkTests` (10 rules over seeds 0-49 × variants 0-1 on settings where every par 4 and 5 draws a fork, 69 fork courses, each with an Explicit 0-199 twin): `ForkBranchesKeepTheirWidths`, `ForksRejoinBeforeTheEndTip`, `ForksKeepClearOfTeeGapsAndDoglegBends`, `NoShotLineCrossesASpine`, `SafeRouteRestsOnTheSafeBranch`, `BranchGuardIsBesideTheRiskyLine`, `NoHazardOnASpineOrOval`, `BulgeOnlyOnForkCourses_KeepsTheEdgeMargin`, `CameraScaleIgnoresTheBulge`, `ForkCoursesKeepTheirShadowReach`. Bit-identity guard `RoughIslandsAndSplitsAreBitIdentical` against `ShapedCourseReference` (captured on `develop` 81b0ce9 before any change, own commit). Explicit measurements `ForkMeasurements.ForkShare`, `ForkShare_Quick`, `ForkFitSensitivity`.
+- Captures in `Docs/Screenshots/fairway-forks/` (Editor, `Main`'s Island Camera, 1080x2400): par 5 seed 48 (the largest bulge, 2.50 m) and par 4 seed 42, at the default zoom and fully zoomed out.
+
+#### Changed
+
+- F3.2 rule tests (`FairwayShapeTests`) cover rough islands and splits only. `CourseHazardTests` measure capsules at the moved rest spots and the guard from the direct line's last segment. `CourseGeneratorTests.TeeHoleAndGreen_...` accepts rough on the centreline under a fairway shape (its par 3 seed 1 case had failed since F3.2's rough island).
+- Plan: decisions "A, renflement" and "A, 2,5 m", the hub's Q1-Q7 answers, and the Q3 deviation (the risky branch is always on the guard's side, never "the inside of a soft bend"). Follow-up: forks round a dogleg corner (Q7 B), which par 4 needs to reach 20%.
+
+#### Measured (EditMode, Editor x64 Mono, seeds 0-199 unless said)
+
+- Fork share of checked courses: par 4 13.5% (target 20%; doglegs leave no room), par 5 34.5% (target 30%). Bulge per side over 92 bare forks: par 4 min 0.94, median 1.91, max 2.46 m; par 5 min 0.67, median 1.87, max 2.50 m. Every fork bulges. Bulged length, eases included, about 24-30 m (median about 25 m).
+- Camera: framed without the bulge, the zoomed-out camera moves at most 12.1 cm (0.38% of its height) against the same course without the bulge; framing the bulge would move it up to 12.5 m. Shadow: the bulge adds at most 0.44 m to the worst framed stretch on 9:21 (13 fork courses, seeds 0-11), under the 75 / 85 m ceilings.
+- Rerolls 1 / 30 / 26 (were 1 / 29 / 26), none exhausted. Props per checked course 5.0 / 8.9 / 14.3. Par 3 ace sweep unchanged: mean 0.59%, max 0.86%, full power never holes.
+- Bit identity: 32 shaped courses (seeds 0-49) identical; 7 skipped because a par 5's other draw now gives a fork. `PlainCoursesAreBitIdentical` passes, with 70 shaped courses skipped (forks included).
+- Cost: bare generation 53.6 ms (par 4) and 88.7 ms (par 5) per course in the Editor, against 28.0 / 39.0 ms in F3.2. Fork tries build a candidate course and route world each. Checked courses 151 / 251 ms (Editor). Terrain build with 4 pieces + 2 ovals 407 / 791 ms (plain 347 / 741 ms). Phone figures come in 4.9.
+- Moved pins: par 4 seed 42 (`CourseGeneratorTests`) and par 5 seed 103 (PR 4.4 phone review) now carry forks. Their tests pass unchanged, so nothing is re-pinned.
+
 ### 2026-11-11: rough islands and splits (`feature/fairway-rough-islands`, F3.2)
 
 #### Added
