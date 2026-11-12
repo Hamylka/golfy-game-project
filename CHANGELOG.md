@@ -15,6 +15,18 @@ All notable progress on Iso Golf. The format follows [Keep a Changelog](https://
 
 - `CLAUDE.md` went from about 33 KB to about 22 KB: the camera, generator and props sections keep a summary and the invariants, with pointers. New rules: hub at most 350k tokens of context, subtask soft limit 300k, and how to wait for tests (about 30 s per `get_test_job` whatever `wait_timeout` says, so announce long runs, one poll per cycle, never rerun the whole suite because the bridge dropped).
 - Why: the token audit of 4-12 Nov (55 sessions): cost is mostly cache reads (calls × context), `get_test_job` polls were about 30% of the cache reads of the F3 and M4 subtasks, and `CLAUDE.md` is re-read on every call.
+### 2026-11-12: waiting for tests without polling (`feature/test-run-done-file`)
+
+#### Added
+
+- `Assets/_Project/Scripts/EditorTools/` (Editor-only assembly `IsoGolf.EditorTools`): `TestRunDoneFile` observes every Unity test run (MCP bridge or Test Runner window) and writes `Temp/IsoGolfTestRun/last-run.json` when it starts and when it finishes; `TestRunReport` is its plain data (unit-tested, `TestRunReportTests`, 4 tests).
+- `Tools/wait-for-test-run.sh <since_unix_ms> [timeout_s]`: waits in the shell for a run that finished after `since`, prints its summary, exits 0 (no failure), 1 (failures) or 2 (timeout). Run in the background, it replaces about 1 `get_test_job` poll per 35 s of run with one wake-up.
+- `Docs/Process/test-run-done-file.md`: how it works, the agent recipe and the limits.
+
+#### Changed
+
+- `IsoGolf.Tests.EditMode.asmdef` references `IsoGolf.EditorTools`.
+- Why: the MCP bridge writes no results file and `get_test_job` returns after about 30 s whatever `wait_timeout` says, so each poll re-reads the whole context (token audit, 2026-11-12).
 
 ### 2026-11-12: fairway forks and the island bulge (`feature/fairway-forks`, F3.3)
 

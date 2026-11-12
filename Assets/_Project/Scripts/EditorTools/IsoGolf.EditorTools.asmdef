@@ -1,0 +1,12 @@
+{
+    "name": "IsoGolf.EditorTools",
+    "rootNamespace": "IsoGolf.EditorTools",
+    "references": [
+        "UnityEngine.TestRunner",
+        "UnityEditor.TestRunner"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "autoReferenced": false
+}
