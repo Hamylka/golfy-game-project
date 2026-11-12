@@ -229,6 +229,21 @@ namespace IsoGolf.Tests
             }
         }
 
+        /// <summary>One prop's hash, every field the layout hash reads for it (F3.4's props reference, one value per prop).</summary>
+        public static ulong Prop(CourseProp prop)
+        {
+            var hash = new Hasher();
+            hash.Add((int)prop.Kind); hash.Add(prop.Root); hash.Add(prop.End); hash.Add(prop.Scale);
+            hash.Add(prop.Seed); hash.Add(prop.Cluster); hash.Add(prop.YawDegrees);
+            hash.Add(prop.Shapes.Count);
+            foreach (PropShape shape in prop.Shapes)
+            {
+                hash.Add((int)shape.Kind); hash.Add((int)shape.Material); hash.Add(shape.Center); hash.Add(shape.Extents); hash.Add(shape.Yaw);
+            }
+
+            return hash.Value;
+        }
+
         private sealed class Hasher
         {
             public ulong Value { get; private set; } = Offset;

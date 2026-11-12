@@ -4,6 +4,19 @@ All notable progress on Iso Golf. The format follows [Keep a Changelog](https://
 
 ## [Unreleased]
 
+### 2026-11-12: props on fork spines (`feature/fairway-spine-props`, F3.4)
+
+#### Added
+
+- **Spine theme** (split fairway plan §4): on a fork course, a small cluster on the spine, the rough between the branches, from its own sub-stream of the props stream (salt 7, key and cluster number `PropPlacement.SpineBase` = 160, after the landmark's 150). It is placed after every other prop, so every other prop stays bit for bit where it was. It is extra to the density's clusters. Theme by one integer draw over `props.spineWeights` (50 / 50): a short cypress line along the spine, or bushes and rocks led by an olive where one fits. A cypress or an olive with no room becomes a bush, and a cypress line that misses once carries on as bushes. Each member stands in the middle of the spine's free strip at its slot (the run of 0.1 m steps across that are rough and clear of play for its true reach and shadow), then must pass every keep-out (`PropZones.Fits`). A member with no room slides 0.25 m along, up to `memberTries` slots. A spine that holds fewer than two props stays bare. Settings in `LevelGenSettings.props`: `spineChance` 100, `spineWeights` (50, 50), `spineMembers` 2-4, `spineGap` 1.6-2.2 m, `spineAcrossStep` 0.1 m.
+- Tests (`SpinePropTests`): `SpinePropsStayOutOfCorridorsCapsulesAndFairway` (on the held stretch between the branch centres; no keep-out broken, read from the true outlines and the safe route's own capsule samples), `SpineThemeLeavesOtherClustersBitIdentical` (against `PropReferenceCapsuleFix`), `CoursesWithoutAForkKeepTheirProps` (against `PropReferenceBefore`, captured on F3.3's code in its own commit), each on seeds 0-49, the first two with `Explicit` 0-199 twins. Measurements: `SpinePropsMeasurement`, `SpineRoomMeasurement`, `ForkCapsuleFixMovedProps`, `PhoneReviewSeeds`.
+- Measured (variant 0, seeds 0-199): props per course 4.98 / 9.10 / 14.47 (4.98 / 8.90 / 14.09 without the spine); spine cluster on 66.7% of par 4 forks (18/27) and 50.8% of par 5 forks (33/65), 2.3 props per spine. On a spine, rocks fit on every fork and bushes on about 90%, but a cypress fits on 8 of 92 (its shadow reaches a corridor) and an olive on 11 of 92. Cost: +17 ms per fork course (Editor, generation with props, 144 -> 161 ms par 4, 203 -> 221 ms par 5).
+- Phone review APK `Builds/Android/IsoGolf_FairwayShapes.apk` (`ISOGOLF_MEASURE`): `PhoneChecksPanel` has a second row that steps through 16 review courses with their label.
+
+#### Fixed
+
+- **Fork capsules for props** (an F3.3 gap): `PropZones` built the landing capsules on the centreline and ignored the fork's rest offset, so on a fork the props kept out of a phantom 1.5 m band over the spine and not out of the real capsule on the safe branch. They now follow `RouteWorld.CapsuleSamples` row by row; the test oracle (`PropPlacementTests.BrokenKeepOut`) does too. Courses without a fork keep every prop. On seeds 0-49 it changed the props of 5 of 10 par 4 forks and 15 of 20 par 5 forks (98 -> 100 and 300 -> 302 props; once one prop moves, the later clusters move with it).
+
 ### 2026-11-12: token economy, decision files and relaunch brief (`chore/claude-md-decision-files`)
 
 #### Added

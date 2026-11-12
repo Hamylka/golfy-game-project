@@ -16,6 +16,28 @@ namespace IsoGolf.Measurement
     {
         private const int Window = 300;
 
+        // F3.4's phone review of the fairway shapes: courses picked from the checked courses of seeds 0-49 (PhoneReviewSeeds), each
+        // with what to look at. Stepped through by the second row of the strip.
+        private static readonly (int seed, int par, string label)[] Shapes =
+        {
+            (1, 3, "rough island 9 m"),
+            (19, 3, "rough island 7 m"),
+            (1, 4, "split 13 m from tee"),
+            (16, 4, "split 9 m"),
+            (3, 4, "rough island 14 m"),
+            (18, 4, "rough island 33 m"),
+            (9, 4, "fork 6 m, spine props"),
+            (42, 4, "fork 10 m, spine props"),
+            (30, 4, "fork 14 m, bare spine"),
+            (48, 5, "fork 49 m, largest bulge"),
+            (16, 5, "fork 7 m, 3 spine props"),
+            (27, 5, "fork 31 m, 3 spine props"),
+            (6, 5, "split 64 m"),
+            (4, 5, "rough island 15 m"),
+            (20, 5, "split 29 m + fork 58 m"),
+            (10, 5, "rough island 13 m + fork 28 m"),
+        };
+
         private readonly float[] _dt = new float[Window];
         private int _count;
         private float _logAt;
@@ -108,7 +130,37 @@ namespace IsoGolf.Measurement
                 }
             }
 
-            GUI.Label(new Rect(0f, y + h, Screen.width, h), _stats, _label);
+            // The shapes row: previous/next through the review list, with the course's label.
+            int index = ShapeIndex();
+            float y2 = y + h;
+            if (GUI.Button(new Rect(0f, y2, w, h), "<", _button))
+            {
+                int previous = index < 0 ? Shapes.Length - 1 : (index + Shapes.Length - 1) % Shapes.Length;
+                Apply(Shapes[previous].seed, Shapes[previous].par);
+            }
+
+            string shapeText = index < 0 ? "shapes: not in the list" : (index + 1) + "/" + Shapes.Length + " P" + _par + " s" + _seed + " " + Shapes[index].label;
+            GUI.Label(new Rect(w, y2, w * 6f, h), shapeText, _label);
+            if (GUI.Button(new Rect(w * 7f, y2, w, h), ">", _button))
+            {
+                int next = (index + 1) % Shapes.Length;
+                Apply(Shapes[next].seed, Shapes[next].par);
+            }
+
+            GUI.Label(new Rect(0f, y2 + h, Screen.width, h), _stats, _label);
+        }
+
+        private int ShapeIndex()
+        {
+            for (int i = 0; i < Shapes.Length; i++)
+            {
+                if (Shapes[i].seed == _seed && Shapes[i].par == _par)
+                {
+                    return i;
+                }
+            }
+
+            return -1;
         }
 
         private void Apply(int seed, int par)

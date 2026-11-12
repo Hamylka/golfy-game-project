@@ -34,6 +34,12 @@ namespace IsoGolf.Generation
         internal const int RakeBase = 140;
         internal const int LandmarkBase = 150;
 
+        // The fork spine's cluster (F3.4): its number and stream key, after every other, so no earlier prop moves.
+        internal const int SpineBase = 160;
+
+        // A spine member with no room at its slot tries the next one this far along.
+        private const float SpineSlot = 0.25f;
+
         private enum Theme
         {
             OliveGrove,
@@ -122,6 +128,9 @@ namespace IsoGolf.Generation
             // The built props come after, each from sub-streams keyed above the clusters', so the clusters above stay exactly where
             // they were with or without them.
             PlaceBuilt(par, propsSeed, zones, maker, rules, density, starts, centres, placed);
+
+            // Last, a fork's spine (F3.4): earlier props never read later ones, so this leaves every prop above bit for bit.
+            Spine(new SeededRandom(Stream(propsSeed, SpineBase)), layout, settings, zones, maker, rules, placed);
 
             // Each prop was built once, without colours, when it was tried: its shapes are fitted to that mesh, and the terrain
             // view builds the same mesh from the same seed, so they are the drawn prop's own.
@@ -359,6 +368,155 @@ namespace IsoGolf.Generation
             }
         }
 
+        /// <summary>
+        /// F3.4 (split fairway plan §4): a small cluster on a fork's spine, the rough between its two branches, from its own sub-stream
+        /// keyed after every other (so every other prop stays bit for bit where it was), extra to the density's clusters. A short
+        /// cypress line along the spine, or bushes and rocks led by an olive where one fits; a cypress or an olive with no room
+        /// becomes a bush. Each member stands in the middle of the spine's free strip at its slot: the run of across positions on
+        /// rough and clear of play for its true reach and shadow; it is then accepted only if it passes the whole of
+        /// <see cref="PropZones.Fits"/>, so every keep-out (corridors and shadows, capsules, the fairway margin off both branches)
+        /// applies unchanged. A spine that holds fewer than two props stays bare.
+        /// </summary>
+        private static void Spine(SeededRandom sub, CourseLayout layout, LevelGenSettings settings, PropZones zones, Maker maker, PropRules rules,
+            List<Planned> placed)
+        {
+            FairwayShape? found = null;
+            foreach (FairwayShape shape in layout.Plan.FairwayShapes)
+            {
+                if (shape.Kind == FairwayShapeKind.Fork)
+                {
+                    found = shape;
+                }
+            }
+
+            if (found == null || !sub.Chance(rules.SpineChance))
+            {
+                return;
+            }
+
+            // The held stretch, where both branches run at their full offset and the spine at its full width.
+            FairwayShape fork = found.Value;
+            float ease = settings.FairwayShapes.ForkEase;
+            float from = fork.From + ease;
+            float to = fork.To - ease;
+            float middle = 0.5f * (fork.SafeOffset + fork.RiskyOffset);
+            float half = 0.5f * Mathf.Abs(fork.SafeOffset - fork.RiskyOffset);
+
+            Vector2Int w = rules.SpineWeights;
+            bool cypresses = sub.Int(0, Mathf.Max(0, w.x + w.y - 1)) < w.x;
+            int members = sub.Int(rules.SpineMembers.x, rules.SpineMembers.y);
+            float gap = cypresses ? sub.Centimetres(rules.CypressSpacing) : sub.Centimetres(rules.SpineGap);
+            while (members > 2 && Geo.Cm((members - 1) * gap) > Geo.Cm(to - from))
+            {
+                members--;
+            }
+
+            int slack = Geo.Cm(to - from) - Geo.Cm((members - 1) * gap);
+            if (slack < 0)
+            {
+                return;
+            }
+
+            // Each member is tried at its slot, then a step further along at a time (the spine is wider in some places than others),
+            // up to MemberTries slots; the next member's slot is a gap past the last one placed. A cypress with no room (its long shadow
+            // reaches a corridor on most spines) becomes a bush, and the line carries on as bushes, so it costs one member's tries.
+            float s = from + (sub.Int(0, slack) / 100f);
+            var cluster = new List<Planned>();
+            for (int m = 0; m < members && Geo.Cm(s) <= Geo.Cm(to); m++)
+            {
+                PropKind wanted = cypresses ? PropKind.Cypress : (m == 0 ? PropKind.Olive : (sub.Chance(rules.BushShare) ? PropKind.Bush : PropKind.Rock));
+                for (int t = 0; t < rules.MemberTries && Geo.Cm(s) <= Geo.Cm(to); t++)
+                {
+                    bool placedHere = SpineMember(sub, layout.Centreline, zones, maker, rules, s, middle, half, wanted, placed, cluster);
+                    if (!placedHere && (wanted == PropKind.Cypress || wanted == PropKind.Olive))
+                    {
+                        cypresses = false;
+                        wanted = PropKind.Bush;
+                        placedHere = SpineMember(sub, layout.Centreline, zones, maker, rules, s, middle, half, wanted, placed, cluster);
+                    }
+
+                    if (placedHere)
+                    {
+                        break;
+                    }
+
+                    s += SpineSlot;
+                }
+
+                s += gap;
+            }
+
+            if (cluster.Count >= 2)
+            {
+                placed.AddRange(cluster);
+            }
+        }
+
+        /// <summary>
+        /// One spine member at this slot along the centreline: built once in the middle of the strip where its foot fits, to learn its
+        /// true reach and height; then moved, same mesh seed, to the middle of the strip where that reach and its shadow fit.
+        /// </summary>
+        private static bool SpineMember(SeededRandom sub, CoursePath centreline, PropZones zones, Maker maker, PropRules rules, float along,
+            float middle, float half, PropKind kind, List<Planned> placed, List<Planned> cluster)
+        {
+            Vector2 centre = centreline.PointAt(along);
+            Vector2 side = Geo.Left(Geo.PathDirection(centreline, along));
+            float step = rules.SpineAcrossStep;
+            int reach = Mathf.FloorToInt((half / step) + 0.001f);
+
+            if (!StripMiddle(zones, centre, side, middle, step, reach, Maker.FootRadius, 0f, out Vector2 foot))
+            {
+                return false;
+            }
+
+            Planned probe = maker.Single(sub, kind, foot, ScaleFor(sub, rules, kind), SpineBase);
+            if (probe == null || probe.Steep || !StripMiddle(zones, centre, side, middle, step, reach, probe.Radius, probe.Height, out Vector2 at))
+            {
+                return false;
+            }
+
+            Planned prop = maker.Seeded(kind, at, probe.Scale, SpineBase, probe.Seed);
+            return TryAccept(sub, zones, rules, prop, placed, cluster, false);
+        }
+
+        /// <summary>
+        /// The middle of the longest run of across positions (whole steps from the spine's middle, out to the branch centres) where a
+        /// prop of this reach and height fits; the first such run on a tie. False if none fits.
+        /// </summary>
+        private static bool StripMiddle(PropZones zones, Vector2 centre, Vector2 side, float middle, float step, int reach, float radius, float height,
+            out Vector2 at)
+        {
+            int bestFrom = 0, bestLength = 0, runFrom = 0, run = 0;
+            for (int j = -reach; j <= reach + 1; j++)
+            {
+                bool fits = j <= reach && zones.RoughAndClearOfPlay(centre + (side * (middle + (j * step))), radius, height);
+                if (fits)
+                {
+                    if (run == 0)
+                    {
+                        runFrom = j;
+                    }
+
+                    run++;
+                }
+                else
+                {
+                    if (run > bestLength)
+                    {
+                        bestFrom = runFrom;
+                        bestLength = run;
+                    }
+
+                    run = 0;
+                }
+            }
+
+            // The run's middle in whole steps: an even run takes the step on the lower side of its centre.
+            int j0 = bestFrom + ((bestLength - 1) / 2);
+            at = centre + (side * (middle + (j0 * step)));
+            return bestLength > 0;
+        }
+
         /// <summary>One cluster around this start: its theme, from where the start lies, then its members.</summary>
         private static List<Planned> Cluster(SeededRandom sub, PropZones zones, Maker maker, PropRules rules, PropDensity density, Vector2 centre, List<Planned> placed, int k)
         {
@@ -580,7 +738,7 @@ namespace IsoGolf.Generation
         private sealed class Maker
         {
             // No prop reaches less than this from its foot: the cheap test a candidate passes before it is built.
-            private const float FootRadius = 0.05f;
+            internal const float FootRadius = 0.05f;
 
             private readonly PropKitSettings _kit;
             private readonly CourseFields _fields;
@@ -612,15 +770,21 @@ namespace IsoGolf.Generation
                 return Make(sub, kind, at, at, scale, cluster, yawDegrees);
             }
 
+            /// <summary>A single prop with its mesh seed already drawn (a spine member moved to its strip's middle, F3.4); the caller tests it.</summary>
+            public Planned Seeded(PropKind kind, Vector2 at, float scale, int cluster, int seed)
+            {
+                return Make(null, kind, at, at, scale, cluster, 0f, seed);
+            }
+
             /// <summary>A prop between two ground points (a bridge), built to be measured; the caller tests it.</summary>
             public Planned Line(SeededRandom sub, PropKind kind, Vector2 from, Vector2 to, float scale, int cluster)
             {
                 return Make(sub, kind, from, to, scale, cluster);
             }
 
-            private Planned Make(SeededRandom sub, PropKind kind, Vector2 from, Vector2 to, float scale, int cluster, float yaw = 0f)
+            private Planned Make(SeededRandom sub, PropKind kind, Vector2 from, Vector2 to, float scale, int cluster, float yaw = 0f, int seed = -1)
             {
-                var prop = new Planned { Kind = kind, Root = from, End = to, Scale = scale, Cluster = cluster, Yaw = yaw, Seed = sub.Int(0, MeshSeeds - 1) };
+                var prop = new Planned { Kind = kind, Root = from, End = to, Scale = scale, Cluster = cluster, Yaw = yaw, Seed = seed >= 0 ? seed : sub.Int(0, MeshSeeds - 1) };
                 prop.Root3 = new Vector3(from.x, _fields.Height(from.x, from.y), from.y);
                 prop.End3 = CourseProp.IsLine(kind) ? new Vector3(to.x, _fields.Height(to.x, to.y), to.y) : prop.Root3;
                 prop.Shapes = new PropBuilder(_kit, null).Add(kind, prop.Root3, prop.End3, scale, prop.Seed, yaw);
@@ -734,14 +898,24 @@ namespace IsoGolf.Generation
 
                 // Each rest spot's landing capsule (the tee and the safe target on the green have none): the band along the
                 // centreline that RouteWorld.CapsuleSamples samples, as a polyline with a half width. Its samples all lie
-                // within that width of it, so the band holds the capsule.
+                // within that width of it, so the band holds the capsule. On a fork the band follows the rest spots across onto the
+                // safe branch, row by row, exactly as RouteWorld.CapsuleSamples does (F3.4: until then the props kept out of a
+                // band on the centreline, over the spine, and not out of the real capsule).
+                RouteOffset? offset = FairwayShapePlacer.RouteOffsetOf(plan.FairwayShapes, settings);
                 for (int i = 1; i + 1 < plan.SafeRoute.Count; i++)
                 {
                     float along = layout.Centreline.Project(plan.SafeRoute[i], out _);
                     var points = new List<Vector2>();
                     for (float s = along - settings.SafeLandingBack; s <= along + settings.SafeLandingAhead + 0.001f; s += RouteWorld.Grid)
                     {
-                        points.Add(layout.Centreline.PointAt(s));
+                        Vector2 centre = layout.Centreline.PointAt(s);
+                        float across = offset?.At(s) ?? 0f;
+                        if (across != 0f)
+                        {
+                            centre += Geo.Left(Geo.PathDirection(layout.Centreline, s)) * across;
+                        }
+
+                        points.Add(centre);
                     }
 
                     _capsules.Add(points.ToArray());
@@ -831,6 +1005,16 @@ namespace IsoGolf.Generation
             }
 
             return true;
+        }
+
+        /// <summary>
+        /// The cheap part of <see cref="Fits"/> for a spine's free strip (F3.4): on rough and clear of play (corridors and their shadows,
+        /// capsules). Between a fork's branches the corridors reach further than the fairway margin, so the strip is the same; the
+        /// chosen spot still passes the whole of <see cref="Fits"/> when it is accepted.
+        /// </summary>
+        public bool RoughAndClearOfPlay(Vector2 p, float radius, float height)
+        {
+            return _fields.Surface(Geo.At(p)) == CourseSurface.Rough && ClearOfPlay(p, radius, height);
         }
 
         /// <summary>

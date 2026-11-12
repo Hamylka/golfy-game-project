@@ -141,6 +141,18 @@ namespace IsoGolf.Generation
         [Tooltip("Built props' scale range, in hundredths.")]
         [SerializeField] private Vector2 builtScale = new Vector2(0.92f, 1.12f);
 
+        [Header("Fork spine (F3.4)")]
+        [Tooltip("Chance in percent that a fork's spine gets a cluster, extra to the density's clusters.")]
+        [SerializeField, Range(0, 100)] private int spineChance = 100;
+        [Tooltip("Weights of the spine themes: a short cypress line along it, bushes and rocks (led by an olive where one fits).")]
+        [SerializeField] private Vector2Int spineWeights = new Vector2Int(50, 50);
+        [Tooltip("Props in a spine cluster, from the fewest to the most. Fewer if the spine is short.")]
+        [SerializeField] private Vector2Int spineMembers = new Vector2Int(2, 4);
+        [Tooltip("Bushes and rocks on a spine stand at least this far apart along it (a cypress line uses the cypress spacing); two bushes need about 1.4 m.")]
+        [SerializeField] private Vector2 spineGap = new Vector2(1.6f, 2.2f);
+        [Tooltip("The spine's free strip is searched across in steps of this length.")]
+        [SerializeField, Range(0.05f, 0.5f)] private float spineAcrossStep = 0.1f;
+
         [Header("Shadows")]
         [Tooltip("Where shadows fall, in degrees from the course's heading (positive toward +Z), as Main's sun casts them. Read from the scene by a test.")]
         [SerializeField] private float shadowHeading = -125f;
@@ -219,6 +231,11 @@ namespace IsoGolf.Generation
         public Vector2 CypressSpacing => cypressSpacing;
         public Vector2 WallLength => wallLength;
         public float WallBesideLine => wallBesideLine;
+        public int SpineChance => spineChance;
+        public Vector2Int SpineWeights => spineWeights;
+        public Vector2Int SpineMembers => spineMembers;
+        public Vector2 SpineGap => spineGap;
+        public float SpineAcrossStep => spineAcrossStep;
         public float ShadowHeading => shadowHeading;
         public float ShadowLength => shadowLength;
     }
