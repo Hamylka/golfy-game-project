@@ -872,7 +872,14 @@ namespace IsoGolf.Generation
         private readonly float _corridor;
         private readonly float _capsuleHalfWidth;
         private readonly List<Vector2[]> _lines = new List<Vector2[]>();
+        private readonly List<ShotLineKind> _kinds = new List<ShotLineKind>();
         private readonly List<Vector2[]> _capsules = new List<Vector2[]>();
+        private readonly LevelGenSettings _settings;
+
+        // The ball's ground and each safe leg's planned arc, built on the first strategic test only, so the placement of every
+        // other prop costs what it did (strategic obstacles S1).
+        private CourseHeightField _heights;
+        private PlannedArc?[] _arcs;
         private readonly List<HazardOutline> _bunkers = new List<HazardOutline>();
         private readonly List<HazardOutline> _ponds = new List<HazardOutline>();
         private readonly List<HazardOutline> _greens = new List<HazardOutline>();
@@ -884,6 +891,7 @@ namespace IsoGolf.Generation
             _layout = layout;
             _fields = new CourseFields(layout);
             _rules = settings.Props;
+            _settings = settings;
             CoursePlan plan = layout.Plan;
             _corridor = plan != null ? plan.ShotCorridorHalfWidth : settings.ShotCorridorHalfWidth;
             _capsuleHalfWidth = settings.SafeLandingHalfWidth;
@@ -894,6 +902,7 @@ namespace IsoGolf.Generation
                 foreach (ShotLine line in plan.Lines)
                 {
                     _lines.Add(new[] { line.From, line.To });
+                    _kinds.Add(line.Kind);
                 }
 
                 // Each rest spot's landing capsule (the tee and the safe target on the green have none): the band along the
@@ -1052,7 +1061,92 @@ namespace IsoGolf.Generation
         /// shadow of a prop <paramref name="height"/> tall too), every landing capsule, the green and the bunkers with their margins.
         /// Nothing about the ground it stands on or the ponds, so a bridge can use it across water.
         /// </summary>
-        public bool ClearOfPlay(Vector2 p, float radius, float height)
+        public bool ClearOfPlay(Vector2 p, float radius, float height) => ClearOfPlay(p, radius, height, false);
+
+        /// <summary>
+        /// <see cref="ClearOfPlay(Vector2, float, float)"/> for a strategic prop (strategic obstacles plan §2, director Q1 B): the
+        /// direct and cut corridors are open to it and its shadow. A safe leg's corridor is too, but only where the leg's planned
+        /// arc (<see cref="PlannedArc"/>) passes over it, see <see cref="UnderSafeArc"/>. The tee, the +X end, the capsules, the
+        /// green and the bunkers stay as strict as for every prop. Every other prop keeps the strict rule.
+        /// </summary>
+        public bool StrategicClearOfPlay(Vector2 p, float radius, float height) => ClearOfPlay(p, radius, height, true);
+
+        /// <summary>
+        /// <see cref="Fits"/> for a strategic prop: the same ground, edge, fairway margin and ponds, with
+        /// <see cref="StrategicClearOfPlay"/> in place of the strict corridors.
+        /// </summary>
+        public bool FitsStrategic(Vector2 p, float radius, float height)
+        {
+            if (Geo.Cm(FromEdge(p)) < Geo.Cm(Mathf.Max(_rules.EdgeMargin, radius * (1f - _rules.CrownOverEdge))))
+            {
+                return false;
+            }
+
+            if (_fields.Surface(Geo.At(p)) != CourseSurface.Rough)
+            {
+                return false;
+            }
+
+            if (!StrategicClearOfPlay(p, radius, height) || OverFairway(p, radius))
+            {
+                return false;
+            }
+
+            foreach (HazardOutline pond in _ponds)
+            {
+                if (Geo.Cm(pond.SignedDistance(p, _rules.HazardKeepOut + radius + 1f)) < Geo.Cm(_rules.HazardKeepOut + radius + RingSag))
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// Whether safe leg <paramref name="line"/>'s planned arc passes over a prop of this reach standing here, with
+        /// <paramref name="height"/> its top above the ground at <paramref name="p"/>: its whole footprint projects strictly between
+        /// the leg's take-off and landing (the ends stay strict), and over that span the ball's bottom keeps
+        /// <see cref="PropRules.StrategicSafeClearance"/> above the top, so its centre passes the clearance plus its radius over it.
+        /// The arc is a downward parabola, so its lowest point over the span is at one of the span's two ends: testing them is exact.
+        /// </summary>
+        public bool UnderSafeArc(int line, Vector2 p, float radius, float height)
+        {
+            if (_kinds[line] != ShotLineKind.Safe)
+            {
+                return false;
+            }
+
+            PlannedArc arc = SafeArc(line);
+            float along = arc.Along(p);
+            if (Geo.Cm(along - radius) <= 0 || Geo.Cm(along + radius) >= Geo.Cm(arc.Length))
+            {
+                return false;
+            }
+
+            int needCm = Geo.Cm(_fields.Height(p.x, p.y) + height + _rules.StrategicSafeClearance);
+            return Geo.Cm(arc.HeightAt(along - radius)) >= needCm && Geo.Cm(arc.HeightAt(along + radius)) >= needCm;
+        }
+
+        /// <summary>The kind of each of <see cref="Lines"/>, in the same order.</summary>
+        public IReadOnlyList<ShotLineKind> Kinds => _kinds;
+
+        /// <summary>The planned arc of a safe leg among <see cref="Lines"/>, on the ball's own ground (as <c>BallGround.Height</c>).</summary>
+        public PlannedArc SafeArc(int line)
+        {
+            _heights ??= new CourseHeightField(_layout);
+            _arcs ??= new PlannedArc?[_lines.Count];
+            if (_arcs[line] == null)
+            {
+                Vector2 from = _lines[line][0];
+                Vector2 to = _lines[line][1];
+                _arcs[line] = new PlannedArc(from, _heights.Height(from.x, from.y), to, _heights.Height(to.x, to.y), _settings);
+            }
+
+            return _arcs[line].Value;
+        }
+
+        private bool ClearOfPlay(Vector2 p, float radius, float height, bool strategic)
         {
             if (Geo.Cm(Vector2.Distance(p, _layout.Tee)) < Geo.Cm(_rules.TeeKeepOut + radius))
             {
@@ -1065,10 +1159,18 @@ namespace IsoGolf.Generation
             }
 
             Vector2 shadowEnd = p + (_shadow * (height * _rules.ShadowLength));
-            foreach (Vector2[] line in _lines)
+            for (int i = 0; i < _lines.Count; i++)
             {
+                // A strategic prop may stand in the direct and cut corridors, and under a safe leg its arc passes over.
+                if (strategic && _kinds[i] != ShotLineKind.Safe)
+                {
+                    continue;
+                }
+
                 // The prop and its shadow stay out of the corridor: the shadow test holds the foot's own, at its start.
-                if (Geo.Cm(SegmentDistance(p, shadowEnd, line[0], line[1])) < Geo.Cm(_corridor + radius))
+                Vector2[] line = _lines[i];
+                if (Geo.Cm(SegmentDistance(p, shadowEnd, line[0], line[1])) < Geo.Cm(_corridor + radius)
+                    && !(strategic && UnderSafeArc(i, p, radius, height)))
                 {
                     return false;
                 }

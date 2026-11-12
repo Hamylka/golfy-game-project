@@ -21,6 +21,11 @@ namespace IsoGolf.Tests
             Assert.That(gen.FullCarry, Is.EqualTo(shot.CarryFor(1f)));
             Assert.That(gen.CarryAt(0.7f), Is.EqualTo(shot.CarryFor(0.7f)).Within(1e-4f));
             Assert.That(gen.FullReach, Is.EqualTo(ShotReach.FullPowerDistance(shot)).Within(1f));
+
+            // Strategic obstacles S1: a safe leg's planned arc (PlannedArc).
+            Assert.That(gen.LaunchAngle, Is.EqualTo(shot.LaunchAngle));
+            Assert.That(gen.BallRadius, Is.EqualTo(shot.BallRadius));
+            Assert.That(shot.ResponseOf(CourseSurface.Fairway).CarryScale, Is.EqualTo(1f), "PlannedArc plays safe legs from fairway at its carry");
         }
     }
 }

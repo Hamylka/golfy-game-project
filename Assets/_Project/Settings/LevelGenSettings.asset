@@ -103,6 +103,8 @@ MonoBehaviour:
   skirtNoiseScale: 0.7
   minCarry: 1
   fullCarry: 26
+  launchAngle: 36
+  ballRadius: 0.12
   fullReach: 32
   cutPower: 0.9
   layupPower: 0.7
@@ -226,6 +228,16 @@ MonoBehaviour:
     landmarkFromCentreline: 3.5
     builtMaxSlope: 0.3
     builtScale: {x: 0.92, y: 1.12}
+    spineChance: 100
+    spineWeights: {x: 50, y: 50}
+    spineMembers: {x: 2, y: 4}
+    spineGap: {x: 1.6, y: 2.2}
+    spineAcrossStep: 0.1
+    strategicChance: 60
+    strategicMembers: {x: 1, y: 3}
+    strategicSafeClearance: 0.3
+    strategicFullBlockChance: 25
+    strategicOvalMargin: 0.15
     shadowHeading: -125
     shadowLength: 0.78
   fairwayShapes:

@@ -153,6 +153,18 @@ namespace IsoGolf.Generation
         [Tooltip("The spine's free strip is searched across in steps of this length.")]
         [SerializeField, Range(0.05f, 0.5f)] private float spineAcrossStep = 0.1f;
 
+        [Header("Strategic obstacles (strategic obstacles plan: zones in S1, placement in S2)")]
+        [Tooltip("Chance in percent that a course with room gets a strategic group (director Q3 B).")]
+        [SerializeField, Range(0, 100)] private int strategicChance = 60;
+        [Tooltip("Props in a strategic group, from the fewest to the most.")]
+        [SerializeField] private Vector2Int strategicMembers = new Vector2Int(1, 3);
+        [Tooltip("Under a safe leg's middle, the leg's planned arc keeps at least this much between the ball's bottom and a strategic prop's top, along its whole footprint (director Q1 B).")]
+        [SerializeField, Min(0f)] private float strategicSafeClearance = 0.3f;
+        [Tooltip("Chance in percent that a strategic group may fully block a cut or risky direct line, where that makes sense (director Q5).")]
+        [SerializeField, Range(0, 100)] private int strategicFullBlockChance = 25;
+        [Tooltip("The fairway margin a strategic prop keeps on a rough island's oval, instead of the fairway margin (director Q2 B).")]
+        [SerializeField, Min(0f)] private float strategicOvalMargin = 0.15f;
+
         [Header("Shadows")]
         [Tooltip("Where shadows fall, in degrees from the course's heading (positive toward +Z), as Main's sun casts them. Read from the scene by a test.")]
         [SerializeField] private float shadowHeading = -125f;
@@ -236,6 +248,11 @@ namespace IsoGolf.Generation
         public Vector2Int SpineMembers => spineMembers;
         public Vector2 SpineGap => spineGap;
         public float SpineAcrossStep => spineAcrossStep;
+        public int StrategicChance => strategicChance;
+        public Vector2Int StrategicMembers => strategicMembers;
+        public float StrategicSafeClearance => strategicSafeClearance;
+        public int StrategicFullBlockChance => strategicFullBlockChance;
+        public float StrategicOvalMargin => strategicOvalMargin;
         public float ShadowHeading => shadowHeading;
         public float ShadowLength => shadowLength;
     }

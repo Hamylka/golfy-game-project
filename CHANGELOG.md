@@ -4,6 +4,21 @@ All notable progress on Iso Golf. The format follows [Keep a Changelog](https://
 
 ## [Unreleased]
 
+### 2026-11-12: strategic zones and the safe-leg flight check (`feature/strategic-zones`, strategic obstacles S1)
+
+#### Added
+
+- **Strategic zones** (strategic obstacles plan §2, director Q1 B): `PropZones.StrategicClearOfPlay` and `FitsStrategic`, the rule S2's strategic props will use. Direct and cut corridors are open to them; a safe leg's corridor only where the leg's planned arc keeps the ball's bottom `props.strategicSafeClearance` (0.3 m) above the prop's top along its whole footprint, never at take-off or landing (`UnderSafeArc`). Capsules, tee, green, hazards, the +X end and the fairway margin stay strict. `ClearOfPlay` and `Fits` are unchanged for every other prop.
+- **`PlannedArc`** (Generation): a safe leg's flight in closed form (fixed launch angle; ball-bottom height h0 + x·tanθ·(1 − x/C); the carry that lands at the leg's end), mirrored from `BallisticArc.ForCarry`. `LevelGenSettings` mirrors `launchAngle` (36) and `ballRadius` (0.12) from `ShotSettings`.
+- **`CourseChecks.SafeLegsFly`** (flag `CourseCheck.SafeLegHit`, props on only): each safe leg's first flight at its planned power strikes no prop (`PredictHit`, the search `Shoot` runs). A struck prop is dropped by `KeepProps`, never the course; the flag pole doesn't count. On today's courses it drops nothing.
+- Settings in `LevelGenSettings.props` for S2: `strategicChance` 60, `strategicMembers` 1-3, `strategicSafeClearance` 0.3, `strategicFullBlockChance` 25, `strategicOvalMargin` 0.15.
+- Tests (`StrategicZoneTests`): `StrategicKeepOuts`, `ArcHeightModelMatchesSimulation`, `SafeLegStartsAreOnFairway`, `SafeLegsFly_PassesOnCheckedCourses` (0-49, with an `Explicit` 0-199 twin), `SafeLegsFly_FailsOnAPropBeforeALanding_AndDropsIt`, `PlainCoursesBitIdentical` (every checked course, seeds 0-49 per par, against `CheckedCourseReferenceBefore`, captured on develop b3e4a8b by `CheckedCourseReferenceTests`; S2 reuses it). Measurement `SafeLegsFlyCost`. `LevelGenShotModelTests` holds the new mirrored numbers.
+- Measured (Editor, seeds 0-49): `SafeLegsFly` costs 0.29 / 0.81 / 1.74 ms per checked course (par 3 / 4 / 5; 66 / 138 / 203 legs), and checked generation is 59.9 / 145.7 / 246.4 ms per course (against 151 / 251 ms for par 4 / 5 before). No safe leg's first flight strikes a prop, so no prop is dropped and every checked course is bit-identical.
+
+#### Changed
+
+- `Docs/Decisions/m4-props.md`: the S1 decisions (arc model, clearance from the ball's bottom, pole not counted).
+
 ### 2026-11-12: strategic obstacles plan (`docs/strategic-obstacles-plan`)
 
 #### Added
