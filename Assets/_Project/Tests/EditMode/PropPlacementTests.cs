@@ -443,13 +443,15 @@ namespace IsoGolf.Tests
                     }
                 }
 
+                // On a fork the capsule follows the rest spots onto the safe branch (F3.4), as the safe route samples it.
+                RouteOffset? offset = FairwayShapePlacer.RouteOffsetOf(plan.FairwayShapes, Settings);
                 for (int r = 1; r + 1 < plan.SafeRoute.Count; r++)
                 {
                     float along = layout.Centreline.Project(plan.SafeRoute[r], out _);
                     for (float s = along - Settings.SafeLandingBack; s <= along + Settings.SafeLandingAhead + 0.001f; s += 0.5f)
                     {
-                        Vector2 centre = layout.Centreline.PointAt(s);
                         Vector2 side = Geo.Left(Geo.PathDirection(layout.Centreline, s));
+                        Vector2 centre = layout.Centreline.PointAt(s) + (side * (offset?.At(s) ?? 0f));
                         for (float across = -Settings.SafeLandingHalfWidth; across <= Settings.SafeLandingHalfWidth + 0.001f; across += 0.5f)
                         {
                             if (Vector2.Distance(c, centre + (side * across)) < radius - Tolerance)

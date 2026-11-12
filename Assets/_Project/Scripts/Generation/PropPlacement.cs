@@ -734,14 +734,24 @@ namespace IsoGolf.Generation
 
                 // Each rest spot's landing capsule (the tee and the safe target on the green have none): the band along the
                 // centreline that RouteWorld.CapsuleSamples samples, as a polyline with a half width. Its samples all lie
-                // within that width of it, so the band holds the capsule.
+                // within that width of it, so the band holds the capsule. On a fork the band follows the rest spots across onto the
+                // safe branch, row by row, exactly as RouteWorld.CapsuleSamples does (F3.4: until then the props kept out of a
+                // band on the centreline, over the spine, and not out of the real capsule).
+                RouteOffset? offset = FairwayShapePlacer.RouteOffsetOf(plan.FairwayShapes, settings);
                 for (int i = 1; i + 1 < plan.SafeRoute.Count; i++)
                 {
                     float along = layout.Centreline.Project(plan.SafeRoute[i], out _);
                     var points = new List<Vector2>();
                     for (float s = along - settings.SafeLandingBack; s <= along + settings.SafeLandingAhead + 0.001f; s += RouteWorld.Grid)
                     {
-                        points.Add(layout.Centreline.PointAt(s));
+                        Vector2 centre = layout.Centreline.PointAt(s);
+                        float across = offset?.At(s) ?? 0f;
+                        if (across != 0f)
+                        {
+                            centre += Geo.Left(Geo.PathDirection(layout.Centreline, s)) * across;
+                        }
+
+                        points.Add(centre);
                     }
 
                     _capsules.Add(points.ToArray());
