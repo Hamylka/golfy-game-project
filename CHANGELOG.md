@@ -4,6 +4,17 @@ All notable progress on Iso Golf. The format follows [Keep a Changelog](https://
 
 ## [Unreleased]
 
+### 2026-11-12: strategic obstacles plan (`docs/strategic-obstacles-plan`)
+
+#### Added
+
+- `Docs/Plans/strategic-obstacles-plan.md`: props on fork spines, split bands, rough islands (small props only) and dogleg cut corners, allowed in the direct and cut corridors but never in a landing capsule or a safe leg's flight (height-aware safe legs, new `SafeLegsFly` check), one group on 60% of courses with room, full blocks on 25% of the allowed cases, a sub-stream keyed 170 placed last, and cypress shadows on spines allowed across the direct and cut corridors. Director: Q1 B, Q2 B, Q3 B, Q4 A, Q5 "plutôt B mais pas dans 100% des cas", Q6 A, Q7 B, Q8 A, PR split S1-S2 accepted. Implementation in S1 (`feature/strategic-zones`) and S2 (`feature/strategic-props`), before 4.7.
+- Measured (Editor, seeds 0-99, bare variant 0): courses with room for a bush in a strategic zone, par 3 / 4 / 5: 0 / 28 / 59% with strict safe corridors, 0 / 33 / 68% with height-aware safe legs. No rough island holds a prop today (ovals 1.2-2 m wide). A spine cypress fits on about 55% of forks with the new shadow rule (about 9% today). Safe-leg apex median 3.2-3.6 m. Playing every safe leg costs at most 0.7 / 2.0 / 3.9 ms per course.
+
+#### Changed
+
+- `Docs/Decisions/m4-props.md`: the strategic obstacles decisions.
+
 ### 2026-11-12: props on fork spines (`feature/fairway-spine-props`, F3.4)
 
 #### Added
