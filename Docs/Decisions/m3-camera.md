@@ -1,0 +1,19 @@
+# Camera decisions (M3, M3 camera rotation plan, F1, PR 3d')
+
+Moved verbatim from CLAUDE.md (develop @ bc81fcf) so it is read only when the camera is touched. CLAUDE.md keeps a short summary.
+
+## Screen (was in Conventions > World and camera)
+
+**Screen:** forced portrait, with long, narrow islands. Par 3 courses fit entirely in one view when fully zoomed out, and every course starts closer than that, at a default zoom. Every par zooms out to the same scale, set by the island's width, so the ball and props are the same size on every course. Fully zoomed out, a longer course (par 4, par 5) shows mostly whole as an overview, its far end small; at the default zoom it is only partly visible, and the camera moves along the course during play, turning only at rest.
+
+## Camera
+
+perspective camera with a fixed pitch, rendering at native resolution with MSAA. Fully zoomed out, it frames a par 3 island whole on any portrait screen, at the same width-set scale on every course. A level starts at a closer default zoom, with the ball low on screen. The player moves around with a one-finger drag, zooms with a pinch, and turns the view with a two-finger twist, up to ±45° around the automatic heading. The view's centre stays above the island, with about 3 m of margin, at every zoom and heading (this replaces PR 33's zoomed-out corridor along the centreline and the axis-aligned limits).
+
+## Camera heading
+
+**Camera heading (`Rendering`, decided in the M3 camera rotation plan):** the camera turns itself only at rest: while it eases onto a stopped ball, and on the reset view. It faces the hole when the hole is within a full-power shot (from `ShotSettings`), otherwise the course ahead: the direction of the centreline from the ball's spot on it to a look-ahead distance further on (`CameraRigSettings.headingLookAhead`, 16 m, about half a full shot), stopped at the hole end, then turned toward the hole by at most `holeHeadingFarTurn` (20°), so a distant hole leans into view without the view looking across the void beside a dogleg; on the tee (start view, lost tee shot) it faces the course ahead only. Mid-leg the course ahead is the leg's heading; a ball resting short of a bend faces mostly the next leg, turning gradually with no threshold (decided in F1, `fix/m3-camera-heading-par5-seed6`). During flight it only translates. A twist made by hand lasts until the next shot or the reset view. The reset view also clears the twist. A drag that starts on the ball begins the shot instead. A camera drag keeps gliding and slows down after release. Camera gestures are blocked while aiming and allowed during flight. During a shot the camera stays still until the ball reaches the middle of the screen, then glides to keep it between about 40% and 60% of the screen's height and width, and at rest eases until the ball sits low on screen with the course ahead. A finger on the screen during flight pauses this follow; the camera eases back to the ball once the ball has stopped and the finger has lifted.
+
+## Approach framing
+
+**Approach framing (`Rendering`, decided in PR 3d', `feature/m3-approach-framing`):** for short shots the camera comes closer, with no fixed threshold. At rest it zooms just enough to put the hole about 62% up the screen, the ball staying at its rest spot 30% up, which keeps room below it for a full pull; the heading faces the hole, so the hole sits above the ball, with the convention's slight lean to the right. Further away (beyond about 10 m on `Main`) that zoom is the default zoom, and the closest zoom is reached around 4 m. It applies like the heading: only at rest, while easing onto a stopped ball, and on the reset view, never in flight. It wins over a manual zoom, which lasts until the next shot. The twist never changes the zoom, and a twist or a finger during the rest ease stops the zoom where it is.

@@ -4,6 +4,18 @@ All notable progress on Iso Golf. The format follows [Keep a Changelog](https://
 
 ## [Unreleased]
 
+### 2026-11-12: token economy, decision files and relaunch brief (`chore/claude-md-decision-files`)
+
+#### Added
+
+- `Docs/Decisions/` (`m3-camera.md`, `m3-generation.md`, `m4-props.md`): the detailed M3 and M4 decisions moved verbatim out of `CLAUDE.md`, read only when the matching system is touched. Future milestones get their own file (`m5-*.md`).
+- `Docs/Process/relaunch-brief.md`: when a subtask is relaunched (soft limit 300k, more than about 15 calls left, at a natural boundary) and the brief template.
+
+#### Changed
+
+- `CLAUDE.md` went from about 33 KB to about 22 KB: the camera, generator and props sections keep a summary and the invariants, with pointers. New rules: hub at most 350k tokens of context, subtask soft limit 300k, and how to wait for tests (about 30 s per `get_test_job` whatever `wait_timeout` says, so announce long runs, one poll per cycle, never rerun the whole suite because the bridge dropped).
+- Why: the token audit of 4-12 Nov (55 sessions): cost is mostly cache reads (calls × context), `get_test_job` polls were about 30% of the cache reads of the F3 and M4 subtasks, and `CLAUDE.md` is re-read on every call.
+
 ### 2026-11-12: fairway forks and the island bulge (`feature/fairway-forks`, F3.3)
 
 #### Added
