@@ -21,6 +21,12 @@ namespace IsoGolf.Gameplay
 
         /// <summary>No approach from the safe route's last rest spot holed or stopped on the green near the hole.</summary>
         NoRestNearHole = 4,
+
+        /// <summary>
+        /// A safe-route leg's first flight, at its planned power (<see cref="PlannedArc"/>), struck a prop before landing (strategic
+        /// obstacles S1). Checked with props on only; the flag pole doesn't count.
+        /// </summary>
+        SafeLegHit = 8,
     }
 
     /// <summary>What <see cref="CheckedCourse.Generate"/> settled on.</summary>
@@ -93,7 +99,40 @@ namespace IsoGolf.Gameplay
                 failed |= CourseCheck.NoRestNearHole;
             }
 
+            if (obstacles != null && !SafeLegsFly(ground, plan, shot, settings, obstacles, struck))
+            {
+                failed |= CourseCheck.SafeLegHit;
+            }
+
             return failed;
+        }
+
+        /// <summary>
+        /// Every leg of the safe route flies clear (strategic obstacles plan §2): played from its start, aimed at its end, at the power
+        /// its planned arc lands with (<see cref="PlannedArc"/>, the model strategic props are kept under), its first flight strikes no
+        /// prop before it lands. Bounces and rolls don't count: the landing capsules keep them clear of props, and today some already
+        /// reach a prop past the capsule. The flag pole doesn't count either (hub's decision): only a prop can be dropped, and the
+        /// pole is the approach check's business. The flight is found by the search <c>Shoot</c> runs (<see cref="BallSimulation.PredictHit"/>),
+        /// so no step is played. Every struck prop goes into <paramref name="struck"/>, so <see cref="CheckedCourse.KeepProps"/> drops it.
+        /// </summary>
+        public static bool SafeLegsFly(BallGround ground, CoursePlan plan, ShotSettings shot, LevelGenSettings settings, BallObstacles obstacles, List<int> struck = null)
+        {
+            bool clear = true;
+            for (int k = 0; k + 1 < plan.SafeRoute.Count; k++)
+            {
+                Vector2 from = plan.SafeRoute[k];
+                Vector2 to = plan.SafeRoute[k + 1];
+                var planned = new PlannedArc(from, ground.Height(from.x, from.y), to, ground.Height(to.x, to.y), settings);
+                var ball = new BallSimulation(ground, shot, from, obstacles);
+                BallisticArc arc = ball.ArcFor(planned.Direction, planned.Power);
+                if (ball.PredictHit(arc, ball.PredictLanding(arc), out ArcHit hit) && !hit.IsPole)
+                {
+                    struck?.Add(hit.Index);
+                    clear = false;
+                }
+            }
+
+            return clear;
         }
 
         /// <summary>

@@ -192,6 +192,10 @@ namespace IsoGolf.Generation
         [SerializeField, Min(0.1f)] private float minCarry = 1f;
         [Tooltip("Carry at full power on flat ground. Equals ShotSettings.maxCarry.")]
         [SerializeField, Min(0.1f)] private float fullCarry = 26f;
+        [Tooltip("Launch angle of every flight, in degrees. Equals ShotSettings.launchAngle (strategic obstacles S1: a safe leg's planned arc).")]
+        [SerializeField, Range(10f, 80f)] private float launchAngle = 40f;
+        [Tooltip("The ball's radius. Equals ShotSettings.ballRadius.")]
+        [SerializeField, Min(0.01f)] private float ballRadius = 0.12f;
         [Tooltip("How far a full-power shot goes, carry and roll. Within 1 m of ShotReach.FullPowerDistance.")]
         [SerializeField, Min(0.1f)] private float fullReach = 32f;
         [Tooltip("The power a golfer uses to cut a dogleg's corner.")]
@@ -382,6 +386,8 @@ namespace IsoGolf.Generation
         public float MinCarry => minCarry;
         public float FullCarry => fullCarry;
         public float FullReach => fullReach;
+        public float LaunchAngle => launchAngle;
+        public float BallRadius => ballRadius;
         public float CutPower => cutPower;
         public float LayupPower => layupPower;
         public float SafeStep => safeStep;
