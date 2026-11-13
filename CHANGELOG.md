@@ -4,6 +4,15 @@ All notable progress on Iso Golf. The format follows [Keep a Changelog](https://
 
 ## [Unreleased]
 
+### 2026-11-13: perched birds (`feature/m4-birds`, M4 task 4.6)
+
+#### Added
+
+- **Birds** (visual only): 2-5 tiny faceted white doves per course (director's request: off-white, soft grey tips and tail; PR 67), perched on the tops of olives, bushes, sheds and benches, with open rough ground as the fallback. When a ball flying or rolling comes within 3.5 m they flap up and away along a fixed seed-derived path, shrink to nothing at its far end (no popping), and come back to the same perch 8-14 s later, once the ball is clear. CPU-driven, no physics; one dynamic mesh on the land material for the whole flock, so one extra draw call (plus its shadow pass).
+- `BirdPerches` (placement, view-time, own stream salt 9; 6 = surfaces, 7 = props, 8 = fairway shapes are taken), `BirdFlight` (state machine), `BirdMeshKit` (template and wing flap), `BirdsView` (mesh), `BirdSettings` (asset in `Settings/`), all in `Generation` because `Rendering` cannot see the palette or the kit. `LevelBootstrap` feeds `BirdsView.Advance` the ball's course-local position and moving flag, so no assembly cycle. `Main` gets a `Birds` object under `Course`.
+- Tests: `BirdTests` (determinism, perch rules over seeds 0-49 per par, trigger radius, state machine, no popping, mesh, view) and one `MainSceneTests` case.
+- `Docs/Decisions/m4-props.md`: the Ambient life bullet.
+
 ### 2026-11-13: strategic props (`feature/strategic-props`, strategic obstacles S2)
 
 #### Added

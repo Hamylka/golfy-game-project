@@ -20,6 +20,8 @@ namespace IsoGolf.Gameplay
         [SerializeField] private HoleView hole;
         [Tooltip("Optional. Scenes without it keep their sun as authored.")]
         [SerializeField] private LevelSun sun;
+        [Tooltip("Optional, needs the ball and a generated course. The perched birds (M4 PR 4.6): visual only.")]
+        [SerializeField] private BirdsView birds;
 
         [Tooltip("The ball strikes the props and, in flight, the flag pole. On for Sandbox_Par3's hand-placed trees; and for Main, whose generated props (M4 PR 4.3) and flag pole the checks play with.")]
         [SerializeField] private bool collisions;
@@ -91,6 +93,21 @@ namespace IsoGolf.Gameplay
                 hole.Build(ground);
                 ball.Build(ground, collisions ? BallObstacles.ForCourse(terrain.PropShapes, ground, ball.Shot) : null);
                 islandCamera.PlaceOn(ball.transform.localPosition);
+
+                if (birds != null && Generated != null)
+                {
+                    birds.Build(terrain.Layout, seed, par, Generated.Variant);
+                }
+            }
+        }
+
+        private void Update()
+        {
+            // The ball's course-local position and whether it is in motion, for the birds, which are visual only and never feed back.
+            if (birds != null && ball != null && ball.Simulation != null)
+            {
+                BallState state = ball.Simulation.State;
+                birds.Advance(Time.deltaTime, ball.Simulation.InterpolatedPosition, state == BallState.Flying || state == BallState.Rolling);
             }
         }
 
