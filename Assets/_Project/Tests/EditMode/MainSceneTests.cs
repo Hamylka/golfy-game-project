@@ -64,6 +64,19 @@ namespace IsoGolf.Tests
         }
 
         [Test]
+        public void BirdsLiveInTheCourseContainerAtItsOrigin_AndTheBootstrapDrivesThem()
+        {
+            // M4 PR 4.6: course-local, so they float with the island; the bootstrap feeds them the ball's local position.
+            BirdsView birds = Root("Course").GetComponentInChildren<BirdsView>(true);
+            Assert.That(birds, Is.Not.Null);
+            Assert.That(birds.transform.localPosition, Is.EqualTo(Vector3.zero));
+            Assert.That(birds.transform.localRotation, Is.EqualTo(Quaternion.identity));
+            Assert.That(birds.transform.localScale, Is.EqualTo(Vector3.one));
+            var bootstrap = Object.FindFirstObjectByType<LevelBootstrap>();
+            Assert.That(new SerializedObject(bootstrap).FindProperty("birds").objectReferenceValue, Is.SameAs(birds));
+        }
+
+        [Test]
         public void CameraCloudsAndSunStayOutsideTheCourseContainer()
         {
             // They must not float with the course: that contrast is what makes the motion visible.

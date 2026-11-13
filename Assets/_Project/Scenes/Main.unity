@@ -741,6 +741,7 @@ Transform:
   - {fileID: 1103648084}
   - {fileID: 441434112}
   - {fileID: 936105976}
+  - {fileID: 1716760389}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1103648083
@@ -1033,6 +1034,53 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: IsoGolf.Rendering::IsoGolf.Rendering.LevelSun
   sun: {fileID: 1678882214}
+--- !u!1 &1716760388
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1716760389}
+  - component: {fileID: 1716760390}
+  m_Layer: 0
+  m_Name: Birds
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1716760389
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1716760388}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 951827837}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1716760390
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1716760388}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3edee8ec9648cc645acb494ff628fff0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: IsoGolf.Generation::IsoGolf.Generation.BirdsView
+  settings: {fileID: 11400000, guid: 548e7c9fcc9af9940add825ac9d72d21, type: 2}
+  palette: {fileID: 11400000, guid: f0bc7674256819e4d920b9b8f6a2df40, type: 2}
+  material: {fileID: 2100000, guid: ad4e2044caef9814f9c30aa2c03bd228, type: 2}
 --- !u!1 &1989556502
 GameObject:
   m_ObjectHideFlags: 0
@@ -1117,6 +1165,7 @@ MonoBehaviour:
   ball: {fileID: 1103648086}
   hole: {fileID: 441434113}
   sun: {fileID: 1678882217}
+  birds: {fileID: 1716760390}
   collisions: 1
   generator: {fileID: 11400000, guid: 38ed32c895a0df548a6b8030c7781e97, type: 2}
   seed: 1
