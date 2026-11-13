@@ -15,7 +15,7 @@ MonoBehaviour:
   count: {x: 2, y: 5}
   flockSpread: 4
   perchSink: 0.05
-  perchClearance: 1.6
+  perchClearance: 0.8
   groundGrid: 1
   teeClearance: 3
   triggerRadius: 3.5

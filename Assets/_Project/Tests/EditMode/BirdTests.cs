@@ -107,19 +107,23 @@ namespace IsoGolf.Tests
                             Assert.AreNotEqual(CourseSurface.Bunker, around, $"par {par} seed {seed} bunker beside a perch");
                         }
 
-                        float ground = fields.Height(foot.x, foot.z);
-                        if (perch.Position.y > ground + 0.2f)
+                        // On a prop: within a metre of an olive, bush, shed or bench (a perch's top is up to its crown radius off the foot).
+                        foreach (CourseProp prop in layout.Props)
                         {
-                            onProps++;
+                            bool perchable = prop.Kind == PropKind.Olive || prop.Kind == PropKind.Bush || prop.Kind == PropKind.Shed || prop.Kind == PropKind.Bench;
+                            if (perchable && Vector2.Distance(new Vector2(prop.Root.x, prop.Root.z), new Vector2(foot.x, foot.z)) < 1.2f)
+                            {
+                                onProps++;
+                                break;
+                            }
                         }
                     }
                 }
             }
 
             Assert.Greater(courses, 100, "most courses have a flock");
-            // A rock or a wall top stands under 0.2 m over the ground, so this undercounts: it only shows props are the main perch.
-            TestContext.Out.WriteLine($"{courses} flocks, {total} birds, {onProps} over 0.2 m above the ground");
-            Assert.Greater(onProps, total / 4, "birds perch on props first");
+            TestContext.Out.WriteLine($"{courses} flocks, {total} birds, {onProps} on an olive, bush, shed or bench");
+            Assert.Greater(onProps, total / 2, "birds perch on props first");
         }
 
         [Test]

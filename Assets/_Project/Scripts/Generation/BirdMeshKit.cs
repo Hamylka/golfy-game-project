@@ -6,7 +6,7 @@ namespace IsoGolf.Generation
     /// <summary>
     /// The bird's faceted mesh as a template (M4 PR 4.6): a small body, head, beak and tail that never move, and two wings in two parts
     /// (an inner and an outer one, the outer beating further) that the CPU rotates about the body axis each frame, so the wings read as
-    /// flapping. Local space: +X forward, +Y up, 0.22 m long at scale 1. Palette vertex colours only: slate and stone for the body and
+    /// flapping. Local space: +X forward, +Y up, 0.22 m long at scale 1. Palette vertex colours only: off-white and stone for the body and
     /// wings, tile for the beak, nothing black. Triangles are not shared (flat shading); wings and tail are double-sided, a top and a bottom
     /// triangle each, so they are seen from above and below whatever the culling.
     /// </summary>
@@ -35,13 +35,16 @@ namespace IsoGolf.Generation
         public static BirdMeshKit Build(PaletteSettings palette)
         {
             var kit = new BirdMeshKit();
-            Color32 back = Tone(palette.SlateMid);
-            Color32 belly = Tone(palette.StoneMid);
-            Color32 head = Tone(palette.SlateDark);
+            // Doves (director, PR 67): an off-white, slightly warm body and wings, soft grey tips and tail, so the facets and the flap still read.
+            // Existing palette entries only: the ball's off-white, the stone row and the cloud shade. A greyer back and belly keep it off the cream rocks.
+            Color32 back = Tone(palette.StoneMid);
+            Color32 belly = Tone(palette.StoneLight);
+            Color32 head = Tone(palette.TraceOffWhite);
             Color32 beak = Tone(palette.TileDark);
-            Color32 wingTop = Tone(palette.SlateLight);
-            Color32 wingUnder = Tone(palette.StoneLight);
-            Color32 tail = Tone(palette.SlateDark);
+            Color32 wingTop = Tone(palette.TraceOffWhite);
+            Color32 wingTipTone = Tone(palette.CloudShade);
+            Color32 wingUnder = Tone(palette.StoneMid);
+            Color32 tail = Tone(palette.CloudShade);
 
             // Body: a flattened octahedron.
             var nose = new Vector3(0.10f, 0f, 0f);
@@ -103,7 +106,7 @@ namespace IsoGolf.Generation
                 var wingTip = new Vector3(-0.03f, 0.04f, 0.30f * side);
                 kit.Flat(sFront, jointFront, jointBack, wingTop, wingUnder, true, 0f, 0.5f, 0.5f);
                 kit.Flat(sFront, jointBack, sBack, wingTop, wingUnder, true, 0f, 0.5f, 0f);
-                kit.Flat(jointFront, wingTip, jointBack, wingTop, wingUnder, true, 0.5f, 1f, 0.5f);
+                kit.Flat(jointFront, wingTip, jointBack, wingTipTone, wingUnder, true, 0.5f, 1f, 0.5f);
             }
 
             return kit;

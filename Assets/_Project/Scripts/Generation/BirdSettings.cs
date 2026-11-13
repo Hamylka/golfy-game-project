@@ -16,7 +16,7 @@ namespace IsoGolf.Generation
         [Tooltip("How far a bird sits below a crown's top, so it neither floats nor sinks into a crown whose faces are jittered.")]
         [SerializeField] private float perchSink = 0.05f;
         [Tooltip("Ground is tested this far around a perch: never a bunker, water, the green or the island's void within it.")]
-        [SerializeField] private float perchClearance = 1.6f;
+        [SerializeField] private float perchClearance = 0.8f;
         [Tooltip("Grid step of the rough-ground fallback, used only when the course has no prop to perch on.")]
         [SerializeField] private float groundGrid = 1f;
         [Tooltip("The tee is kept free within this radius.")]

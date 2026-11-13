@@ -40,7 +40,7 @@ namespace IsoGolf.Generation
     /// generation, the checks, the simulation or the aim preview reads the birds, so every prop and fingerprint stays as it was.
     /// Deterministic: the same (seed, par, variant) on the same course gives the same flock.
     ///
-    /// How it works: the candidates are the tops of the course's own props (olive crowns, bushes, rocks, walls, sheds, benches),
+    /// How it works: the candidates are the tops of the course's own props (olive crowns, bushes, sheds, benches; never the cream stone of rocks and walls, where a white dove vanishes),
     /// each tested for clear ground around it (rough or fairway only: no bunker, water, green or void within the clearance, away from
     /// the tee and the +X end). One candidate is drawn for the first bird; the others come from the candidates within the flock's
     /// spread, in a fixed order, and share a perch (offset a few centimetres) when too few remain. A course with no suitable prop
@@ -185,9 +185,6 @@ namespace IsoGolf.Generation
             {
                 case PropKind.Olive:
                 case PropKind.Bush:
-                case PropKind.Rock:
-                case PropKind.RoundRock:
-                case PropKind.Wall:
                 case PropKind.Shed:
                 case PropKind.Bench:
                     return true;
