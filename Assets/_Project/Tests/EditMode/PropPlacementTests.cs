@@ -415,6 +415,11 @@ namespace IsoGolf.Tests
             bool spineCypress = prop.Cluster == PropPlacement.SpineBase && prop.Kind == PropKind.Cypress;
             float top = Mathf.Min(prop.Root.y, prop.End.y) + height;
 
+            // A tall obstacle (director Q1 B): only its base keeps the fairway margin (and the ponds' keep-out); its crown may
+            // overhang the fairway. Every keep-out of play still takes its whole reach.
+            bool tall = prop.Zone == StrategicZone.BlockLine;
+            float groundReach = tall && PropBuilder.TallBase(prop.Kind, Settings.PropKit) >= 0f ? PropBuilder.TallBase(prop.Kind, Settings.PropKit) : radius;
+
             var circles = new List<Vector2>();
             var from = new Vector2(prop.Root.x, prop.Root.z);
             var to = new Vector2(prop.End.x, prop.End.z);
@@ -438,7 +443,7 @@ namespace IsoGolf.Tests
                     // island keeps the oval's narrower margin (S2, director Q2 B).
                     for (int a = 0; a < 24; a++)
                     {
-                        float reach = radius + margin - Tolerance;
+                        float reach = groundReach + margin - Tolerance;
                         if (fields.Surface(Geo.At(c + (Geo.Dir(a * 15f) * reach))) == CourseSurface.Fairway
                             || fields.Surface(Geo.At(c + (Geo.Dir(a * 15f) * reach * 0.5f))) == CourseSurface.Fairway)
                         {
@@ -494,6 +499,16 @@ namespace IsoGolf.Tests
                             {
                                 return "landing capsule";
                             }
+
+                            // A tall obstacle's shadow stays off the capsules too (director Q6 A).
+                            for (int k = 1; tall && k <= 10; k++)
+                            {
+                                Vector2 shade = c + (shadow * (height * rules.ShadowLength * k / 10f));
+                                if (Vector2.Distance(shade, centre + (side * across)) < radius - Tolerance)
+                                {
+                                    return "landing capsule (shadow)";
+                                }
+                            }
                         }
                     }
                 }
@@ -525,7 +540,7 @@ namespace IsoGolf.Tests
                     }
 
                     float pond = rim ? rules.RimGap.x : rules.HazardKeepOut;
-                    if (!bridge && fields.Pond(Geo.At(c + (dir * (pond + radius - Tolerance)))) < 0f)
+                    if (!bridge && fields.Pond(Geo.At(c + (dir * (pond + groundReach - Tolerance)))) < 0f)
                     {
                         return "pond";
                     }

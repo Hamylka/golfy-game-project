@@ -155,7 +155,9 @@ namespace IsoGolf.Tests
                     var fields = new CourseFields(layout);
                     foreach (CourseProp prop in layout.Props)
                     {
-                        if (prop.Kind == PropKind.Bridge || prop.Kind == PropKind.Rake)
+                        // A tall obstacle's crown may overhang the fairway (director Q1 B, tall obstacles); its base keeps the margin,
+                        // which PropPlacementTests.BrokenKeepOut holds.
+                        if (prop.Kind == PropKind.Bridge || prop.Kind == PropKind.Rake || prop.Zone == StrategicZone.BlockLine)
                         {
                             continue;
                         }
@@ -236,7 +238,9 @@ namespace IsoGolf.Tests
                     var fields = new CourseFields(layout);
                     foreach (CourseProp prop in layout.Props)
                     {
-                        if (prop.Kind < PropKind.Shed || prop.Kind == PropKind.Bridge || prop.Kind == PropKind.Rake)
+                        // The pine and the clump are trees, not built props: only the dovecote wants level ground.
+                        if (prop.Kind < PropKind.Shed || prop.Kind == PropKind.Bridge || prop.Kind == PropKind.Rake
+                            || prop.Kind == PropKind.UmbrellaPine || prop.Kind == PropKind.CypressClump)
                         {
                             continue;
                         }

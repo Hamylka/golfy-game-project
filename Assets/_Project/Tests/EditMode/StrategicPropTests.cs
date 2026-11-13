@@ -233,7 +233,13 @@ namespace IsoGolf.Tests
                         continue;
                     }
 
+                    // A tall obstacle closes a block line before any zone is drawn (director Q5 B): TallObstacleTests hold it.
                     StrategicZone zone = group[0].Zone;
+                    if (zone == StrategicZone.BlockLine)
+                    {
+                        continue;
+                    }
+
                     bool inABlockZone = false;
                     foreach (PropPlacement.StrategicArea area in blockAreas)
                     {

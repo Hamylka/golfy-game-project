@@ -4,6 +4,21 @@ All notable progress on Iso Golf. The format follows [Keep a Changelog](https://
 
 ## [Unreleased]
 
+### 2026-11-13: tall obstacles (`feature/tall-obstacles`, follow-up to strategic obstacles S2)
+
+#### Added
+
+- **Tall obstacles** that fully block a line where Q5 allows it (director: "Q1 B, Q2 A, Q3 A, Q4 A, Q5 B, Q6 A, Q7 A"): an umbrella pine (6 m, crown r 2.2 m), a cypress clump (5.5 m, r 1.35 m) and a rarer dovecote (5.5 m, r 1.12 m), new `PropKind`s built by `PropBuilder` with shapes from `PropKitSettings` alone. On a course with a block line, `PropPlacement.Strategic` first searches every spot that closes it (no draw), then draws the kind (`props.tallWeights` 50 / 35 / 15) and an even spot on stream 170; with no spot, the course gets S2's group bit for bit. The base stands on rough with the fairway margin and only the crown may overhang the fairway (Q1 B, tall obstacles only); the shadow stays off the safe legs and the landing capsules (Q6 A). `StrategicZone.BlockLine` marks them.
+- Tests `TallObstacleTests` (seeds 0-49): shapes hold the mesh and ignore the seed, obstacles close only allowed lines and keep out, courses without one unchanged, the aim preview stops at one. Measurements `TallObstacleMeasurements.TallShareAndCost` and `CheckedTallAndReviewSeeds`.
+- Measured (Editor; variant 0, seeds 0-199): a full block on 0 / 5.5 / 15.5% of courses (par 3 / 4 / 5), mostly pines; props per course 5.09 / 9.56 / 15.06; no measurable generation cost. Checked seeds 0-49: 0 / 6 / 10 kept, 0 props dropped.
+- Phone review APK `Builds/Android/IsoGolf_TallObstacles.apk` (development build, `ISOGOLF_MEASURE`): `PhoneChecksPanel`'s second row steps through the 16 checked courses with a tall obstacle.
+- `Docs/Decisions/m4-props.md`: the Tall obstacles bullet.
+
+#### Changed
+
+- On the 11 par 4s and 31 par 5s (of seeds 0-199) that now get a tall obstacle, it replaces S2's strategic group (or adds one where S2 drew none); every other prop and course is unchanged.
+- Test helpers: `PropPlacementTests.BrokenKeepOut` applies the tall rule (base for the fairway and ponds, shadow off capsules); `NoPropShapeReachesFairway` and `BuiltProps_StandOnLevelGround` leave the tall crowns and the two trees out; `B3GroupsStandOnTheBlockLineWithTallKinds` skips tall obstacles.
+
 ### 2026-11-13: perched birds (`feature/m4-birds`, M4 task 4.6)
 
 #### Added

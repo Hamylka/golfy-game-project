@@ -183,6 +183,12 @@ namespace IsoGolf.Generation
         [Tooltip("S2: a candidate foot lies within the direct or cut corridor plus this much, so the member can reach into it.")]
         [SerializeField, Min(0f)] private float strategicSlotReach = 1f;
 
+        [Header("Tall obstacles")]
+        [Tooltip("Tall obstacles (director Q2 A): the weights of the umbrella pine, the cypress clump and the dovecote, among the kinds that can close a line on this course.")]
+        [SerializeField] private Vector3Int tallWeights = new Vector3Int(50, 35, 15);
+        [Tooltip("Tall obstacles: candidate spots lie on a grid of this step along and across a block line.")]
+        [SerializeField, Range(0.1f, 1f)] private float tallSlotGrid = 0.5f;
+
         [Header("Shadows")]
         [Tooltip("Where shadows fall, in degrees from the course's heading (positive toward +Z), as Main's sun casts them. Read from the scene by a test.")]
         [SerializeField] private float shadowHeading = -125f;
@@ -280,6 +286,8 @@ namespace IsoGolf.Generation
         public Vector2 StrategicSmallBushScale => strategicSmallBushScale;
         public float StrategicSlotGrid => strategicSlotGrid;
         public float StrategicSlotReach => strategicSlotReach;
+        public Vector3Int TallWeights => tallWeights;
+        public float TallSlotGrid => tallSlotGrid;
         public float ShadowHeading => shadowHeading;
         public float ShadowLength => shadowLength;
     }
