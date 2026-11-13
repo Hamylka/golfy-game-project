@@ -236,8 +236,17 @@ MonoBehaviour:
     strategicChance: 60
     strategicMembers: {x: 1, y: 3}
     strategicSafeClearance: 0.3
-    strategicFullBlockChance: 25
+    strategicFullBlockChance: 100
     strategicOvalMargin: 0.15
+    strategicTreeWeights: {x: 25, y: 25}
+    strategicLowWeights: {x: 30, y: 20}
+    strategicBuiltChance: 15
+    strategicGap: {x: 1.2, y: 2}
+    strategicPassGap: 1.5
+    strategicSmallReach: 0.5
+    strategicSmallBushScale: {x: 0.6, y: 0.8}
+    strategicSlotGrid: 0.25
+    strategicSlotReach: 1
     shadowHeading: -125
     shadowLength: 0.78
   fairwayShapes:

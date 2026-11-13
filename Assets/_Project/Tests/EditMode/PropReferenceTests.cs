@@ -32,6 +32,12 @@ namespace IsoGolf.Tests
         [Timeout(1800000)]
         public void CapturePropReferenceCapsuleFix() => Capture("PropReferenceCapsuleFix", "after the fork capsule fix, before the spine theme");
 
+        /// <summary>Writes `PropReferenceS1`. Run by hand only on S1's code (develop 71c29f5), before any strategic obstacles S2 change.</summary>
+        [Test]
+        [Explicit("Writes the reference file; run by hand only on the reference code")]
+        [Timeout(1800000)]
+        public void CapturePropReferenceS1() => Capture("PropReferenceS1", "on develop 71c29f5 (S1), before any strategic obstacles S2 change");
+
         /// <summary>The course's props, as the references store them: par, seed, 1 on a fork course (else 0), the count, then one hash per prop.</summary>
         internal static List<ulong> Row(int seed, int par, out CourseLayout layout)
         {

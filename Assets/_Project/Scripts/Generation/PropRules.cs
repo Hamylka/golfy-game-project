@@ -160,10 +160,28 @@ namespace IsoGolf.Generation
         [SerializeField] private Vector2Int strategicMembers = new Vector2Int(1, 3);
         [Tooltip("Under a safe leg's middle, the leg's planned arc keeps at least this much between the ball's bottom and a strategic prop's top, along its whole footprint (director Q1 B).")]
         [SerializeField, Min(0f)] private float strategicSafeClearance = 0.3f;
-        [Tooltip("Chance in percent that a strategic group may fully block a cut or risky direct line, where that makes sense (director Q5).")]
-        [SerializeField, Range(0, 100)] private int strategicFullBlockChance = 25;
+        [Tooltip("Chance in percent that a strategic group goes, with tall kinds, to a zone on a cut or risky direct line where a full block is allowed (director Q5, then \"B3 à 100%\", then \"Pour l'instant A\": tall obstacles to fly over; on today's kit they never close the line).")]
+        [SerializeField, Range(0, 100)] private int strategicFullBlockChance = 100;
         [Tooltip("The fairway margin a strategic prop keeps on a rough island's oval, instead of the fairway margin (director Q2 B).")]
         [SerializeField, Min(0f)] private float strategicOvalMargin = 0.15f;
+        [Tooltip("S2: kind weights of a strategic member off rough islands, olive and cypress (one integer draw over these and the low weights).")]
+        [SerializeField] private Vector2Int strategicTreeWeights = new Vector2Int(25, 25);
+        [Tooltip("S2: kind weights of a strategic member off rough islands, bush and rock.")]
+        [SerializeField] private Vector2Int strategicLowWeights = new Vector2Int(30, 20);
+        [Tooltip("S2: chance in percent that a group's first member is built (a short wall on a spine, a split or a corner, or a shed on a spine or a corner), where it fits (director Q6 A).")]
+        [SerializeField, Range(0, 100)] private int strategicBuiltChance = 15;
+        [Tooltip("S2: a strategic member stands this far from the one before it.")]
+        [SerializeField] private Vector2 strategicGap = new Vector2(1.2f, 2f);
+        [Tooltip("S2: a line stays playable if its corridor keeps a free run this wide across it, past the members a full-power shot can't loft (director Q5).")]
+        [SerializeField, Min(0f)] private float strategicPassGap = 1.5f;
+        [Tooltip("S2: on a rough island, a strategic prop reaches at most this far from its foot (director Q2 B: small props only).")]
+        [SerializeField, Min(0f)] private float strategicSmallReach = 0.5f;
+        [Tooltip("S2: the scale of a low bush on a rough island.")]
+        [SerializeField] private Vector2 strategicSmallBushScale = new Vector2(0.6f, 0.8f);
+        [Tooltip("S2: a strategic zone's candidate feet lie on a grid of this step.")]
+        [SerializeField, Range(0.1f, 1f)] private float strategicSlotGrid = 0.25f;
+        [Tooltip("S2: a candidate foot lies within the direct or cut corridor plus this much, so the member can reach into it.")]
+        [SerializeField, Min(0f)] private float strategicSlotReach = 1f;
 
         [Header("Shadows")]
         [Tooltip("Where shadows fall, in degrees from the course's heading (positive toward +Z), as Main's sun casts them. Read from the scene by a test.")]
@@ -253,6 +271,15 @@ namespace IsoGolf.Generation
         public float StrategicSafeClearance => strategicSafeClearance;
         public int StrategicFullBlockChance => strategicFullBlockChance;
         public float StrategicOvalMargin => strategicOvalMargin;
+        public Vector2Int StrategicTreeWeights => strategicTreeWeights;
+        public Vector2Int StrategicLowWeights => strategicLowWeights;
+        public int StrategicBuiltChance => strategicBuiltChance;
+        public Vector2 StrategicGap => strategicGap;
+        public float StrategicPassGap => strategicPassGap;
+        public float StrategicSmallReach => strategicSmallReach;
+        public Vector2 StrategicSmallBushScale => strategicSmallBushScale;
+        public float StrategicSlotGrid => strategicSlotGrid;
+        public float StrategicSlotReach => strategicSlotReach;
         public float ShadowHeading => shadowHeading;
         public float ShadowLength => shadowLength;
     }

@@ -35,7 +35,9 @@ namespace IsoGolf.Tests
 
                 List<ulong> now = PropReferenceTests.Row(row.Key.Item2, row.Key.Item1, out CourseLayout layout);
                 Assert.IsFalse(PropReferenceTests.IsFork(layout), $"par {row.Key.Item1} seed {row.Key.Item2} drew a fork it did not have");
-                if (!Same(now.GetRange(4, now.Count - 4), row.Value.props))
+                // The strategic group (S2) is new on any course; every other prop stays.
+                int none = 0;
+                if (!Same(Others(layout, ref none, false), row.Value.props))
                 {
                     failures.AppendLine($"par {row.Key.Item1} seed {row.Key.Item2}: props changed ({row.Value.props.Count} -> {now.Count - 4})");
                 }
@@ -475,13 +477,22 @@ namespace IsoGolf.Tests
         }
 
         /// <summary>The course's prop hashes, in order, leaving out its spine cluster (counted into <paramref name="spines"/>).</summary>
-        private static List<ulong> Others(CourseLayout layout, ref int spines)
+        /// <summary>
+        /// The hashes of a course's props, in order, leaving out the strategic group (S2) and, with <paramref name="withoutSpine"/>, the
+        /// spine cluster; <paramref name="spines"/> counts courses that have a spine cluster.
+        /// </summary>
+        internal static List<ulong> Others(CourseLayout layout, ref int spines, bool withoutSpine = true)
         {
             var others = new List<ulong>();
             bool spine = false;
             foreach (CourseProp prop in layout.Props)
             {
-                if (prop.Cluster == PropPlacement.SpineBase)
+                if (prop.Strategic)
+                {
+                    continue;
+                }
+
+                if (prop.Cluster == PropPlacement.SpineBase && withoutSpine)
                 {
                     spine = true;
                 }

@@ -37,6 +37,9 @@ namespace IsoGolf.Generation
         // The fork spine's cluster (F3.4): its number and stream key, after every other, so no earlier prop moves.
         internal const int SpineBase = 160;
 
+        // The strategic group (strategic obstacles S2): its number and stream key, after the spine's, placed last.
+        internal const int StrategicBase = 170;
+
         // A spine member with no room at its slot tries the next one this far along.
         private const float SpineSlot = 0.25f;
 
@@ -66,6 +69,21 @@ namespace IsoGolf.Generation
             public float Radius;
             public float Height;
             public bool Steep;
+            public StrategicZone Zone;
+        }
+
+        /// <summary>A strategic zone of this course and the feet a member may stand on in it, in a fixed order.</summary>
+        internal sealed class StrategicArea
+        {
+            public StrategicZone Zone;
+            public float Margin;
+            public readonly List<Vector2> Slots = new List<Vector2>();
+
+            /// <summary>The line a block-draw group closes here (B3): the first line where a full block is allowed that a slot reaches, or −1.</summary>
+            public int BlockLine = -1;
+
+            /// <summary>The slots that reach <see cref="BlockLine"/>'s corridor, in grid order.</summary>
+            public readonly List<Vector2> BlockSlots = new List<Vector2>();
         }
 
         /// <summary>The props of this course, or none if the settings have no prop kit or the course has no plan (hand-made).</summary>
@@ -132,11 +150,14 @@ namespace IsoGolf.Generation
             // Last, a fork's spine (F3.4): earlier props never read later ones, so this leaves every prop above bit for bit.
             Spine(new SeededRandom(Stream(propsSeed, SpineBase)), layout, settings, zones, maker, rules, placed);
 
+            // Then one strategic group (strategic obstacles S2), placed last of all for the same reason.
+            Strategic(new SeededRandom(Stream(propsSeed, StrategicBase)), layout, par, settings, zones, maker, rules, placed);
+
             // Each prop was built once, without colours, when it was tried: its shapes are fitted to that mesh, and the terrain
             // view builds the same mesh from the same seed, so they are the drawn prop's own.
             foreach (Planned prop in placed)
             {
-                result.Add(new CourseProp(prop.Kind, prop.Root3, prop.End3, prop.Scale, prop.Seed, prop.Cluster, prop.Shapes, prop.Yaw));
+                result.Add(new CourseProp(prop.Kind, prop.Root3, prop.End3, prop.Scale, prop.Seed, prop.Cluster, prop.Shapes, prop.Yaw, prop.Zone));
             }
 
             return result;
@@ -464,19 +485,21 @@ namespace IsoGolf.Generation
             float step = rules.SpineAcrossStep;
             int reach = Mathf.FloorToInt((half / step) + 0.001f);
 
-            if (!StripMiddle(zones, centre, side, middle, step, reach, Maker.FootRadius, 0f, out Vector2 foot))
+            if (!StripMiddle(zones, centre, side, middle, step, reach, Maker.FootRadius, 0f, ClearRule.Strict, out Vector2 foot))
             {
                 return false;
             }
 
+            // A cypress's long shadow may cross the direct and cut corridors on a spine, never a safe leg's (director Q7 B).
+            ClearRule rule = kind == PropKind.Cypress ? ClearRule.SpineCypress : ClearRule.Strict;
             Planned probe = maker.Single(sub, kind, foot, ScaleFor(sub, rules, kind), SpineBase);
-            if (probe == null || probe.Steep || !StripMiddle(zones, centre, side, middle, step, reach, probe.Radius, probe.Height, out Vector2 at))
+            if (probe == null || probe.Steep || !StripMiddle(zones, centre, side, middle, step, reach, probe.Radius, probe.Height, rule, out Vector2 at))
             {
                 return false;
             }
 
             Planned prop = maker.Seeded(kind, at, probe.Scale, SpineBase, probe.Seed);
-            return TryAccept(sub, zones, rules, prop, placed, cluster, false);
+            return TryAccept(sub, zones, rules, prop, placed, cluster, false, true, rule);
         }
 
         /// <summary>
@@ -484,12 +507,12 @@ namespace IsoGolf.Generation
         /// prop of this reach and height fits; the first such run on a tie. False if none fits.
         /// </summary>
         private static bool StripMiddle(PropZones zones, Vector2 centre, Vector2 side, float middle, float step, int reach, float radius, float height,
-            out Vector2 at)
+            ClearRule rule, out Vector2 at)
         {
             int bestFrom = 0, bestLength = 0, runFrom = 0, run = 0;
             for (int j = -reach; j <= reach + 1; j++)
             {
-                bool fits = j <= reach && zones.RoughAndClearOfPlay(centre + (side * (middle + (j * step))), radius, height);
+                bool fits = j <= reach && zones.RoughAndClearOfPlay(centre + (side * (middle + (j * step))), radius, height, rule);
                 if (fits)
                 {
                     if (run == 0)
@@ -515,6 +538,463 @@ namespace IsoGolf.Generation
             int j0 = bestFrom + ((bestLength - 1) / 2);
             at = centre + (side * (middle + (j0 * step)));
             return bestLength > 0;
+        }
+
+        /// <summary>
+        /// Strategic obstacles S2 (plan §1-§2): one group of 1-3 props on the direct or cut line, where the course has a strategic
+        /// zone (a fork's spine, a split's band, a rough island's oval, a dogleg's cut corner; a par 3 only on a rough island), on
+        /// <see cref="PropRules.StrategicChance"/> of courses. Every draw comes from this sub-stream, keyed after the spine's and made
+        /// after every other prop, so no other prop moves. The draws come in a fixed order: the chance, the block draw, the zone
+        /// (even over the zones that can close a block line on a won block draw, B3, else over every zone), the member count, then
+        /// each member's kind, scale and slot. Members are tested by the
+        /// strategic rule (<see cref="PropZones.FitsStrategic(Vector2, float, float, float)"/>: the direct and cut corridors are open,
+        /// a safe leg only under its planned arc), clear the props already placed, and keep each line they reach playable
+        /// (<see cref="PropZones.Playable"/>) unless a full block is allowed there (<see cref="PropZones.FullBlockAllowed"/>) and the
+        /// group's block draw won. The first member must reach into a direct or cut corridor, so a group is always on a line.
+        /// </summary>
+        private static void Strategic(SeededRandom sub, CourseLayout layout, int par, LevelGenSettings settings, PropZones zones, Maker maker, PropRules rules,
+            List<Planned> placed)
+        {
+            if (!sub.Chance(rules.StrategicChance))
+            {
+                return;
+            }
+
+            List<StrategicArea> areas = StrategicAreas(layout, par, settings, zones, rules);
+            if (areas.Count == 0)
+            {
+                return;
+            }
+
+            // Director: "B3 à 100%". The block draw comes first (always drawn, whatever its chance), so that on a win the zone is
+            // drawn over the zones that can close a line where a full block is allowed; with none, over every zone as before.
+            bool mayBlock = sub.Chance(rules.StrategicFullBlockChance);
+            List<StrategicArea> blockAreas = mayBlock ? BlockAreas(areas) : new List<StrategicArea>();
+            bool block = blockAreas.Count > 0;
+            StrategicArea area = block ? blockAreas[sub.Int(0, blockAreas.Count - 1)] : areas[sub.Int(0, areas.Count - 1)];
+            int members = sub.Int(rules.StrategicMembers.x, rules.StrategicMembers.y);
+
+            List<Planned> group = block ? StrategicBlock(sub, par, zones, maker, rules, area, members, placed) : null;
+            if (group == null)
+            {
+                // The normal rule, or, when no tall member fits on the block line, a group by the normal rule in the same zone (hub:
+                // never no group), from the same sub-stream onward.
+                group = new List<Planned>();
+                for (int m = 0; m < members; m++)
+                {
+                    if (!StrategicMember(sub, par, zones, maker, rules, area, m, mayBlock && !block, -1, placed, group))
+                    {
+                        break;
+                    }
+                }
+            }
+
+            placed.AddRange(group);
+        }
+
+        /// <summary>
+        /// A block-draw group (B3, then director "Pour l'instant A"): tall members only (a wall or a shed first on
+        /// <see cref="PropRules.StrategicBuiltChance"/>, else an olive or a cypress), each standing in <paramref name="area"/>'s block
+        /// line's corridor, up to the drawn member count. They may close the line where a full block is allowed, but they need not:
+        /// on today's kit a full-power arc clears a 2-3 m prop everywhere but next to the ball and the landing, which are keep-outs, so
+        /// these are tall obstacles to fly over. Null if no tall member fits: the caller then places a group by the normal rule in
+        /// the same zone.
+        /// </summary>
+        private static List<Planned> StrategicBlock(SeededRandom sub, int par, PropZones zones, Maker maker, PropRules rules, StrategicArea area,
+            int members, List<Planned> placed)
+        {
+            var group = new List<Planned>();
+            for (int m = 0; m < members; m++)
+            {
+                if (!StrategicMember(sub, par, zones, maker, rules, area, m, true, area.BlockLine, placed, group))
+                {
+                    break;
+                }
+            }
+
+            return group.Count > 0 ? group : null;
+        }
+
+        /// <summary>
+        /// The zones a block-draw group may go to (B3): not a rough island (small props only, director Q2 B), and with a slot in the
+        /// corridor of a line where a full block is allowed (<see cref="PropZones.FullBlockAllowed"/>, set on each area by
+        /// <see cref="StrategicAreas"/>).
+        /// </summary>
+        internal static List<StrategicArea> BlockAreas(List<StrategicArea> areas)
+        {
+            var result = new List<StrategicArea>();
+            foreach (StrategicArea area in areas)
+            {
+                if (area.Zone != StrategicZone.RoughIsland && area.BlockLine >= 0)
+                {
+                    result.Add(area);
+                }
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// This course's strategic zones, in a fixed order (spine, split bands, rough islands, cut corners), each with its slots: the
+        /// points of a grid laid along the zone, <see cref="PropRules.StrategicSlotGrid"/> apart, where a foot passes the strategic
+        /// rule and lies within a direct or cut corridor plus <see cref="PropRules.StrategicSlotReach"/>. Zones with no slot are left out.
+        /// </summary>
+        internal static List<StrategicArea> StrategicAreas(CourseLayout layout, int par, LevelGenSettings settings, PropZones zones, PropRules rules)
+        {
+            var areas = new List<StrategicArea>();
+            CoursePath path = layout.Centreline;
+            float g = rules.StrategicSlotGrid;
+
+            foreach (FairwayShape shape in layout.Plan.FairwayShapes)
+            {
+                if (par == 3 || shape.Kind != FairwayShapeKind.Fork)
+                {
+                    continue;
+                }
+
+                // The held stretch, between the branch centres (as the spine theme's strip).
+                float ease = settings.FairwayShapes.ForkEase;
+                float lo = Mathf.Min(shape.SafeOffset, shape.RiskyOffset);
+                float hi = Mathf.Max(shape.SafeOffset, shape.RiskyOffset);
+                var area = new StrategicArea { Zone = StrategicZone.Spine, Margin = rules.FairwayMargin };
+                AlongGrid(path, shape.From + ease, shape.To - ease, lo, hi, g, p => true, zones, rules, area);
+                Add(areas, area, zones, par);
+            }
+
+            foreach (FairwayShape shape in layout.Plan.FairwayShapes)
+            {
+                if (par == 3 || shape.Kind != FairwayShapeKind.Split)
+                {
+                    continue;
+                }
+
+                // The band across the strip; the fairway margin keeps members off the fairway ahead of and behind it.
+                float half = layout.Fairway.HalfWidth;
+                var area = new StrategicArea { Zone = StrategicZone.Split, Margin = rules.FairwayMargin };
+                AlongGrid(path, shape.From, shape.To, -half, half, g, p => true, zones, rules, area);
+                Add(areas, area, zones, par);
+            }
+
+            foreach (EllipseShape oval in layout.Fairway.RoughOvals)
+            {
+                // Inside the oval, with the oval's own, narrower fairway margin (director Q2 B).
+                HazardOutline outline = HazardOutline.Of(oval, false, HazardRole.Flank);
+                float along = path.Project(oval.Center, out _);
+                float reach = Mathf.Max(oval.Radius.x, oval.Radius.y) * 1.5f;
+                var area = new StrategicArea { Zone = StrategicZone.RoughIsland, Margin = rules.StrategicOvalMargin };
+                AlongGrid(path, along - reach, along + reach, -reach, reach, g, p => outline.SignedDistance(p, 1f) < 0f, zones, rules, area);
+                Add(areas, area, zones, par);
+            }
+
+            for (int i = 0; i < zones.Lines.Count && par != 3; i++)
+            {
+                if (zones.Kinds[i] != ShotLineKind.Cut)
+                {
+                    continue;
+                }
+
+                // Along the cut line, across its corridor and a slot's reach: the corner's inside, beside its carry hazard (whose
+                // keep-out is unchanged), never on it.
+                Vector2 a = zones.Lines[i][0];
+                Vector2 b = zones.Lines[i][1];
+                float length = Vector2.Distance(a, b);
+                Vector2 dir = length > 1e-6f ? (b - a) / length : Vector2.right;
+                Vector2 left = Geo.Left(dir);
+                float across = zones.Corridor + rules.StrategicSlotReach;
+                int na = Mathf.FloorToInt(length / g);
+                int nc = Mathf.FloorToInt(across / g);
+                var area = new StrategicArea { Zone = StrategicZone.CutCorner, Margin = rules.FairwayMargin };
+                for (int u = 0; u <= na; u++)
+                {
+                    for (int v = -nc; v <= nc; v++)
+                    {
+                        TrySlot(a + (dir * (u * g)) + (left * (v * g)), zones, rules, area);
+                    }
+                }
+
+                Add(areas, area, zones, par);
+            }
+
+            return areas;
+        }
+
+        private static void Add(List<StrategicArea> areas, StrategicArea area, PropZones zones, int par)
+        {
+            if (area.Slots.Count == 0)
+            {
+                return;
+            }
+
+            areas.Add(area);
+
+            // B3: the first line, in line order, where a full block is allowed and a slot's foot reaches the corridor.
+            for (int i = 0; i < zones.Lines.Count && area.BlockLine < 0; i++)
+            {
+                if (!zones.IsStrategicLine(i) || !zones.FullBlockAllowed(i, par))
+                {
+                    continue;
+                }
+
+                foreach (Vector2 slot in area.Slots)
+                {
+                    if (zones.Intrudes(i, slot, Maker.FootRadius))
+                    {
+                        area.BlockSlots.Add(slot);
+                    }
+                }
+
+                if (area.BlockSlots.Count > 0)
+                {
+                    area.BlockLine = i;
+                }
+            }
+        }
+
+        /// <summary>The slots of a grid laid along the centreline: whole steps from <paramref name="from"/>, and across from <paramref name="lo"/> to <paramref name="hi"/>.</summary>
+        private static void AlongGrid(CoursePath path, float from, float to, float lo, float hi, float g, System.Func<Vector2, bool> inside, PropZones zones, PropRules rules,
+            StrategicArea area)
+        {
+            int na = Mathf.FloorToInt(((to - from) / g) + 0.001f);
+            int c0 = Mathf.CeilToInt((lo / g) - 0.001f);
+            int c1 = Mathf.FloorToInt((hi / g) + 0.001f);
+            for (int u = 0; u <= na; u++)
+            {
+                float s = from + (u * g);
+                Vector2 centre = path.PointAt(s);
+                Vector2 left = Geo.Left(Geo.PathDirection(path, s));
+                for (int v = c0; v <= c1; v++)
+                {
+                    Vector2 p = centre + (left * (v * g));
+                    if (inside(p))
+                    {
+                        TrySlot(p, zones, rules, area);
+                    }
+                }
+            }
+        }
+
+        private static void TrySlot(Vector2 p, PropZones zones, PropRules rules, StrategicArea area)
+        {
+            bool near = false;
+            for (int i = 0; i < zones.Lines.Count && !near; i++)
+            {
+                near = zones.IsStrategicLine(i) && zones.Intrudes(i, p, rules.StrategicSlotReach);
+            }
+
+            if (near && zones.FitsStrategic(p, Maker.FootRadius, 0f, area.Margin))
+            {
+                area.Slots.Add(p);
+            }
+        }
+
+        /// <summary>
+        /// One member of the strategic group: its kind (a rock or a low bush on a rough island; else a short wall or a shed for the
+        /// first member on <see cref="PropRules.StrategicBuiltChance"/>, or a tree, a bush or a rock by the kind weights), then up to
+        /// <see cref="PropRules.MemberTries"/> slots: the first member's from an even draw onward, a later member's each an even draw
+        /// over the slots <see cref="PropRules.StrategicGap"/> from the member before. A tree or a built prop with no room becomes a
+        /// bush, a bush on a rough island a rock. False if no slot holds it.
+        /// With a <paramref name="target"/> line (a block-draw group, B3): tall kinds only (a built prop, else an olive or a cypress
+        /// by <see cref="PropRules.StrategicTreeWeights"/>; a built prop with no room becomes an olive), on the slots that reach the
+        /// target's corridor, each try an even draw, and the member must reach into the target's corridor.
+        /// </summary>
+        private static bool StrategicMember(SeededRandom sub, int par, PropZones zones, Maker maker, PropRules rules, StrategicArea area, int m, bool mayBlock,
+            int target, List<Planned> placed, List<Planned> group)
+        {
+            bool island = area.Zone == StrategicZone.RoughIsland;
+            bool tall = target >= 0;
+            PropKind kind;
+            if (island)
+            {
+                kind = sub.Chance(rules.BushShare) ? PropKind.Bush : PropKind.Rock;
+            }
+            else if (m == 0 && sub.Chance(rules.StrategicBuiltChance))
+            {
+                bool shedHere = area.Zone == StrategicZone.Spine || area.Zone == StrategicZone.CutCorner;
+                kind = shedHere && sub.Coin() ? PropKind.Shed : PropKind.Wall;
+            }
+            else if (tall)
+            {
+                Vector2Int t = rules.StrategicTreeWeights;
+                kind = sub.Int(0, Mathf.Max(0, t.x + t.y - 1)) < t.x ? PropKind.Olive : PropKind.Cypress;
+            }
+            else
+            {
+                Vector2Int t = rules.StrategicTreeWeights;
+                Vector2Int l = rules.StrategicLowWeights;
+                int pick = sub.Int(0, Mathf.Max(0, t.x + t.y + l.x + l.y - 1));
+                kind = pick < t.x ? PropKind.Olive : pick < t.x + t.y ? PropKind.Cypress : pick < t.x + t.y + l.x ? PropKind.Bush : PropKind.Rock;
+            }
+
+            List<Vector2> pool = tall ? area.BlockSlots : area.Slots;
+            List<Vector2> slots = pool;
+            if (m > 0)
+            {
+                slots = new List<Vector2>();
+                Vector2 last = group[group.Count - 1].Root;
+                foreach (Vector2 slot in pool)
+                {
+                    int d = Geo.Cm(Vector2.Distance(slot, last));
+                    if (d >= Geo.Cm(rules.StrategicGap.x) && d <= Geo.Cm(rules.StrategicGap.y))
+                    {
+                        slots.Add(slot);
+                    }
+                }
+
+                if (slots.Count == 0)
+                {
+                    return false;
+                }
+            }
+
+            PropKind fallback = tall ? (kind == PropKind.Wall || kind == PropKind.Shed ? PropKind.Olive : kind)
+                : island ? (kind == PropKind.Bush ? PropKind.Rock : kind) : (kind == PropKind.Rock ? kind : PropKind.Bush);
+            int start = sub.Int(0, slots.Count - 1);
+            for (int pass = 0; pass < 2; pass++)
+            {
+                for (int t = 0; t < rules.MemberTries; t++)
+                {
+                    Vector2 at = m == 0 && !tall ? slots[(start + t) % slots.Count] : slots[sub.Int(0, slots.Count - 1)];
+                    Planned prop = StrategicProp(sub, zones, maker, rules, area, kind, at);
+                    if (StrategicAccept(prop, par, zones, rules, area, m, mayBlock, placed, group) && (!tall || OnLine(prop, target, zones)))
+                    {
+                        prop.Zone = area.Zone;
+                        group.Add(prop);
+                        return true;
+                    }
+                }
+
+                if (fallback == kind)
+                {
+                    break;
+                }
+
+                kind = fallback;
+            }
+
+            return false;
+        }
+
+        /// <summary>A strategic member of this kind at this slot, built to be measured.</summary>
+        private static Planned StrategicProp(SeededRandom sub, PropZones zones, Maker maker, PropRules rules, StrategicArea area, PropKind kind, Vector2 at)
+        {
+            switch (kind)
+            {
+                case PropKind.Wall:
+                {
+                    // Along the course on a spine or a corner; along the band, across the course, on a split.
+                    Vector2 dir = zones.CourseDirection(at);
+                    Vector2 along = area.Zone == StrategicZone.Split ? Geo.Left(dir) : dir;
+                    float half = 0.5f * sub.Centimetres(rules.WallLength);
+                    return maker.Free(sub, PropKind.Wall, at - (along * half), at + (along * half), 1f, StrategicBase);
+                }
+
+                case PropKind.Shed:
+                {
+                    float scale = sub.Hundredths(rules.BuiltScale);
+                    int yaw = zones.HeadingToCourse(at) - 90 + sub.Int(-15, 15);
+                    return maker.Oriented(sub, PropKind.Shed, at, yaw, scale, StrategicBase);
+                }
+
+                default:
+                {
+                    float scale = area.Zone == StrategicZone.RoughIsland && kind == PropKind.Bush
+                        ? sub.Hundredths(rules.StrategicSmallBushScale)
+                        : ScaleFor(sub, rules, kind);
+                    return maker.Free(sub, kind, at, at, scale, StrategicBase);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Whether a strategic member may stand: small enough on a rough island, every footprint circle passing the strategic rule
+        /// and clear of every prop placed and of the group, the first member reaching into a direct or cut corridor, and every such
+        /// line it reaches still playable past the group (<see cref="PropZones.Playable"/>), unless a full block is allowed there and
+        /// the group's block draw won.
+        /// </summary>
+        private static bool StrategicAccept(Planned prop, int par, PropZones zones, PropRules rules, StrategicArea area, int m, bool mayBlock,
+            List<Planned> placed, List<Planned> group)
+        {
+            if (prop == null || prop.Steep)
+            {
+                return false;
+            }
+
+            if (area.Zone == StrategicZone.RoughIsland && Geo.Cm(prop.Radius) > Geo.Cm(rules.StrategicSmallReach))
+            {
+                return false;
+            }
+
+            foreach (Vector2 circle in prop.Circles)
+            {
+                if (!zones.FitsStrategic(circle, prop.Radius, prop.Height, area.Margin))
+                {
+                    return false;
+                }
+
+                if (!Clear(circle, prop.Radius, placed, rules) || !Clear(circle, prop.Radius, group, rules))
+                {
+                    return false;
+                }
+            }
+
+            var feet = new List<StrategicFoot>();
+            foreach (Planned member in group)
+            {
+                AddFeet(member, feet);
+            }
+
+            AddFeet(prop, feet);
+            bool onALine = false;
+            for (int i = 0; i < zones.Lines.Count; i++)
+            {
+                if (!zones.IsStrategicLine(i))
+                {
+                    continue;
+                }
+
+                bool reaches = false;
+                foreach (Vector2 circle in prop.Circles)
+                {
+                    reaches |= zones.Intrudes(i, circle, prop.Radius);
+                }
+
+                if (!reaches)
+                {
+                    continue;
+                }
+
+                onALine = true;
+                if (!zones.Playable(i, feet) && !(mayBlock && zones.FullBlockAllowed(i, par)))
+                {
+                    return false;
+                }
+            }
+
+            return m > 0 || onALine;
+        }
+
+
+        /// <summary>Whether some footprint circle of this prop reaches into line <paramref name="line"/>'s corridor (B3).</summary>
+        private static bool OnLine(Planned prop, int line, PropZones zones)
+        {
+            foreach (Vector2 circle in prop.Circles)
+            {
+                if (zones.Intrudes(line, circle, prop.Radius))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static void AddFeet(Planned prop, List<StrategicFoot> feet)
+        {
+            float top = Mathf.Min(prop.Root3.y, prop.End3.y) + prop.Height;
+            foreach (Vector2 circle in prop.Circles)
+            {
+                feet.Add(new StrategicFoot(circle, prop.Radius, top));
+            }
         }
 
         /// <summary>One cluster around this start: its theme, from where the start lies, then its members.</summary>
@@ -677,7 +1157,8 @@ namespace IsoGolf.Generation
         /// Keeps the prop if every circle of its footprint fits the keep-outs and clears every prop already placed; then draws
         /// its mesh seed. A rim rock may stand by water, and must stand on a pond's rim.
         /// </summary>
-        private static bool TryAccept(SeededRandom sub, PropZones zones, PropRules rules, Planned prop, List<Planned> placed, List<Planned> cluster, bool rim, bool clearOfCluster = true)
+        private static bool TryAccept(SeededRandom sub, PropZones zones, PropRules rules, Planned prop, List<Planned> placed, List<Planned> cluster, bool rim, bool clearOfCluster = true,
+            ClearRule rule = ClearRule.Strict)
         {
             if (prop == null || prop.Steep)
             {
@@ -686,7 +1167,7 @@ namespace IsoGolf.Generation
 
             foreach (Vector2 circle in prop.Circles)
             {
-                if (!zones.Fits(circle, prop.Radius, prop.Height, rim) || !Clear(circle, prop.Radius, placed, rules) || (clearOfCluster && !Clear(circle, prop.Radius, cluster, rules)))
+                if (!zones.Fits(circle, prop.Radius, prop.Height, rim, rule, rules.FairwayMargin) || !Clear(circle, prop.Radius, placed, rules) || (clearOfCluster && !Clear(circle, prop.Radius, cluster, rules)))
                 {
                     return false;
                 }
@@ -776,6 +1257,15 @@ namespace IsoGolf.Generation
                 return Make(null, kind, at, at, scale, cluster, 0f, seed);
             }
 
+            /// <summary>
+            /// A strategic member (S2) between two ground points (the same point for a single prop), built with no foot test: its foot
+            /// is a slot that passed the strategic rule already. The caller tests it.
+            /// </summary>
+            public Planned Free(SeededRandom sub, PropKind kind, Vector2 from, Vector2 to, float scale, int cluster)
+            {
+                return Make(sub, kind, from, to, scale, cluster);
+            }
+
             /// <summary>A prop between two ground points (a bridge), built to be measured; the caller tests it.</summary>
             public Planned Line(SeededRandom sub, PropKind kind, Vector2 from, Vector2 to, float scale, int cluster)
             {
@@ -854,6 +1344,34 @@ namespace IsoGolf.Generation
                 height = Mathf.Max(height, shape.Center.y + shape.Extents.y - Mathf.Min(root.y, end.y));
             }
         }
+    }
+
+    /// <summary>How a prop keeps out of the shot lines' corridors (<see cref="PropZones"/>).</summary>
+    internal enum ClearRule
+    {
+        /// <summary>Every prop: its body and its shadow out of every corridor.</summary>
+        Strict,
+
+        /// <summary>A spine cypress (director Q7 B): its body out of every corridor, its shadow out of the safe legs' only.</summary>
+        SpineCypress,
+
+        /// <summary>A strategic prop (S1, Q1 B): free in the direct and cut corridors, under a safe leg only where its arc passes over.</summary>
+        Strategic,
+    }
+
+    /// <summary>One footprint circle of a strategic prop, for the block rule: its centre, reach, and its top in course space.</summary>
+    internal readonly struct StrategicFoot
+    {
+        public StrategicFoot(Vector2 centre, float radius, float top)
+        {
+            Centre = centre;
+            Radius = radius;
+            Top = top;
+        }
+
+        public Vector2 Centre { get; }
+        public float Radius { get; }
+        public float Top { get; }
     }
 
     /// <summary>
@@ -986,7 +1504,10 @@ namespace IsoGolf.Generation
         /// Whether a prop covering this circle of the ground (and, for its height, its shadow) may stand here: on rough, out of
         /// every keep-out. A rim rock (<paramref name="rim"/>) may come as close to a pond as <see cref="PropRules.RimGap"/>.
         /// </summary>
-        public bool Fits(Vector2 p, float radius, float height, bool rim)
+        public bool Fits(Vector2 p, float radius, float height, bool rim) => Fits(p, radius, height, rim, ClearRule.Strict, _rules.FairwayMargin);
+
+        /// <summary><see cref="Fits(Vector2, float, float, bool)"/> with the corridors tested by <paramref name="rule"/> and this fairway margin.</summary>
+        public bool Fits(Vector2 p, float radius, float height, bool rim, ClearRule rule, float fairwayMargin)
         {
             // On the island, gaps included; a crown may hang partly out over the edge.
             if (Geo.Cm(FromEdge(p)) < Geo.Cm(Mathf.Max(_rules.EdgeMargin, radius * (1f - _rules.CrownOverEdge))))
@@ -999,7 +1520,7 @@ namespace IsoGolf.Generation
                 return false;
             }
 
-            if (!ClearOfPlay(p, radius, height) || OverFairway(p, radius))
+            if (!ClearOfPlay(p, radius, height, rule) || OverFairway(p, radius, fairwayMargin))
             {
                 return false;
             }
@@ -1021,9 +1542,9 @@ namespace IsoGolf.Generation
         /// capsules). Between a fork's branches the corridors reach further than the fairway margin, so the strip is the same; the
         /// chosen spot still passes the whole of <see cref="Fits"/> when it is accepted.
         /// </summary>
-        public bool RoughAndClearOfPlay(Vector2 p, float radius, float height)
+        public bool RoughAndClearOfPlay(Vector2 p, float radius, float height, ClearRule rule = ClearRule.Strict)
         {
-            return _fields.Surface(Geo.At(p)) == CourseSurface.Rough && ClearOfPlay(p, radius, height);
+            return _fields.Surface(Geo.At(p)) == CourseSurface.Rough && ClearOfPlay(p, radius, height, rule);
         }
 
         /// <summary>
@@ -1031,14 +1552,17 @@ namespace IsoGolf.Generation
         /// fairway field is sampled at the centre and on two rings of 24 points, out to the reach plus the margin, so a crown or a
         /// shed can't overhang the fairway's edge. Off when the margin is negative.
         /// </summary>
-        public bool OverFairway(Vector2 p, float radius)
+        public bool OverFairway(Vector2 p, float radius) => OverFairway(p, radius, _rules.FairwayMargin);
+
+        /// <summary><see cref="OverFairway(Vector2, float)"/> with this margin (a strategic prop on a rough island's oval keeps <see cref="PropRules.StrategicOvalMargin"/>).</summary>
+        public bool OverFairway(Vector2 p, float radius, float margin)
         {
-            if (_rules.FairwayMargin < 0f)
+            if (margin < 0f)
             {
                 return false;
             }
 
-            float reach = radius + _rules.FairwayMargin;
+            float reach = radius + margin;
             for (int ring = 0; ring < 3; ring++)
             {
                 float r = ring == 0 ? 0f : (ring == 1 ? reach * 0.5f : reach);
@@ -1061,7 +1585,7 @@ namespace IsoGolf.Generation
         /// shadow of a prop <paramref name="height"/> tall too), every landing capsule, the green and the bunkers with their margins.
         /// Nothing about the ground it stands on or the ponds, so a bridge can use it across water.
         /// </summary>
-        public bool ClearOfPlay(Vector2 p, float radius, float height) => ClearOfPlay(p, radius, height, false);
+        public bool ClearOfPlay(Vector2 p, float radius, float height) => ClearOfPlay(p, radius, height, ClearRule.Strict);
 
         /// <summary>
         /// <see cref="ClearOfPlay(Vector2, float, float)"/> for a strategic prop (strategic obstacles plan §2, director Q1 B): the
@@ -1069,38 +1593,128 @@ namespace IsoGolf.Generation
         /// arc (<see cref="PlannedArc"/>) passes over it, see <see cref="UnderSafeArc"/>. The tee, the +X end, the capsules, the
         /// green and the bunkers stay as strict as for every prop. Every other prop keeps the strict rule.
         /// </summary>
-        public bool StrategicClearOfPlay(Vector2 p, float radius, float height) => ClearOfPlay(p, radius, height, true);
+        public bool StrategicClearOfPlay(Vector2 p, float radius, float height) => ClearOfPlay(p, radius, height, ClearRule.Strategic);
 
         /// <summary>
-        /// <see cref="Fits"/> for a strategic prop: the same ground, edge, fairway margin and ponds, with
+        /// <see cref="Fits(Vector2, float, float, bool)"/> for a strategic prop: the same ground, edge, fairway margin and ponds, with
         /// <see cref="StrategicClearOfPlay"/> in place of the strict corridors.
         /// </summary>
-        public bool FitsStrategic(Vector2 p, float radius, float height)
+        public bool FitsStrategic(Vector2 p, float radius, float height) => Fits(p, radius, height, false, ClearRule.Strategic, _rules.FairwayMargin);
+
+        /// <summary><see cref="FitsStrategic(Vector2, float, float)"/> with this fairway margin (<see cref="PropRules.StrategicOvalMargin"/> on a rough island).</summary>
+        public bool FitsStrategic(Vector2 p, float radius, float height, float fairwayMargin) => Fits(p, radius, height, false, ClearRule.Strategic, fairwayMargin);
+
+        /// <summary>
+        /// Where a strategic group may block line <paramref name="line"/> fully, on its block draw (strategic obstacles plan §2, Q5:
+        /// "plutôt B mais pas dans 100% des cas"): never on a par 3; only on a cut line or a fork's direct line (the risky branch); only
+        /// where the safe route reaches the green in at most par − 1 shots, so going round costs no stroke to the green; and never on
+        /// a straight course's tee shot (a line from the tee on a course with no dogleg, forks included: hub, literal reading).
+        /// </summary>
+        public bool FullBlockAllowed(int line, int par)
         {
-            if (Geo.Cm(FromEdge(p)) < Geo.Cm(Mathf.Max(_rules.EdgeMargin, radius * (1f - _rules.CrownOverEdge))))
+            CoursePlan plan = _layout.Plan;
+            if (par <= 3 || plan == null)
             {
                 return false;
             }
 
-            if (_fields.Surface(Geo.At(p)) != CourseSurface.Rough)
+            bool fork = false;
+            foreach (FairwayShape shape in plan.FairwayShapes)
+            {
+                fork |= shape.Kind == FairwayShapeKind.Fork;
+            }
+
+            ShotLineKind kind = _kinds[line];
+            if (kind != ShotLineKind.Cut && !(kind == ShotLineKind.Direct && fork))
             {
                 return false;
             }
 
-            if (!StrategicClearOfPlay(p, radius, height) || OverFairway(p, radius))
+            if (plan.SafeRoute.Count - 1 > par - 1)
             {
                 return false;
             }
 
-            foreach (HazardOutline pond in _ponds)
+            return plan.Dogleg || Geo.Cm(Vector2.Distance(_lines[line][0], _layout.Tee)) > 0;
+        }
+
+        /// <summary>Whether line <paramref name="line"/> is a direct or a cut line: the lines a strategic prop may stand on (S2).</summary>
+        public bool IsStrategicLine(int line) => _kinds[line] != ShotLineKind.Safe;
+
+        /// <summary>Whether a footprint circle reaches into line <paramref name="line"/>'s corridor (its body, not its shadow).</summary>
+        public bool Intrudes(int line, Vector2 p, float radius) =>
+            Geo.Cm(Geo.DistanceToSegment(p, _lines[line][0], _lines[line][1])) < Geo.Cm(_corridor + radius);
+
+        /// <summary>The ball's own ground under a point (<see cref="CourseHeightField"/>, as <c>BallGround.Height</c>).</summary>
+        public float BallHeight(Vector2 p)
+        {
+            _heights ??= new CourseHeightField(_layout);
+            return _heights.Height(p.x, p.y);
+        }
+
+        /// <summary>
+        /// Whether a full-power shot from line <paramref name="line"/>'s start, along it, passes over this footprint circle (top
+        /// <paramref name="top"/>, in course space) with <see cref="PropRules.StrategicSafeClearance"/> between the ball's bottom and
+        /// the top, along the circle's whole span (strategic obstacles plan §2, Q5, hub: the conservative reading). The full-power
+        /// arc is the highest at every distance up to its carry, so no shot from there lofts what it doesn't clear.
+        /// </summary>
+        public bool Loftable(int line, Vector2 p, float radius, float top)
+        {
+            Vector2 from = _lines[line][0];
+            PlannedArc arc = PlannedArc.AtFullPower(from, BallHeight(from), _lines[line][1] - from, _settings);
+            float along = arc.Along(p);
+            if (Geo.Cm(along - radius) <= 0 || Geo.Cm(along + radius) >= Geo.Cm(arc.Carry))
             {
-                if (Geo.Cm(pond.SignedDistance(p, _rules.HazardKeepOut + radius + 1f)) < Geo.Cm(_rules.HazardKeepOut + radius + RingSag))
+                return false;
+            }
+
+            int needCm = Geo.Cm(top + _rules.StrategicSafeClearance);
+            return Geo.Cm(arc.HeightAt(along - radius)) >= needCm && Geo.Cm(arc.HeightAt(along + radius)) >= needCm;
+        }
+
+        /// <summary>
+        /// The block rule (strategic obstacles plan §2, Q5): whether line <paramref name="line"/> stays playable past these footprint
+        /// circles. Each circle that reaches into its corridor and that a full-power shot can't loft (<see cref="Loftable"/>) covers
+        /// its span across the line; the line is playable while the corridor keeps a free run of <see cref="PropRules.StrategicPassGap"/>
+        /// across it. Every circle counts at once, wherever it stands along the line: conservative, a slalom counts as a wall.
+        /// </summary>
+        public bool Playable(int line, IReadOnlyList<StrategicFoot> feet)
+        {
+            Vector2 a = _lines[line][0];
+            Vector2 b = _lines[line][1];
+            Vector2 dir = (b - a).sqrMagnitude > 1e-12f ? (b - a).normalized : Vector2.right;
+            var covered = new List<Vector2Int>();
+            foreach (StrategicFoot foot in feet)
+            {
+                if (!Intrudes(line, foot.Centre, foot.Radius) || Loftable(line, foot.Centre, foot.Radius, foot.Top))
                 {
-                    return false;
+                    continue;
                 }
+
+                float across = Cross(dir, foot.Centre - a);
+                covered.Add(new Vector2Int(Geo.Cm(across - foot.Radius), Geo.Cm(across + foot.Radius)));
             }
 
-            return true;
+            if (covered.Count == 0)
+            {
+                return true;
+            }
+
+            covered.Sort((u, v) => u.x != v.x ? u.x.CompareTo(v.x) : u.y.CompareTo(v.y));
+            int edge = Geo.Cm(_corridor);
+            int need = Geo.Cm(_rules.StrategicPassGap);
+            int free = -edge;
+            foreach (Vector2Int span in covered)
+            {
+                if (Mathf.Min(span.x, edge) - free >= need)
+                {
+                    return true;
+                }
+
+                free = Mathf.Max(free, span.y);
+            }
+
+            return edge - free >= need;
         }
 
         /// <summary>
@@ -1146,8 +1760,9 @@ namespace IsoGolf.Generation
             return _arcs[line].Value;
         }
 
-        private bool ClearOfPlay(Vector2 p, float radius, float height, bool strategic)
+        private bool ClearOfPlay(Vector2 p, float radius, float height, ClearRule rule)
         {
+            bool strategic = rule == ClearRule.Strategic;
             if (Geo.Cm(Vector2.Distance(p, _layout.Tee)) < Geo.Cm(_rules.TeeKeepOut + radius))
             {
                 return false;
@@ -1167,9 +1782,13 @@ namespace IsoGolf.Generation
                     continue;
                 }
 
-                // The prop and its shadow stay out of the corridor: the shadow test holds the foot's own, at its start.
+                // The prop and its shadow stay out of the corridor: the shadow test holds the foot's own, at its start. A spine
+                // cypress's shadow may cross the direct and cut corridors, never a safe leg's (director Q7 B); its body may not.
                 Vector2[] line = _lines[i];
-                if (Geo.Cm(SegmentDistance(p, shadowEnd, line[0], line[1])) < Geo.Cm(_corridor + radius)
+                float reach = rule == ClearRule.SpineCypress && _kinds[i] != ShotLineKind.Safe
+                    ? Geo.DistanceToSegment(p, line[0], line[1])
+                    : SegmentDistance(p, shadowEnd, line[0], line[1]);
+                if (Geo.Cm(reach) < Geo.Cm(_corridor + radius)
                     && !(strategic && UnderSafeArc(i, p, radius, height)))
                 {
                     return false;

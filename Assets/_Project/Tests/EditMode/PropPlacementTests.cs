@@ -366,6 +366,25 @@ namespace IsoGolf.Tests
         /// Which keep-out this prop breaks, or null. Sampled from the true outlines and the safe route's capsule samples, not from
         /// <see cref="PropZones"/>.
         /// </summary>
+        /// <summary>
+        /// Whether safe leg <paramref name="line"/>'s planned arc (from its start's ground to its end's, on the ball's own ground)
+        /// keeps the ball's bottom the strategic clearance over a footprint circle of this reach and top, along its whole span,
+        /// strictly between take-off and landing. Re-derived from <see cref="PlannedArc"/> for the S2 tests.
+        /// </summary>
+        internal static bool UnderPlannedArc(CourseLayout layout, ShotLine line, Vector2 c, float radius, float top)
+        {
+            var heights = new CourseHeightField(layout);
+            var arc = new PlannedArc(line.From, heights.Height(line.From.x, line.From.y), line.To, heights.Height(line.To.x, line.To.y), Settings);
+            float along = arc.Along(c);
+            if (along - radius <= Tolerance || along + radius >= arc.Length - Tolerance)
+            {
+                return false;
+            }
+
+            float need = top + Settings.Props.StrategicSafeClearance - Tolerance;
+            return arc.HeightAt(along - radius) >= need && arc.HeightAt(along + radius) >= need;
+        }
+
         internal static string BrokenKeepOut(CourseLayout layout, CourseProp prop)
         {
             PropRules rules = Settings.Props;
@@ -389,6 +408,12 @@ namespace IsoGolf.Tests
             CoursePlan plan = layout.Plan;
             float corridor = plan.ShotCorridorHalfWidth;
             bool rim = prop.Kind == PropKind.RoundRock;
+            float margin = prop.Zone == StrategicZone.RoughIsland ? rules.StrategicOvalMargin : rules.FairwayMargin;
+
+            // S2: a spine cypress's shadow may cross the direct and cut corridors (director Q7 B); a strategic prop may stand in
+            // them, and in a safe leg's only where the leg's planned arc passes over it (S1, Q1 B).
+            bool spineCypress = prop.Cluster == PropPlacement.SpineBase && prop.Kind == PropKind.Cypress;
+            float top = Mathf.Min(prop.Root.y, prop.End.y) + height;
 
             var circles = new List<Vector2>();
             var from = new Vector2(prop.Root.x, prop.Root.z);
@@ -407,12 +432,13 @@ namespace IsoGolf.Tests
                     return "not on rough";
                 }
 
-                if (!bridge && rules.FairwayMargin >= 0f)
+                if (!bridge && margin >= 0f)
                 {
-                    // The whole footprint plus the margin stays off the fairway (PR 4.4, director).
+                    // The whole footprint plus the margin stays off the fairway (PR 4.4, director); a strategic prop on a rough
+                    // island keeps the oval's narrower margin (S2, director Q2 B).
                     for (int a = 0; a < 24; a++)
                     {
-                        float reach = radius + rules.FairwayMargin - Tolerance;
+                        float reach = radius + margin - Tolerance;
                         if (fields.Surface(Geo.At(c + (Geo.Dir(a * 15f) * reach))) == CourseSurface.Fairway
                             || fields.Surface(Geo.At(c + (Geo.Dir(a * 15f) * reach * 0.5f))) == CourseSurface.Fairway)
                         {
@@ -433,7 +459,17 @@ namespace IsoGolf.Tests
 
                 foreach (ShotLine line in plan.Lines)
                 {
-                    for (int k = 0; k <= 10; k++)
+                    if (prop.Strategic && line.Kind != ShotLineKind.Safe)
+                    {
+                        continue;
+                    }
+
+                    if (prop.Strategic && UnderPlannedArc(layout, line, c, radius, top))
+                    {
+                        continue;
+                    }
+
+                    for (int k = 0; k <= (spineCypress && line.Kind != ShotLineKind.Safe ? 0 : 10); k++)
                     {
                         Vector2 s = c + (shadow * (height * rules.ShadowLength * k / 10f));
                         if (Geo.DistanceToSegment(s, line.From, line.To) < corridor + radius - Tolerance)
