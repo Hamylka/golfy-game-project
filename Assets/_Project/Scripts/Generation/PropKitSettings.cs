@@ -78,6 +78,22 @@ namespace IsoGolf.Generation
         [SerializeField, Min(0.3f)] private float lighthouseRadius = 0.8f;
         [SerializeField, Min(1f)] private float lighthouseHeight = 3.5f;
 
+        // The tall obstacles' collision shapes come from these values alone, never from a seed, so the placement knows their
+        // footprint before it draws anything (tall obstacles, Q5 B: a course with no spot draws nothing new).
+        [Header("Tall obstacles")]
+        [SerializeField, Min(1f)] private float pineHeight = 6f;
+        [SerializeField, Min(0.5f)] private float pineCrownRadius = 2.2f;
+        [Tooltip("Height of the flat crown, from its underside to the top.")]
+        [SerializeField, Min(0.3f)] private float pineCrownDepth = 2f;
+        [SerializeField, Min(0.05f)] private float pineTrunkRadius = 0.28f;
+        [Tooltip("Reach of the clump's foliage from its middle.")]
+        [SerializeField, Min(0.5f)] private float clumpRadius = 1.35f;
+        [SerializeField, Min(1f)] private float clumpHeight = 5.5f;
+        [SerializeField, Min(0.5f)] private float dovecoteRadius = 1f;
+        [Tooltip("Height of the dovecote's wall; its roof rises above it to the full height.")]
+        [SerializeField, Min(1f)] private float dovecoteWallHeight = 4.3f;
+        [SerializeField, Min(1f)] private float dovecoteHeight = 5.5f;
+
         public float ShedLength => shedLength;
         public float ShedWidth => shedWidth;
         public float ShedWallHeight => shedWallHeight;
@@ -95,6 +111,15 @@ namespace IsoGolf.Generation
         public float ChapelTowerHeight => chapelTowerHeight;
         public float LighthouseRadius => lighthouseRadius;
         public float LighthouseHeight => lighthouseHeight;
+        public float PineHeight => pineHeight;
+        public float PineCrownRadius => pineCrownRadius;
+        public float PineCrownDepth => pineCrownDepth;
+        public float PineTrunkRadius => pineTrunkRadius;
+        public float ClumpRadius => clumpRadius;
+        public float ClumpHeight => clumpHeight;
+        public float DovecoteRadius => dovecoteRadius;
+        public float DovecoteWallHeight => dovecoteWallHeight;
+        public float DovecoteHeight => dovecoteHeight;
         public float TrunkHeight => trunkHeight;
         public float TrunkRadius => trunkRadius;
         public int BlobCount => blobCount;

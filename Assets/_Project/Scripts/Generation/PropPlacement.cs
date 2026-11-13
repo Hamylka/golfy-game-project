@@ -555,6 +555,13 @@ namespace IsoGolf.Generation
         private static void Strategic(SeededRandom sub, CourseLayout layout, int par, LevelGenSettings settings, PropZones zones, Maker maker, PropRules rules,
             List<Planned> placed)
         {
+            // Tall obstacles first (director Q5 B: a course with a block line always tries a block). It draws nothing when no spot
+            // can close a line, so such a course goes on below exactly as in S2.
+            if (Tall(sub, par, zones, maker, rules, placed))
+            {
+                return;
+            }
+
             if (!sub.Chance(rules.StrategicChance))
             {
                 return;
@@ -590,6 +597,165 @@ namespace IsoGolf.Generation
             }
 
             placed.AddRange(group);
+        }
+
+        /// <summary>The tall obstacles, in the order of <see cref="PropRules.TallWeights"/>.</summary>
+        internal static readonly PropKind[] TallKinds = { PropKind.UmbrellaPine, PropKind.CypressClump, PropKind.Dovecote };
+
+        /// <summary>
+        /// A tall obstacle that closes a line where a full block is allowed (tall obstacles, director Q1 B, Q2 A, Q4 A, Q5 B, Q6 A):
+        /// every spot that would close one is found first, with no draw (<see cref="TallSpots"/>); with none, nothing is drawn and the
+        /// course gets its S2 group. Else the kind is drawn by <see cref="PropRules.TallWeights"/> over the kinds that have a spot,
+        /// then an even draw over that kind's spots, then its mesh seed. It stands alone: S2's 1.2-2.0 m member gap lies inside its
+        /// own reach.
+        /// </summary>
+        private static bool Tall(SeededRandom sub, int par, PropZones zones, Maker maker, PropRules rules, List<Planned> placed)
+        {
+            List<Vector2>[] spots = TallSpots(par, zones, maker, rules, placed);
+            Vector3Int w = rules.TallWeights;
+            int[] weights = { w.x, w.y, w.z };
+            int total = 0;
+            for (int k = 0; k < TallKinds.Length; k++)
+            {
+                weights[k] = spots[k].Count > 0 ? Mathf.Max(0, weights[k]) : 0;
+                total += weights[k];
+            }
+
+            if (total == 0)
+            {
+                return false;
+            }
+
+            int pick = sub.Int(0, total - 1);
+            int kind = 0;
+            while (pick >= weights[kind])
+            {
+                pick -= weights[kind];
+                kind++;
+            }
+
+            Vector2 at = spots[kind][sub.Int(0, spots[kind].Count - 1)];
+            Planned prop = maker.Free(sub, TallKinds[kind], at, at, 1f, StrategicBase);
+            prop.Zone = StrategicZone.BlockLine;
+            placed.Add(prop);
+            return true;
+        }
+
+        /// <summary>
+        /// For each of <see cref="TallKinds"/>, every point of a <see cref="PropRules.TallSlotGrid"/> grid along each line where a
+        /// full block is allowed (in line order) where that obstacle may stand and closes the line. A tall obstacle's shapes come
+        /// from the kit's settings alone, so its footprint is known before any draw. It may stand where:
+        /// <list type="bullet">
+        /// <item>its base (the pine's trunk, the clump's trunks, the whole dovecote) passes the strategic rule with the fairway margin,
+        /// on rough (director Q1 B: the crown alone may overhang the fairway);</item>
+        /// <item>its whole reach (the crown) stays out of every keep-out of play, and its shadow out of the safe legs and the landing
+        /// capsules (Q6 A);</item>
+        /// <item>it stands clear of every prop placed;</item>
+        /// <item>it makes the line unplayable by the S2 block rule (<see cref="PropZones.Playable"/>), and leaves every other direct or
+        /// cut line it reaches playable, unless a full block is allowed there too;</item>
+        /// <item>a dovecote stands on level ground, as every built prop.</item>
+        /// </list>
+        /// </summary>
+        internal static List<Vector2>[] TallSpotsFor(CourseLayout layout, int par, LevelGenSettings settings)
+        {
+            var zones = new PropZones(layout, settings);
+            return TallSpots(par, zones, new Maker(settings.PropKit, new CourseFields(layout), zones), settings.Props, new List<Planned>());
+        }
+
+        private static List<Vector2>[] TallSpots(int par, PropZones zones, Maker maker, PropRules rules, List<Planned> placed)
+        {
+            var spots = new List<Vector2>[TallKinds.Length];
+            for (int k = 0; k < TallKinds.Length; k++)
+            {
+                spots[k] = new List<Vector2>();
+            }
+
+            var lines = new List<int>();
+            for (int i = 0; i < zones.Lines.Count; i++)
+            {
+                if (zones.IsStrategicLine(i) && zones.FullBlockAllowed(i, par))
+                {
+                    lines.Add(i);
+                }
+            }
+
+            if (lines.Count == 0)
+            {
+                return spots;
+            }
+
+            float g = rules.TallSlotGrid;
+            for (int k = 0; k < TallKinds.Length; k++)
+            {
+                PropKind kind = TallKinds[k];
+                maker.TallFootprint(kind, out float reach, out float height);
+                float baseReach = PropBuilder.TallBase(kind, maker.Kit);
+                bool whole = baseReach < 0f || Geo.Cm(baseReach) >= Geo.Cm(reach);
+                foreach (int i in lines)
+                {
+                    Vector2 a = zones.Lines[i][0];
+                    Vector2 b = zones.Lines[i][1];
+                    float length = Vector2.Distance(a, b);
+                    Vector2 dir = length > 1e-6f ? (b - a) / length : Vector2.right;
+                    Vector2 left = Geo.Left(dir);
+                    int na = Mathf.FloorToInt(length / g);
+                    int nc = Mathf.FloorToInt((zones.Corridor + reach) / g);
+                    for (int u = 0; u <= na; u++)
+                    {
+                        for (int v = -nc; v <= nc; v++)
+                        {
+                            Vector2 p = a + (dir * (u * g)) + (left * (v * g));
+                            if (TallFits(p, i, par, kind, reach, whole ? reach : baseReach, height, zones, maker, rules, placed))
+                            {
+                                spots[k].Add(p);
+                            }
+                        }
+                    }
+                }
+            }
+
+            return spots;
+        }
+
+        private static bool TallFits(Vector2 p, int line, int par, PropKind kind, float reach, float baseReach, float height, PropZones zones, Maker maker,
+            PropRules rules, List<Planned> placed)
+        {
+            // The cheap tests first: on rough, and wide enough here to close the corridor (geometry alone).
+            if (!zones.OnRough(p) || !zones.Covers(line, p, reach))
+            {
+                return false;
+            }
+
+            if (!zones.FitsStrategic(p, baseReach, height, rules.FairwayMargin))
+            {
+                return false;
+            }
+
+            if (Geo.Cm(baseReach) < Geo.Cm(reach) && !zones.StrategicClearOfPlay(p, reach, height))
+            {
+                return false;
+            }
+
+            if (!zones.ShadowClearOfCapsules(p, reach, height) || !Clear(p, reach, placed, rules))
+            {
+                return false;
+            }
+
+            var feet = new[] { new StrategicFoot(p, reach, zones.GroundHeight(p) + height) };
+            if (zones.Playable(line, feet))
+            {
+                return false;
+            }
+
+            for (int j = 0; j < zones.Lines.Count; j++)
+            {
+                if (j != line && zones.IsStrategicLine(j) && zones.Intrudes(j, p, reach) && !zones.Playable(j, feet) && !zones.FullBlockAllowed(j, par))
+                {
+                    return false;
+                }
+            }
+
+            return kind != PropKind.Dovecote || !maker.SteepAt(p, zones.GroundHeight(p), reach);
         }
 
         /// <summary>
@@ -1286,17 +1452,9 @@ namespace IsoGolf.Generation
                 }
 
                 // Built props and traces want level ground under their footprint (a bench on a steep bank looks like it floats).
-                if (kind >= PropKind.Shed && kind != PropKind.Bridge && kind != PropKind.Rake)
+                if (kind >= PropKind.Shed && kind != PropKind.Bridge && kind != PropKind.Rake && kind != PropKind.UmbrellaPine && kind != PropKind.CypressClump)
                 {
-                    float run = Mathf.Min(Mathf.Max(prop.Radius, 0.3f), 1.5f);
-                    float rise = 0f;
-                    for (int a = 0; a < 8; a++)
-                    {
-                        Vector2 q = from + (Geo.Dir(a * 45f) * run);
-                        rise = Mathf.Max(rise, Mathf.Abs(_fields.Height(q.x, q.y) - prop.Root3.y));
-                    }
-
-                    prop.Steep = Geo.Cm(rise) > Geo.Cm(_zones.Rules.BuiltMaxSlope * run);
+                    prop.Steep = SteepAt(from, prop.Root3.y, prop.Radius);
                 }
 
                 float length = Vector2.Distance(from, to);
@@ -1307,6 +1465,27 @@ namespace IsoGolf.Generation
                 }
 
                 return prop;
+            }
+
+            /// <summary>Whether the ground around a built prop of this reach rises or falls more than <see cref="PropRules.BuiltMaxSlope"/> allows.</summary>
+            public bool SteepAt(Vector2 from, float rootHeight, float radius)
+            {
+                float run = Mathf.Min(Mathf.Max(radius, 0.3f), 1.5f);
+                float rise = 0f;
+                for (int a = 0; a < 8; a++)
+                {
+                    Vector2 q = from + (Geo.Dir(a * 45f) * run);
+                    rise = Mathf.Max(rise, Mathf.Abs(_fields.Height(q.x, q.y) - rootHeight));
+                }
+
+                return Geo.Cm(rise) > Geo.Cm(_zones.Rules.BuiltMaxSlope * run);
+            }
+
+            /// <summary>A tall obstacle's reach and height: its shapes come from the kit's settings alone, so one build at the origin gives them.</summary>
+            public void TallFootprint(PropKind kind, out float radius, out float height)
+            {
+                PropShape[] shapes = new PropBuilder(_kit, null).Add(kind, Vector3.zero, Vector3.zero, 1f, 0, 0f);
+                Reach(Vector3.zero, Vector3.zero, shapes, out radius, out height);
             }
         }
 
@@ -1715,6 +1894,54 @@ namespace IsoGolf.Generation
             }
 
             return edge - free >= need;
+        }
+
+        /// <summary>
+        /// The geometry half of <see cref="Playable"/> for one circle (tall obstacles): whether it leaves less than
+        /// <see cref="PropRules.StrategicPassGap"/> free on both sides of line <paramref name="line"/>'s corridor, if it can't be lofted.
+        /// A cheap test before the loft is computed.
+        /// </summary>
+        public bool Covers(int line, Vector2 p, float radius)
+        {
+            Vector2 a = _lines[line][0];
+            Vector2 b = _lines[line][1];
+            Vector2 dir = (b - a).sqrMagnitude > 1e-12f ? (b - a).normalized : Vector2.right;
+            float across = Cross(dir, p - a);
+            int edge = Geo.Cm(_corridor);
+            int need = Geo.Cm(_rules.StrategicPassGap);
+            return Geo.Cm(across - radius) + edge < need && edge - Geo.Cm(across + radius) < need;
+        }
+
+        /// <summary>Whether this point of the ground is rough.</summary>
+        public bool OnRough(Vector2 p) => _fields.Surface(Geo.At(p)) == CourseSurface.Rough;
+
+        /// <summary>The visible ground's height here (<see cref="CourseFields.Height"/>), where a prop's root stands.</summary>
+        public float GroundHeight(Vector2 p) => _fields.Height(p.x, p.y);
+
+        /// <summary>
+        /// Whether the shadow of a prop <paramref name="height"/> tall standing here, as wide as its reach, stays out of every
+        /// landing capsule (tall obstacles, director Q6 A; every other prop tests its body only against the capsules).
+        /// </summary>
+        public bool ShadowClearOfCapsules(Vector2 p, float radius, float height)
+        {
+            Vector2 end = p + (_shadow * (height * _rules.ShadowLength));
+            foreach (Vector2[] capsule in _capsules)
+            {
+                for (int i = 0; i + 1 < capsule.Length; i++)
+                {
+                    if (Geo.Cm(SegmentDistance(p, end, capsule[i], capsule[i + 1])) < Geo.Cm(_capsuleHalfWidth + radius))
+                    {
+                        return false;
+                    }
+                }
+
+                if (capsule.Length == 1 && Geo.Cm(Geo.DistanceToSegment(capsule[0], p, end)) < Geo.Cm(_capsuleHalfWidth + radius))
+                {
+                    return false;
+                }
+            }
+
+            return true;
         }
 
         /// <summary>

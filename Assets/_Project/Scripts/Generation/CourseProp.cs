@@ -21,6 +21,12 @@ namespace IsoGolf.Generation
         Laundry,
         Chapel,
         Lighthouse,
+
+        // Tall obstacles (feature/tall-obstacles): 5.5-6 m, placed only to close a line where a full block is allowed. Last in
+        // the enum, so every older kind keeps its number in the fingerprints.
+        UmbrellaPine,
+        CypressClump,
+        Dovecote,
     }
 
     /// <summary>
@@ -35,6 +41,9 @@ namespace IsoGolf.Generation
         Split,
         RoughIsland,
         CutCorner,
+
+        /// <summary>A tall obstacle standing on a line where a full block is allowed, to close it (tall obstacles, Q4 A).</summary>
+        BlockLine,
     }
 
     /// <summary>

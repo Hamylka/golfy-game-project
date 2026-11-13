@@ -16,24 +16,26 @@ namespace IsoGolf.Measurement
     {
         private const int Window = 300;
 
-        // Strategic obstacles S2's phone review: courses picked from the checked courses of seeds 0-49 (B3 at 100%), each labelled
-        // with its group's zone, kinds and the line it stands on. Stepped through by the second row of the strip.
+        // Tall obstacles' phone review: every checked course of seeds 0-49 with a tall obstacle kept (each one fully blocks a line
+        // where Q5 allows it), labelled with its kind. Stepped through by the second row of the strip.
         private static readonly (int seed, int par, string label)[] Shapes =
         {
-            (9, 5, "B3: corner cypress on Cut"),
-            (2, 5, "B3: corner cypress (near-block)"),
-            (27, 5, "B3: spine cypress, fork Direct"),
-            (29, 5, "B3: spine cypress, fork Direct"),
-            (36, 5, "B3: spine cypress, fork Direct"),
-            (21, 4, "spine shed+cypress, fork Direct"),
-            (4, 4, "corner rock+cypress+rock, Direct"),
-            (0, 4, "corner rocks+bush, Direct+Cut"),
-            (16, 4, "split olive, Direct"),
-            (31, 4, "split cypress, Direct"),
-            (15, 5, "split bushes+rock, Direct"),
-            (3, 5, "spine bush+olive, fork Direct"),
-            (3, 3, "rough island 2 rocks, Direct"),
-            (11, 5, "rough island 3 rocks, Direct"),
+            (26, 4, "full block: dovecote"),
+            (38, 5, "full block: cypress clump"),
+            (2, 5, "full block: umbrella pine"),
+            (5, 4, "full block: umbrella pine"),
+            (30, 4, "full block: umbrella pine"),
+            (44, 4, "full block: umbrella pine"),
+            (46, 4, "full block: umbrella pine"),
+            (47, 4, "full block: umbrella pine"),
+            (3, 5, "full block: umbrella pine"),
+            (10, 5, "full block: umbrella pine"),
+            (20, 5, "full block: umbrella pine"),
+            (29, 5, "full block: umbrella pine"),
+            (31, 5, "full block: umbrella pine"),
+            (36, 5, "full block: umbrella pine"),
+            (41, 5, "full block: umbrella pine"),
+            (48, 5, "full block: umbrella pine"),
         };
 
         private readonly float[] _dt = new float[Window];

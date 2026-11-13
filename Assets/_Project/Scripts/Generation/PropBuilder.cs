@@ -170,6 +170,9 @@ namespace IsoGolf.Generation
                 case PropKind.Bush: return AddBush(root, scale, random);
                 case PropKind.Rock: return AddRock(root, scale, random);
                 case PropKind.RoundRock: return AddRoundRock(root, scale, random);
+                case PropKind.UmbrellaPine: return AddUmbrellaPine(root, random);
+                case PropKind.CypressClump: return AddCypressClump(root, random);
+                case PropKind.Dovecote: return AddDovecote(root, yaw);
                 default: return AddWall(root, end, random);
             }
         }
@@ -214,12 +217,27 @@ namespace IsoGolf.Generation
         /// <summary>Cypress: a thin flame of 6 to 8 sides on a short trunk.</summary>
         public PropShape[] AddCypress(Vector3 root, float scale, System.Random random)
         {
-            int sides = _settings.CypressSides;
             float trunkHeight = _settings.CypressTrunkHeight * scale;
             float height = _settings.CypressHeight * scale;
             float radius = _settings.CypressRadius * scale;
+            Vector3 foot = CypressMesh(root, trunkHeight, height, radius, random, out float trunkTop);
+
+            return new[]
+            {
+                PropShape.Cylinder(root, radius * CypressTrunkWidth, trunkTop, PropMaterial.Wood),
+                PropShape.Cylinder(foot, radius, height, PropMaterial.Foliage),
+            };
+        }
+
+        /// <summary>
+        /// One cypress's mesh (trunk and flame), shared by the cypress and the clump: the same random draws in the same order as
+        /// the cypress always made, so every cypress keeps its shape. Returns the foliage's foot.
+        /// </summary>
+        private Vector3 CypressMesh(Vector3 root, float trunkHeight, float height, float radius, System.Random random, out float trunkTop)
+        {
+            int sides = _settings.CypressSides;
             float startAngle = PropMeshKit.RandomAngle(random);
-            float trunkTop = trunkHeight + (height * CypressTrunkOverlap);
+            trunkTop = trunkHeight + (height * CypressTrunkOverlap);
 
             _kit.AddPrism(root, radius * CypressTrunkWidth, trunkTop, TrunkSides, startAngle, _trunk, TrunkSink);
 
@@ -247,12 +265,127 @@ namespace IsoGolf.Generation
             }
 
             _kit.ClearSway();
+            return foot;
+        }
+
+        // Umbrella pine: a flat crown of one middle blob and a ring of six, kept inside its fixed ellipsoid (a test holds it).
+        private const int PineRingBlobs = 6;
+        private const float PineMiddleBlob = 0.5f;
+        private const float PineRingRadius = 0.58f;
+        private const float PineRingBlob = 0.36f;
+        private const float PineBlobJitter = 0.1f;
+
+        // Cypress clump: one tree in the middle at the full height, three around it lower, on a ring of 0.6 of the clump's reach.
+        private const int ClumpRing = 3;
+        private const float ClumpRingRadius = 0.6f;
+        private const float ClumpMiddleRadius = 0.55f;
+        private const float ClumpRingTreeRadius = 0.5f;
+
+        /// <summary>
+        /// Umbrella pine (pin parasol, tall obstacles): a bare, tapering trunk and a wide, flat crown high up. Its shapes come from
+        /// <see cref="PropKitSettings"/> alone: a hard trunk up to the crown's middle and a soft ellipsoid crown, so the placement
+        /// knows its footprint before drawing a seed. It closes the flight; a ball may still roll under the crown.
+        /// </summary>
+        public PropShape[] AddUmbrellaPine(Vector3 root, System.Random random)
+        {
+            float height = _settings.PineHeight;
+            float reach = _settings.PineCrownRadius;
+            float depth = _settings.PineCrownDepth;
+            float trunk = _settings.PineTrunkRadius;
+            float middle = height - (depth * 0.5f);
+            float startAngle = PropMeshKit.RandomAngle(random);
+
+            _kit.AddFrustum(root, trunk, trunk * 0.7f, middle, TrunkSides, startAngle, _trunk, TrunkSink);
+
+            Vector3 centre = root + (Vector3.up * middle);
+            _kit.SetSway(root.y + middle - (depth * 0.5f), depth, AmbientHash.Unit(root.x, root.z));
+            float ringBlob = reach * PineRingBlob;
+            for (int i = 0; i < PineRingBlobs; i++)
+            {
+                float angle = startAngle + (i * Mathf.PI * 2f / PineRingBlobs);
+                Vector3 at = centre + (PropMeshKit.Around(angle) * (reach * PineRingRadius)) + (Vector3.down * (depth * 0.05f));
+                // Mid foliage with a dark facet here and there and light tops: a crown this big in the darkest shade reads as a hole.
+                _kit.AddBlob(at, ringBlob, depth * 0.22f / ringBlob, PineBlobJitter, 1,
+                    _foliageMid, _foliageDark, _settings.DarkFacetChance, random, i % 2 == 0 ? _oliveLight : _foliageLight);
+            }
+
+            float middleBlob = reach * PineMiddleBlob;
+            _kit.AddBlob(centre + (Vector3.up * (depth * 0.12f)), middleBlob, depth * 0.32f / middleBlob, PineBlobJitter, 1,
+                _foliageMid, _foliageDark, _settings.DarkFacetChance, random, _foliageLight);
+            _kit.ClearSway();
 
             return new[]
             {
-                PropShape.Cylinder(root, radius * CypressTrunkWidth, trunkTop, PropMaterial.Wood),
-                PropShape.Cylinder(foot, radius, height, PropMaterial.Foliage),
+                PropShape.Cylinder(root, trunk, middle, PropMaterial.Wood),
+                PropShape.Ellipsoid(centre, new Vector3(reach, depth * 0.5f, reach), PropMaterial.Foliage),
             };
+        }
+
+        /// <summary>
+        /// Cypress clump (tall obstacles): a tall cypress in the middle and three lower ones packed around it, foliage almost to the
+        /// ground. One soft cylinder from the ground to <see cref="PropKitSettings.ClumpHeight"/> holds them all, from settings alone.
+        /// </summary>
+        public PropShape[] AddCypressClump(Vector3 root, System.Random random)
+        {
+            float top = _settings.ClumpHeight;
+            float reach = _settings.ClumpRadius;
+            float trunkHeight = _settings.CypressTrunkHeight;
+            float startAngle = PropMeshKit.RandomAngle(random);
+            CypressMesh(root, trunkHeight, top - trunkHeight, ClumpMiddleRadius, random, out _);
+            for (int i = 0; i < ClumpRing; i++)
+            {
+                float angle = startAngle + (i * Mathf.PI * 2f / ClumpRing);
+                Vector3 at = root + (PropMeshKit.Around(angle) * (reach * ClumpRingRadius));
+                float height = (top - trunkHeight) * (0.72f + (PropMeshKit.Next(random) * 0.16f));
+                CypressMesh(at, trunkHeight, height, ClumpRingTreeRadius, random, out _);
+            }
+
+            return new[] { PropShape.Cylinder(root, reach, top, PropMaterial.Foliage) };
+        }
+
+        /// <summary>
+        /// Dovecote (pigeonnier, tall obstacles): a round, whitewashed stone tower with a ledge and small flight holes under a tile
+        /// cone roof. No random draw: its shapes (two stacked cylinders, as the lighthouse) depend on settings alone.
+        /// </summary>
+        public PropShape[] AddDovecote(Vector3 root, float yaw)
+        {
+            const int Sides = 10;
+            float radius = _settings.DovecoteRadius;
+            float wall = _settings.DovecoteWallHeight;
+            float ledge = wall * 0.62f;
+            const float LedgeDepth = 0.1f;
+            int first = _kit.Mesh.Positions.Count;
+
+            _kit.AddFrustum(root, radius, radius * 0.94f, ledge, Sides, yaw, _stoneLight, BuiltSink);
+            _kit.AddPrism(root + (Vector3.up * ledge), radius, LedgeDepth, Sides, yaw, _stoneMid, 0f);
+            _kit.AddCone(root + (Vector3.up * (ledge + LedgeDepth)), radius, 0.01f, Sides, yaw, _stoneMid, true);
+            _kit.AddFrustum(root + (Vector3.up * (ledge + LedgeDepth)), radius * 0.93f, radius * 0.9f, wall - ledge - LedgeDepth, Sides, yaw, _stoneLight, 0f);
+
+            // Four flight holes above the ledge, in the darkest slate that still reads as shade, not black.
+            for (int i = 0; i < 4; i++)
+            {
+                float angle = yaw + ((i + 0.5f) * Mathf.PI * 0.5f);
+                Vector3 outward = PropMeshKit.Around(angle);
+                Vector3 hole = root + (Vector3.up * (ledge + 0.45f)) + (outward * ((radius * 0.92f) + 0.01f));
+                _kit.AddUprightDisc(hole, new Vector3(-outward.z, 0f, outward.x), 0.12f, 6, _slateMid);
+            }
+
+            _kit.AddCone(root + (Vector3.up * wall), radius * 1.12f, _settings.DovecoteHeight - wall, Sides, yaw, _tileLight, true);
+            return FitCylinders(first, root);
+        }
+
+        /// <summary>
+        /// How far a tall obstacle's base reaches on the ground (tall obstacles, director Q1 B): the part held to rough with the fairway
+        /// margin, while its crown may overhang the fairway. The pine's trunk, the clump's ring of trunks; the dovecote's whole wall.
+        /// </summary>
+        public static float TallBase(PropKind kind, PropKitSettings kit)
+        {
+            switch (kind)
+            {
+                case PropKind.UmbrellaPine: return kit.PineTrunkRadius;
+                case PropKind.CypressClump: return (kit.ClumpRadius * ClumpRingRadius) + (ClumpRingTreeRadius * CypressTrunkWidth);
+                default: return -1f;
+            }
         }
 
         /// <summary>Round bush: one main blob with two small ones at its sides, low to the ground.</summary>
