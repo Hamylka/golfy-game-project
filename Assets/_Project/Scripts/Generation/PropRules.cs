@@ -160,8 +160,8 @@ namespace IsoGolf.Generation
         [SerializeField] private Vector2Int strategicMembers = new Vector2Int(1, 3);
         [Tooltip("Under a safe leg's middle, the leg's planned arc keeps at least this much between the ball's bottom and a strategic prop's top, along its whole footprint (director Q1 B).")]
         [SerializeField, Min(0f)] private float strategicSafeClearance = 0.3f;
-        [Tooltip("Chance in percent that a strategic group may fully block a cut or risky direct line, where that makes sense (director Q5).")]
-        [SerializeField, Range(0, 100)] private int strategicFullBlockChance = 25;
+        [Tooltip("Chance in percent that a strategic group goes, with tall kinds, to a zone on a cut or risky direct line where a full block is allowed (director Q5, then \"B3 à 100%\", then \"Pour l'instant A\": tall obstacles to fly over; on today's kit they never close the line).")]
+        [SerializeField, Range(0, 100)] private int strategicFullBlockChance = 100;
         [Tooltip("The fairway margin a strategic prop keeps on a rough island's oval, instead of the fairway margin (director Q2 B).")]
         [SerializeField, Min(0f)] private float strategicOvalMargin = 0.15f;
         [Tooltip("S2: kind weights of a strategic member off rough islands, olive and cypress (one integer draw over these and the low weights).")]

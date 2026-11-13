@@ -4,6 +4,23 @@ All notable progress on Iso Golf. The format follows [Keep a Changelog](https://
 
 ## [Unreleased]
 
+### 2026-11-13: strategic props (`feature/strategic-props`, strategic obstacles S2)
+
+#### Added
+
+- **Strategic group** (strategic obstacles plan §1-§5): one group per course, on the props sub-stream 170, placed after every other prop. It stands on a fork spine, a split band, a rough island (small bushes and rocks only) or a dogleg cut corner, inside the direct and cut corridors, but never in a landing capsule or under a safe leg's flight. Its first member always reaches a direct or cut corridor. Every line it reaches stays playable (Q5 block rule: a 1.5 m free run past what a full-power shot can't loft) unless a full block is allowed there. Q7 B: spine cypresses' shadows may cross the direct and cut corridors (`ClearRule.SpineCypress`). `CourseProp.Zone` records the zone.
+- **B3 at 100%, then A** (director): on a course with a line where a full block is allowed, the group goes to a zone on that line with tall kinds (olive, cypress, wall, shed), or falls back to a normal group in that zone. These are tall obstacles to fly over: no full block forms on today's kit. A full-power arc clears 2-3 m props except next to the ball and the landing, which are keep-outs, and the fairway margin rejects 2/3 of the tall-crown slots. Follow-ups: C (block the landing zone) and dedicated 5-6 m obstacles.
+- Settings in `LevelGenSettings.props` (S2 defaults, retunable): `strategicTreeWeights` (25, 25), `strategicLowWeights` (30, 20), `strategicBuiltChance` 15, `strategicGap` (1.2, 2.0), `strategicPassGap` 1.5, `strategicSmallReach` 0.5, `strategicSmallBushScale` (0.6, 0.8), `strategicSlotGrid` 0.25, `strategicSlotReach` 1.
+- Tests (`StrategicPropTests`, seeds 0-49): `StrategicPropsStayOutOfCapsulesAndSafeFlights`, `StrategicGroupLeavesALineOrBlocksItOnlyWhereAllowed`, `B3GroupsStandOnTheBlockLineWithTallKinds`, `StrategicPropsOnlySmallOnRoughIslands`, `OtherPropsBitIdentical` (against `PropReferenceS1`, captured on S1's code in its own commit, and `CheckedCourseReferenceBefore`), `SpineCypressShadowRule`, `PreviewStopsAtStrategicTree`. Measurements `StrategicPropMeasurements.StrategicShareAndProps` and `CheckedDropsAndReviewSeeds`.
+- Measured (Editor; variant 0, seeds 0-199): a group on 8.5 / 25.0 / 30.5% of courses (par 3 / 4 / 5), 1.4-1.6 props per group, 0 full blocks on every par; tall groups on a block line on 3 / 11 of the 13 / 28 courses with a block zone (par 4 / 5). Checked courses, seeds 0-49: 0 props dropped, 4.96 / 9.80 / 15.68 props per course, checked generation 66.8 / 175.6 / 325.6 ms. Rerolls 1 / 30 / 26 and the par 3 ace sweep (mean 0.59%, max 0.86%) unchanged. Spine cypresses: 37 on 53 spine clusters (F3.4: 8 of 92 spines).
+- Phone review APK `Builds/Android/IsoGolf_StrategicProps.apk` (`ISOGOLF_MEASURE`): `PhoneChecksPanel`'s second row steps through 14 strategic review courses.
+
+#### Changed
+
+- `strategicFullBlockChance` 25 → 100 (director: "B3 à 100%"); the block draw now comes before the zone draw.
+- S1's `PlainCoursesBitIdentical` removed: non-fork courses now gain strategic props by design; `OtherPropsBitIdentical` replaces it.
+- `Docs/Decisions/m4-props.md`: the S2 decisions, why no full block forms, the follow-ups.
+
 ### 2026-11-12: strategic zones and the safe-leg flight check (`feature/strategic-zones`, strategic obstacles S1)
 
 #### Added

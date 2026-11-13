@@ -31,7 +31,7 @@ namespace IsoGolf.Tests
             var report = new StringBuilder("STRATEGIC_SHARE");
             foreach (int par in new[] { 3, 4, 5 })
             {
-                int courses = 0, groups = 0, members = 0, props = 0, blocks = 0;
+                int courses = 0, groups = 0, members = 0, props = 0, blocks = 0, blockZones = 0, tallOnLine = 0, fallbacks = 0;
                 var zoneCourses = new Dictionary<StrategicZone, int>();
                 var zoneGroups = new Dictionary<StrategicZone, int>();
                 var kinds = new Dictionary<PropKind, int>();
@@ -70,11 +70,38 @@ namespace IsoGolf.Tests
 
                     groups++;
                     zoneGroups[placed] = zoneGroups.TryGetValue(placed, out int g) ? g + 1 : 1;
-                    blocks += Blocks(layout, feet) ? 1 : 0;
+                    bool blocked = Blocks(layout, feet);
+                    blocks += blocked ? 1 : 0;
+
+                    // B3 (director: then "Pour l'instant A"): a group on a course with a block zone is a tall group on the block
+                    // line, or, when no tall member fitted, a group by the normal rule in that zone (a fallback). With
+                    // strategicFullBlockChance 100, every group drew the block.
+                    var zones = new PropZones(layout, Settings);
+                    bool blockable = PropPlacement.BlockAreas(PropPlacement.StrategicAreas(layout, par, Settings, zones, Settings.Props)).Count > 0;
+                    bool tall = true, onBlockLine = false;
+                    foreach (CourseProp prop in layout.Props)
+                    {
+                        if (prop.Strategic)
+                        {
+                            tall &= prop.Kind == PropKind.Olive || prop.Kind == PropKind.Cypress || prop.Kind == PropKind.Wall || prop.Kind == PropKind.Shed;
+                        }
+                    }
+
+                    foreach (StrategicFoot foot in feet)
+                    {
+                        for (int i = 0; i < zones.Lines.Count; i++)
+                        {
+                            onBlockLine |= zones.FullBlockAllowed(i, par) && zones.Intrudes(i, foot.Centre, foot.Radius);
+                        }
+                    }
+
+                    blockZones += blockable ? 1 : 0;
+                    tallOnLine += blockable && tall && onBlockLine ? 1 : 0;
+                    fallbacks += blockable && !(tall && onBlockLine) ? 1 : 0;
                 }
 
                 report.Append($" | par {par}: {groups}/{courses} courses with a group ({100f * groups / courses:F1}%), {(float)members / Mathf.Max(1, groups):F2} props per group, ");
-                report.Append($"{blocks} full blocks ({100f * blocks / courses:F1}% of courses), props per course {(float)props / courses:F2}, {clock.Elapsed.TotalMilliseconds / courses:F1} ms per course; zones");
+                report.Append($"{blocks} full blocks ({100f * blocks / courses:F1}% of courses; {blockZones} groups with a block zone: {tallOnLine} tall on the block line, {fallbacks} fell back to the normal rule), props per course {(float)props / courses:F2}, {clock.Elapsed.TotalMilliseconds / courses:F1} ms per course; zones");
                 foreach (StrategicZone zone in new[] { StrategicZone.Spine, StrategicZone.Split, StrategicZone.RoughIsland, StrategicZone.CutCorner })
                 {
                     int have = zoneCourses.TryGetValue(zone, out int h) ? h : 0;

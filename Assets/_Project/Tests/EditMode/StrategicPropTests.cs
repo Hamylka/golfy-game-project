@@ -199,6 +199,84 @@ namespace IsoGolf.Tests
             Assert.IsEmpty(failures.ToString(), failures.ToString());
         }
 
+        /// <summary>
+        /// B3 at 100%, then "Pour l'instant A" (director): on a course with a zone that reaches a line where a full block is allowed,
+        /// the group goes there with tall kinds (olive, cypress, wall, shed) standing in that line's corridor, unless none fits, when a
+        /// group by the normal rule stands in the same zone. So every course with a block zone has its group in a block zone, never
+        /// on a rough island, and some par 4 or 5 has a tall group on a block line.
+        /// </summary>
+        [Test]
+        [Timeout(900000)]
+        public void B3GroupsStandOnTheBlockLineWithTallKinds()
+        {
+            var failures = new StringBuilder();
+            var tallGroups = new Dictionary<int, int> { { 4, 0 }, { 5, 0 } };
+            var fallbacks = new Dictionary<int, int> { { 4, 0 }, { 5, 0 } };
+            foreach (int par in new[] { 4, 5 })
+            {
+                for (int seed = 0; seed < Seeds; seed++)
+                {
+                    CourseLayout layout = Placed(seed, par);
+                    var zones = new PropZones(layout, Settings);
+                    List<PropPlacement.StrategicArea> blockAreas = PropPlacement.BlockAreas(PropPlacement.StrategicAreas(layout, par, Settings, zones, Settings.Props));
+                    var group = new List<CourseProp>();
+                    foreach (CourseProp prop in layout.Props)
+                    {
+                        if (prop.Strategic)
+                        {
+                            group.Add(prop);
+                        }
+                    }
+
+                    if (group.Count == 0 || blockAreas.Count == 0)
+                    {
+                        continue;
+                    }
+
+                    StrategicZone zone = group[0].Zone;
+                    bool inABlockZone = false;
+                    foreach (PropPlacement.StrategicArea area in blockAreas)
+                    {
+                        inABlockZone |= area.Zone == zone;
+                    }
+
+                    if (!inABlockZone)
+                    {
+                        failures.AppendLine($"par {par} seed {seed}: the group stands in {zone}, not in a block zone");
+                        continue;
+                    }
+
+                    bool allTall = true, onBlockLine = false;
+                    foreach (CourseProp prop in group)
+                    {
+                        allTall &= prop.Kind == PropKind.Olive || prop.Kind == PropKind.Cypress || prop.Kind == PropKind.Wall || prop.Kind == PropKind.Shed;
+                        foreach (StrategicFoot foot in Feet(prop))
+                        {
+                            for (int i = 0; i < zones.Lines.Count; i++)
+                            {
+                                onBlockLine |= zones.FullBlockAllowed(i, par) && zones.Intrudes(i, foot.Centre, foot.Radius);
+                            }
+                        }
+                    }
+
+                    if (allTall && onBlockLine)
+                    {
+                        tallGroups[par]++;
+                    }
+                    else
+                    {
+                        fallbacks[par]++;
+                    }
+                }
+            }
+
+            Debug.Log($"STRATEGIC_B3 tall groups on a block line: par 4 {tallGroups[4]}, par 5 {tallGroups[5]}; fell back to the normal rule: par 4 {fallbacks[4]}, par 5 {fallbacks[5]} (seeds 0-49, variant 0)");
+            Assert.IsEmpty(failures.ToString(), failures.ToString());
+            // On seeds 0-49 par 4 has none (its few block zones lie over fairway, where a tall crown can't stand): the count is
+            // quoted in the PR rather than pinned per par.
+            Assert.Greater(tallGroups[4] + tallGroups[5], 0, "some par 4 or 5 has a B3 tall group on a block line");
+        }
+
         // --- Rough islands (Q2 B, Q8 A) ----------------------------------------------------------------------------------------
 
         /// <summary>On a rough island only a rock or a low bush stands, reaching at most 0.5 m; a par 3's strategic props stand only there.</summary>
