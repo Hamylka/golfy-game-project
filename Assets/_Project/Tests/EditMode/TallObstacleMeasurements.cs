@@ -157,6 +157,58 @@ namespace IsoGolf.Tests
             Write("Temp/IsoGolfTallChecked.txt", report + "\n" + seeds);
         }
 
+        /// <summary>
+        /// Tall obstacles kept as full blocks (variant 0, seeds 0-199, par 4 and 5) with the pine and clump crowns at 100, 80 and 65%
+        /// of the pre-4.7 radii (2.2 and 1.35 m). The kit asset is restored afterwards.
+        /// </summary>
+        [Test]
+        [Explicit("Measurement")]
+        [Category("Measurement")]
+        [Timeout(3600000)]
+        public void TallClosureByCrownSize()
+        {
+            PropKitSettings kit = Settings.PropKit;
+            string backup = JsonUtility.ToJson(kit);
+            var so = new UnityEditor.SerializedObject(kit);
+            var report = new StringBuilder("TALL_CLOSURE variant 0, seeds 0-199");
+            try
+            {
+                foreach (float size in new[] { 1f, 0.8f, 0.65f })
+                {
+                    so.FindProperty("pineCrownRadius").floatValue = 2.2f * size;
+                    so.FindProperty("clumpRadius").floatValue = 1.35f * size;
+                    so.ApplyModifiedPropertiesWithoutUndo();
+                    foreach (int par in new[] { 4, 5 })
+                    {
+                        int pines = 0, clumps = 0, doves = 0;
+                        for (int seed = 0; seed < 200; seed++)
+                        {
+                            foreach (CourseProp prop in CourseGenerator.Generate(seed, par, Settings, 0).Props)
+                            {
+                                if (prop.Zone != StrategicZone.BlockLine)
+                                {
+                                    continue;
+                                }
+
+                                pines += prop.Kind == PropKind.UmbrellaPine ? 1 : 0;
+                                clumps += prop.Kind == PropKind.CypressClump ? 1 : 0;
+                                doves += prop.Kind == PropKind.Dovecote ? 1 : 0;
+                            }
+                        }
+
+                        report.Append($" | {size * 100:F0}% par {par}: pines {pines}, clumps {clumps}, dovecotes {doves}");
+                    }
+                }
+            }
+            finally
+            {
+                JsonUtility.FromJsonOverwrite(backup, kit);
+                UnityEditor.EditorUtility.SetDirty(kit);
+            }
+
+            Write("Temp/IsoGolfTallClosure.txt", report.ToString());
+        }
+
         private static void Write(string path, string text)
         {
             Directory.CreateDirectory("Temp");

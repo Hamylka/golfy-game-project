@@ -22,6 +22,10 @@ namespace IsoGolf.Gameplay
         [SerializeField] private LevelSun sun;
         [Tooltip("Optional, needs the ball and a generated course. The perched birds (M4 PR 4.6): visual only.")]
         [SerializeField] private BirdsView birds;
+        [Tooltip("Optional, needs a generated course. The butterflies (M4 PR 4.7): visual only.")]
+        [SerializeField] private ButterflyView butterflies;
+        [Tooltip("Optional. The drifting cloud shadow (M4 PR 4.7): visual only.")]
+        [SerializeField] private CloudShadowView cloudShadow;
 
         [Tooltip("The ball strikes the props and, in flight, the flag pole. On for Sandbox_Par3's hand-placed trees; and for Main, whose generated props (M4 PR 4.3) and flag pole the checks play with.")]
         [SerializeField] private bool collisions;
@@ -85,6 +89,16 @@ namespace IsoGolf.Gameplay
             if (clouds != null)
             {
                 clouds.Build(islandCamera.VisibleGround);
+            }
+
+            if (butterflies != null && Generated != null)
+            {
+                butterflies.Build(terrain.Layout, seed, par, Generated.Variant);
+            }
+
+            if (cloudShadow != null)
+            {
+                cloudShadow.Build(terrain.Layout);
             }
 
             if (ball != null)

@@ -41,7 +41,7 @@ namespace IsoGolf.Generation
 
         [Header("Look")]
         [Tooltip("Scale of the bird mesh (0.22 m long at 1).")]
-        [SerializeField] private float birdScale = 1.4f;
+        [SerializeField] private float birdScale = 1.8f;
 
         public Vector2Int Count => count;
         public float FlockSpread => flockSpread;

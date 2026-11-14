@@ -325,35 +325,43 @@ namespace IsoGolf.Tests
         // --- Bit identity ------------------------------------------------------------------------------------------------------
 
         /// <summary>
-        /// Every prop but the strategic group and the spine stays bit for bit. (a) At variant 0, against <c>PropReferenceS1</c>
-        /// (captured on S1's code): a course with no fork keeps every prop; on a fork course, the props before the spine (placed
-        /// last in S1) stay in order. (b) Every checked course with no fork, its strategic props and their drops left out, equals
-        /// <c>CheckedCourseReferenceBefore</c>: variant, candidates, failed checks, other drops and every other prop.
+        /// Every prop but the strategic group and the spine stays bit for bit. (a) At variant 0, against the same settings with
+        /// <c>strategicChance</c> 0: a course with no fork keeps every prop; on a fork course, the props before the spine (placed
+        /// last) stay in order. (b) Every checked course with no fork, its strategic props and their drops left out, equals the
+        /// checked course of those settings: variant, candidates, failed checks, other drops and every other prop. (Until 4.7 the
+        /// anchors were <c>PropReferenceS1</c> and <c>CheckedCourseReferenceBefore</c>, stored hashes.)
         /// </summary>
         [Test]
         [Timeout(900000)]
         public void OtherPropsBitIdentical()
         {
-            Dictionary<(int, int), (bool fork, List<ulong> props)> reference = PropReferenceTests.Read(PropReferenceS1.Courses);
+            // Re-anchored in 4.7: it compared with PropReferenceS1 and CheckedCourseReferenceBefore (stored hashes), which the bush
+            // jitter change moved for every bush. The same settings with strategicChance 0, run live, are the twin: no group, no tall
+            // obstacle, so every other prop and every check outcome must be the same.
+            LevelGenSettings off = SpinePropTests.NoStrategic();
             var failures = new StringBuilder();
             int forks = 0, plain = 0;
+            try
+            {
             for (int p = 0; p < Pars.Length; p++)
             {
                 int par = Pars[p];
                 for (int seed = 0; seed < Seeds; seed++)
                 {
                     CourseLayout layout = Placed(seed, par);
-                    (bool fork, List<ulong> props) old = reference[(par, seed)];
-                    Assert.AreEqual(old.fork, IsFork(layout), $"par {par} seed {seed}: fork flag");
+                    CourseLayout bare = CourseGenerator.Generate(seed, par, off);
+                    bool fork = IsFork(layout);
+                    Assert.AreEqual(fork, IsFork(bare), $"par {par} seed {seed}: fork flag");
                     int none = 0;
-                    List<ulong> others = SpinePropTests.Others(layout, ref none, old.fork);
-                    List<ulong> expected = old.fork ? old.props.GetRange(0, Mathf.Min(others.Count, old.props.Count)) : old.props;
+                    List<ulong> others = SpinePropTests.Others(layout, ref none, fork);
+                    List<ulong> every = SpinePropTests.Others(bare, ref none, false);
+                    List<ulong> expected = fork ? every.GetRange(0, Mathf.Min(others.Count, every.Count)) : every;
                     if (!SpinePropTests.Same(others, expected))
                     {
                         failures.AppendLine($"par {par} seed {seed}: other props changed at variant 0");
                     }
 
-                    if (old.fork)
+                    if (fork)
                     {
                         forks++;
                         continue;
@@ -361,6 +369,7 @@ namespace IsoGolf.Tests
 
                     // (b) The checked course, strategic props and their drops aside.
                     CheckedCourseResult result = Checked(seed, par);
+                    CheckedCourseResult bareResult = CheckedCourse.Generate(seed, par, off, Shot);
                     CourseLayout placed = CourseGenerator.Generate(seed, par, Settings, result.Variant);
                     int strategicPlaced = 0, strategicKept = 0;
                     var kept = new List<CourseProp>();
@@ -382,13 +391,18 @@ namespace IsoGolf.Tests
                     }
 
                     ulong hash = CheckedCourseReferenceTests.HashOf(result, kept, result.DroppedProps - (strategicPlaced - strategicKept));
-                    if (hash != CheckedCourseReferenceBefore.Courses[(p * Seeds) + seed])
+                    if (hash != CheckedCourseReferenceTests.HashOf(bareResult, bareResult.Layout.Props, bareResult.DroppedProps))
                     {
                         failures.AppendLine($"par {par} seed {seed}: checked course changed");
                     }
 
                     plain++;
                 }
+            }
+            }
+            finally
+            {
+                Object.DestroyImmediate(off);
             }
 
             Debug.Log($"OTHER_PROPS compared {plain} checked courses with no fork and {forks} fork courses at variant 0");

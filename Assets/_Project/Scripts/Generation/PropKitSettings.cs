@@ -31,7 +31,7 @@ namespace IsoGolf.Generation
         [SerializeField, Min(0.1f)] private float bushRadius = 0.5f;
         [Tooltip("Size of the two small blobs at the sides, as a fraction of the main one.")]
         [SerializeField, Range(0.3f, 0.9f)] private float bushSatelliteSize = 0.6f;
-        [SerializeField, Range(0f, 0.4f)] private float bushJitter = 0.14f;
+        [SerializeField, Range(0f, 0.4f)] private float bushJitter = 0.084f;
 
         [Header("Rocks")]
         [Tooltip("Width of a rock at scale 1 is its size argument; this is how much flatter than a sphere it sits.")]
@@ -82,12 +82,12 @@ namespace IsoGolf.Generation
         // footprint before it draws anything (tall obstacles, Q5 B: a course with no spot draws nothing new).
         [Header("Tall obstacles")]
         [SerializeField, Min(1f)] private float pineHeight = 6f;
-        [SerializeField, Min(0.5f)] private float pineCrownRadius = 2.2f;
+        [SerializeField, Min(0.5f)] private float pineCrownRadius = 1.76f;
         [Tooltip("Height of the flat crown, from its underside to the top.")]
         [SerializeField, Min(0.3f)] private float pineCrownDepth = 2f;
         [SerializeField, Min(0.05f)] private float pineTrunkRadius = 0.28f;
         [Tooltip("Reach of the clump's foliage from its middle.")]
-        [SerializeField, Min(0.5f)] private float clumpRadius = 1.35f;
+        [SerializeField, Min(0.5f)] private float clumpRadius = 1.08f;
         [SerializeField, Min(1f)] private float clumpHeight = 5.5f;
         [SerializeField, Min(0.5f)] private float dovecoteRadius = 1f;
         [Tooltip("Height of the dovecote's wall; its roof rises above it to the full height.")]

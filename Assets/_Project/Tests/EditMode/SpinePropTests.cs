@@ -16,33 +16,47 @@ namespace IsoGolf.Tests
     public class SpinePropTests
     {
         /// <summary>
-        /// Courses with no fork keep every prop of F3.3, bit for bit: the fork capsule fix and the spine theme change fork courses
-        /// only. Against <c>PropReferenceBefore</c>, captured on F3.3's code.
+        /// On a course with no fork, the strategic groups (S2) and the tall obstacles leave every other prop bit for bit: the same
+        /// settings with <c>strategicChance</c> 0, run live, give exactly the non-strategic props. Re-anchored in 4.7 (it was
+        /// <c>PropReferenceBefore</c>, captured on F3.3's code), because the bush jitter change moves every bush's shape and so every
+        /// stored prop hash; the F3.3 comparison is lost, this invariant is kept.
         /// </summary>
         [Test]
         [Timeout(900000)]
         public void CoursesWithoutAForkKeepTheirProps()
         {
-            Dictionary<(int, int), (bool fork, List<ulong> props)> reference = PropReferenceTests.Read(PropReferenceBefore.Courses);
+            LevelGenSettings off = NoStrategic();
             var failures = new StringBuilder();
             int compared = 0;
-            foreach (KeyValuePair<(int, int), (bool fork, List<ulong> props)> row in reference)
+            try
             {
-                if (row.Value.fork)
+                foreach (int par in new[] { 3, 4, 5 })
                 {
-                    continue;
-                }
+                    for (int seed = 0; seed < PropReferenceTests.Seeds; seed++)
+                    {
+                        CourseLayout layout = CourseGenerator.Generate(seed, par, CourseGeneratorTests.Settings);
+                        if (PropReferenceTests.IsFork(layout))
+                        {
+                            continue;
+                        }
 
-                List<ulong> now = PropReferenceTests.Row(row.Key.Item2, row.Key.Item1, out CourseLayout layout);
-                Assert.IsFalse(PropReferenceTests.IsFork(layout), $"par {row.Key.Item1} seed {row.Key.Item2} drew a fork it did not have");
-                // The strategic group (S2) is new on any course; every other prop stays.
-                int none = 0;
-                if (!Same(Others(layout, ref none, false), row.Value.props))
-                {
-                    failures.AppendLine($"par {row.Key.Item1} seed {row.Key.Item2}: props changed ({row.Value.props.Count} -> {now.Count - 4})");
-                }
+                        CourseLayout bare = CourseGenerator.Generate(seed, par, off);
+                        int none = 0;
+                        List<ulong> others = Others(layout, ref none, false);
+                        List<ulong> expected = Others(bare, ref none, false);
+                        Assert.AreEqual(0, none);
+                        if (!Same(others, expected))
+                        {
+                            failures.AppendLine($"par {par} seed {seed}: props changed ({expected.Count} -> {others.Count})");
+                        }
 
-                compared++;
+                        compared++;
+                    }
+                }
+            }
+            finally
+            {
+                Object.DestroyImmediate(off);
             }
 
             Assert.Greater(compared, 100);
@@ -112,24 +126,38 @@ namespace IsoGolf.Tests
         public void SpinePropsStayOutOfCorridorsCapsulesAndFairway_FullSweep() => SpinePropsStayOut(200);
 
         /// <summary>
-        /// Without its spine cluster, every course keeps exactly the props of <c>PropReferenceCapsuleFix</c> (captured after the
-        /// capsule fix, before the spine theme), in order and bit for bit.
+        /// Without its spine cluster, every course keeps exactly the props of the same code with the spine theme off
+        /// (<c>spineChance</c> 0), in order and bit for bit, on seeds 0-49. Re-anchored in 4.7 (it was <c>PropReferenceCapsuleFix</c>,
+        /// captured after the capsule fix): the bush jitter change moves every stored prop hash, and the live twin checks the same
+        /// invariant. The full sweep below is the same guard on seeds 0-199.
         /// </summary>
         [Test]
         [Timeout(900000)]
         public void SpineThemeLeavesOtherClustersBitIdentical()
         {
-            Dictionary<(int, int), (bool fork, List<ulong> props)> reference = PropReferenceTests.Read(PropReferenceCapsuleFix.Courses);
+            LevelGenSettings off = NoSpine();
             var failures = new StringBuilder();
             int spines = 0;
-            foreach (KeyValuePair<(int, int), (bool fork, List<ulong> props)> row in reference)
+            try
             {
-                CourseLayout layout = CourseGenerator.Generate(row.Key.Item2, row.Key.Item1, CourseGeneratorTests.Settings);
-                List<ulong> others = Others(layout, ref spines);
-                if (!Same(others, row.Value.props))
+                foreach (int par in new[] { 3, 4, 5 })
                 {
-                    failures.AppendLine($"par {row.Key.Item1} seed {row.Key.Item2}: other props changed ({row.Value.props.Count} -> {others.Count})");
+                    for (int seed = 0; seed < PropReferenceTests.Seeds; seed++)
+                    {
+                        List<ulong> others = Others(CourseGenerator.Generate(seed, par, CourseGeneratorTests.Settings), ref spines);
+                        int none = 0;
+                        List<ulong> bare = Others(CourseGenerator.Generate(seed, par, off), ref none);
+                        Assert.AreEqual(0, none);
+                        if (!Same(others, bare))
+                        {
+                            failures.AppendLine($"par {par} seed {seed}: other props changed ({bare.Count} -> {others.Count})");
+                        }
+                    }
                 }
+            }
+            finally
+            {
+                Object.DestroyImmediate(off);
             }
 
             Assert.Greater(spines, 0, "no spine cluster on seeds 0-49: the guard proves nothing");
@@ -512,6 +540,16 @@ namespace IsoGolf.Tests
             LevelGenSettings copy = Object.Instantiate(CourseGeneratorTests.Settings);
             var serialized = new SerializedObject(copy);
             serialized.FindProperty("props.spineChance").intValue = 0;
+            serialized.ApplyModifiedPropertiesWithoutUndo();
+            return copy;
+        }
+
+        /// <summary>The main settings with no strategic group (so no tall obstacle either: they are S2's groups' full blocks).</summary>
+        internal static LevelGenSettings NoStrategic()
+        {
+            LevelGenSettings copy = Object.Instantiate(CourseGeneratorTests.Settings);
+            var serialized = new SerializedObject(copy);
+            serialized.FindProperty("props.strategicChance").intValue = 0;
             serialized.ApplyModifiedPropertiesWithoutUndo();
             return copy;
         }

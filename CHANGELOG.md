@@ -4,6 +4,25 @@ All notable progress on Iso Golf. The format follows [Keep a Changelog](https://
 
 ## [Unreleased]
 
+### 2026-11-14: look recheck with props in (`feature/m4-look-recheck`, M4 task 4.7)
+
+#### Added
+
+- **Butterflies** (visual only): 1-3 per course, at most one per bush, looping round it on a Lissajous path; `ButterflyPlacement` (own stream salt 10), `ButterflyView`, `ButterflySettings`. No prop, fingerprint or shot changes.
+- **Soft cloud shadow**: a slow oval that crosses the course once per 125 s, a world-space term in `ShadowTint.hlsl` (`CloudShadowView`, `CloudShadowSettings`); fragment math only, no draw call.
+- Palette entries `CypressMid`, `CypressDark`, `StoneLight`, `StoneMid`, `StoneDark`.
+- `ButterflyTests`, `TallObstacleMeasurements.TallClosureByCrownSize`, phone captures in `Docs/Screenshots/m4-look-recheck/`.
+- `Docs/Decisions/m4-props.md`: the Look recheck bullet (director's answers, rejected options, closure table).
+
+#### Changed
+
+- Director's choices from the phone look-test: no outline, no slope tint, 1 m bunkers stay; tall crowns at 80% (pine 2.2 → 1.76 m, clump 1.35 → 1.08 m, with tree radii scaled to the reach); doves 1.4 → 1.8 and darker; cypress lighter; stone one step darker; bush jitter 0.14 → 0.084.
+- Tests re-anchored off the bush jitter (own commit): `OtherPropsBitIdentical`, `CoursesWithoutAForkKeepTheirProps` and `SpineThemeLeavesOtherClustersBitIdentical` now compare against the same settings with the feature off; `PlainCourseReference` and `ShapedCourseReference` re-captured (shaped 160 → 136 compared courses).
+
+#### Open
+
+- The 2.5 m bulge on par 5 seed 48 stays as is. A toggled blue/red slope view is a separate follow-up task.
+
 ### 2026-11-13: tall obstacles (`feature/tall-obstacles`, follow-up to strategic obstacles S2)
 
 #### Added

@@ -31,11 +31,14 @@ namespace IsoGolf.Generation
         [SerializeField] private Color trunk = new Color32(0x6A, 0x41, 0x28, 0xFF);
         [Tooltip("Olive crowns' light shade: the grass row's hue, a little greyer and lighter, so olives read silvery.")]
         [SerializeField] private Color oliveLight = new Color32(0x8A, 0x9E, 0x5E, 0xFF);
+        [Tooltip("Cypress foliage (director, PR 4.7: lighter than the olive's mid shade, which read very dark). The body tone and the tone of its darker facets.")]
+        [SerializeField] private Color cypressMid = new Color32(0x6A, 0x85, 0x41, 0xFF);
+        [SerializeField] private Color cypressDark = new Color32(0x56, 0x71, 0x3A, 0xFF);
 
         [Header("Stone")]
-        [SerializeField] private Color stoneLight = new Color32(0xF1, 0xEC, 0xE0, 0xFF);
-        [SerializeField] private Color stoneMid = new Color32(0xDA, 0xD3, 0xC3, 0xFF);
-        [SerializeField] private Color stoneDark = new Color32(0xB8, 0xB0, 0xA0, 0xFF);
+        [SerializeField] private Color stoneLight = new Color32(0xDA, 0xD3, 0xC3, 0xFF);
+        [SerializeField] private Color stoneMid = new Color32(0xB8, 0xB0, 0xA0, 0xFF);
+        [SerializeField] private Color stoneDark = new Color32(0x9A, 0x93, 0x84, 0xFF);
 
         [Header("Built props (M4 PR 4.4)")]
         [Tooltip("Wood: benches, doors, buckets, rakes. The mid shade is Trunk.")]
@@ -99,6 +102,8 @@ namespace IsoGolf.Generation
         public Color FoliageDark => foliageDark;
         public Color Trunk => trunk;
         public Color OliveLight => oliveLight;
+        public Color CypressMid => cypressMid;
+        public Color CypressDark => cypressDark;
         public Color StoneLight => stoneLight;
         public Color StoneMid => stoneMid;
         public Color StoneDark => stoneDark;

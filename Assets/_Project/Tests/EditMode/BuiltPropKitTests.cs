@@ -73,7 +73,7 @@ namespace IsoGolf.Tests
                     colors = new[] { _palette.WoodLight, _palette.Metal };
                     break;
                 case PropKind.Bucket:
-                    colors = new[] { _palette.TraceRed, _palette.TraceOffWhite };
+                    colors = new[] { _palette.TraceRed, _palette.TraceOffWhite, _palette.MetalDark };
                     break;
                 case PropKind.Bicycle:
                     colors = new[] { _palette.MetalDark, _palette.Metal, _palette.TraceBlue };
