@@ -35,16 +35,18 @@ namespace IsoGolf.Generation
         public static BirdMeshKit Build(PaletteSettings palette)
         {
             var kit = new BirdMeshKit();
-            // Doves (director, PR 67): an off-white, slightly warm body and wings, soft grey tips and tail, so the facets and the flap still read.
-            // Existing palette entries only: the ball's off-white, the stone row and the cloud shade. A greyer back and belly keep it off the cream rocks.
+            // Doves (director, PR 67; darker, PR 4.7): an off-white, slightly warm head and wing tops, a stone back, wing undersides and
+            // tail, lighter stone wing tips, so the facets and the flap still read and a dove does not vanish against white clouds.
+            // Existing palette entries only. The stone row moved one step darker in PR 4.7, so the stone entries here are the tones
+            // the "darker" option showed on the phone (the old mid and dark).
             Color32 back = Tone(palette.StoneMid);
-            Color32 belly = Tone(palette.StoneLight);
+            Color32 belly = Tone(palette.TraceOffWhite);
             Color32 head = Tone(palette.TraceOffWhite);
             Color32 beak = Tone(palette.TileDark);
             Color32 wingTop = Tone(palette.TraceOffWhite);
-            Color32 wingTipTone = Tone(palette.CloudShade);
+            Color32 wingTipTone = Tone(palette.StoneLight);
             Color32 wingUnder = Tone(palette.StoneMid);
-            Color32 tail = Tone(palette.CloudShade);
+            Color32 tail = Tone(palette.StoneMid);
 
             // Body: a flattened octahedron.
             var nose = new Vector3(0.10f, 0f, 0f);

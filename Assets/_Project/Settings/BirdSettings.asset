@@ -26,4 +26,4 @@ MonoBehaviour:
   fadeFraction: 0.35
   flapRate: 7
   returnDelay: {x: 8, y: 14}
-  birdScale: 1.4
+  birdScale: 1.8

@@ -55,6 +55,8 @@ namespace IsoGolf.Generation
         private readonly Color32 _foliageMid;
         private readonly Color32 _foliageDark;
         private readonly Color32 _oliveLight;
+        private readonly Color32 _cypressMid;
+        private readonly Color32 _cypressDark;
         private readonly Color32 _trunk;
         private readonly Color32 _stoneLight;
         private readonly Color32 _stoneMid;
@@ -80,6 +82,8 @@ namespace IsoGolf.Generation
             _foliageMid = palette != null ? TerrainBuilder.ToVertexColor(palette.FoliageMid) : default;
             _foliageDark = palette != null ? TerrainBuilder.ToVertexColor(palette.FoliageDark) : default;
             _oliveLight = palette != null ? TerrainBuilder.ToVertexColor(palette.OliveLight) : default;
+            _cypressMid = palette != null ? TerrainBuilder.ToVertexColor(palette.CypressMid) : default;
+            _cypressDark = palette != null ? TerrainBuilder.ToVertexColor(palette.CypressDark) : default;
             _trunk = palette != null ? TerrainBuilder.ToVertexColor(palette.Trunk) : default;
             _stoneLight = palette != null ? TerrainBuilder.ToVertexColor(palette.StoneLight) : default;
             _stoneMid = palette != null ? TerrainBuilder.ToVertexColor(palette.StoneMid) : default;
@@ -257,9 +261,9 @@ namespace IsoGolf.Generation
                 Vector3 outward = PropMeshKit.Around((a0 + a1) * 0.5f);
 
                 // Dark foliage, kept clear of the darkest shade on most facets, so no side of the tree goes near black.
-                Color32 upper = PropMeshKit.Next(random) < CypressDarkFacetChance ? _foliageDark : _foliageMid;
-                _kit.AddTriangle(foot0, belly0, belly1, outward, _foliageMid);
-                _kit.AddTriangle(foot0, belly1, foot1, outward, _foliageMid);
+                Color32 upper = PropMeshKit.Next(random) < CypressDarkFacetChance ? _cypressDark : _cypressMid;
+                _kit.AddTriangle(foot0, belly0, belly1, outward, _cypressMid);
+                _kit.AddTriangle(foot0, belly1, foot1, outward, _cypressMid);
                 _kit.AddTriangle(belly0, tip, belly1, outward, upper);
                 _kit.AddTriangle(foot0, foot1, foot, Vector3.down, _foliageDark);
             }
@@ -280,6 +284,10 @@ namespace IsoGolf.Generation
         private const float ClumpRingRadius = 0.6f;
         private const float ClumpMiddleRadius = 0.55f;
         private const float ClumpRingTreeRadius = 0.5f;
+
+        // The reach the two tree radii above were drawn for (pre-4.7). The trees scale with the reach (4.7: crowns at 80%), so a
+        // smaller clump is a narrower one, not the same trees packed tighter, and every vertex stays inside the soft cylinder.
+        private const float ClumpReferenceReach = 1.35f;
 
         /// <summary>
         /// Umbrella pine (pin parasol, tall obstacles): a bare, tapering trunk and a wide, flat crown high up. Its shapes come from
@@ -331,13 +339,14 @@ namespace IsoGolf.Generation
             float reach = _settings.ClumpRadius;
             float trunkHeight = _settings.CypressTrunkHeight;
             float startAngle = PropMeshKit.RandomAngle(random);
-            CypressMesh(root, trunkHeight, top - trunkHeight, ClumpMiddleRadius, random, out _);
+            float fit = reach / ClumpReferenceReach;
+            CypressMesh(root, trunkHeight, top - trunkHeight, ClumpMiddleRadius * fit, random, out _);
             for (int i = 0; i < ClumpRing; i++)
             {
                 float angle = startAngle + (i * Mathf.PI * 2f / ClumpRing);
                 Vector3 at = root + (PropMeshKit.Around(angle) * (reach * ClumpRingRadius));
                 float height = (top - trunkHeight) * (0.72f + (PropMeshKit.Next(random) * 0.16f));
-                CypressMesh(at, trunkHeight, height, ClumpRingTreeRadius, random, out _);
+                CypressMesh(at, trunkHeight, height, ClumpRingTreeRadius * fit, random, out _);
             }
 
             return new[] { PropShape.Cylinder(root, reach, top, PropMaterial.Foliage) };
@@ -383,7 +392,7 @@ namespace IsoGolf.Generation
             switch (kind)
             {
                 case PropKind.UmbrellaPine: return kit.PineTrunkRadius;
-                case PropKind.CypressClump: return (kit.ClumpRadius * ClumpRingRadius) + (ClumpRingTreeRadius * CypressTrunkWidth);
+                case PropKind.CypressClump: return (kit.ClumpRadius * ClumpRingRadius) + (ClumpRingTreeRadius * (kit.ClumpRadius / ClumpReferenceReach) * CypressTrunkWidth);
                 default: return -1f;
             }
         }

@@ -77,7 +77,7 @@ namespace IsoGolf.Tests
                     colors = new[] { _palette.FoliageMid, _palette.FoliageDark, _palette.OliveLight, _palette.Trunk };
                     break;
                 case Kind.Cypress:
-                    colors = new[] { _palette.FoliageMid, _palette.FoliageDark, _palette.Trunk };
+                    colors = new[] { _palette.CypressMid, _palette.CypressDark, _palette.FoliageDark, _palette.Trunk };
                     break;
                 case Kind.Bush:
                     colors = new[] { _palette.FoliageLight, _palette.FoliageMid, _palette.FoliageDark };

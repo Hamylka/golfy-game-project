@@ -119,6 +119,98 @@ NavMeshSettings:
     debug:
       m_Flags: 0
   m_NavMeshData: {fileID: 0}
+--- !u!1 &53207736
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 53207737}
+  - component: {fileID: 53207738}
+  m_Layer: 0
+  m_Name: CloudShadow
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &53207737
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 53207736}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 951827837}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &53207738
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 53207736}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 74f636694c939a04c846cfebc7c302e2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: IsoGolf.Generation::IsoGolf.Generation.CloudShadowView
+  settings: {fileID: 11400000, guid: 82f099e7fe9abe24abb41e8399287499, type: 2}
+--- !u!1 &85392378
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 85392379}
+  - component: {fileID: 85392380}
+  m_Layer: 0
+  m_Name: Butterflies
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &85392379
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 85392378}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 951827837}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &85392380
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 85392378}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9c50ecc307e971e4392931a017fba1c2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: IsoGolf.Generation::IsoGolf.Generation.ButterflyView
+  settings: {fileID: 11400000, guid: 72e22c02f07edb14bb9c5f576d008ad7, type: 2}
+  palette: {fileID: 11400000, guid: f0bc7674256819e4d920b9b8f6a2df40, type: 2}
+  material: {fileID: 2100000, guid: ad4e2044caef9814f9c30aa2c03bd228, type: 2}
 --- !u!1 &431362523
 GameObject:
   m_ObjectHideFlags: 0
@@ -742,6 +834,8 @@ Transform:
   - {fileID: 441434112}
   - {fileID: 936105976}
   - {fileID: 1716760389}
+  - {fileID: 85392379}
+  - {fileID: 53207737}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1103648083
@@ -1166,6 +1260,8 @@ MonoBehaviour:
   hole: {fileID: 441434113}
   sun: {fileID: 1678882217}
   birds: {fileID: 1716760390}
+  butterflies: {fileID: 85392380}
+  cloudShadow: {fileID: 53207738}
   collisions: 1
   generator: {fileID: 11400000, guid: 38ed32c895a0df548a6b8030c7781e97, type: 2}
   seed: 1

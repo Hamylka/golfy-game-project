@@ -25,7 +25,7 @@ MonoBehaviour:
   cypressTrunkHeight: 0.25
   bushRadius: 0.5
   bushSatelliteSize: 0.6
-  bushJitter: 0.14
+  bushJitter: 0.084
   rockHeightRatio: 0.65
   rockJitter: 0.22
   roundRockJitter: 0.06
@@ -52,3 +52,12 @@ MonoBehaviour:
   chapelTowerHeight: 2.7
   lighthouseRadius: 0.8
   lighthouseHeight: 3.5
+  pineHeight: 6
+  pineCrownRadius: 1.76
+  pineCrownDepth: 2
+  pineTrunkRadius: 0.28
+  clumpRadius: 1.08
+  clumpHeight: 5.5
+  dovecoteRadius: 1
+  dovecoteWallHeight: 4.3
+  dovecoteHeight: 5.5
