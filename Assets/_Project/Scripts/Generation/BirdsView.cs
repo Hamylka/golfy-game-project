@@ -92,8 +92,11 @@ namespace IsoGolf.Generation
             Refresh();
         }
 
+        private static readonly Unity.Profiling.ProfilerMarker RefreshMarker = new Unity.Profiling.ProfilerMarker("BirdsView.Refresh");
+
         private void Refresh()
         {
+            using var marker = RefreshMarker.Auto();
             bool any = Pose(settings.BirdScale);
             _mesh.SetVertices(_vertices);
             _mesh.RecalculateNormals();

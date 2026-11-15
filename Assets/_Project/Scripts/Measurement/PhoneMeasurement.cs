@@ -1,4 +1,4 @@
-#if ISOGOLF_MEASURE
+#if ISOGOLF_MEASURE || ISOGOLF_RELEASE_LOG
 using System.Globalization;
 using System.IO;
 using System.Text;
@@ -24,6 +24,8 @@ namespace IsoGolf.Measurement
         private const float SceneSeconds = 150f;
         private const float AimSeconds = 3f;
 
+        private static bool _puttOnlyFlag;
+
         private enum Mode { Rest = 0, AimPutt = 1, AimArc = 2, Flight = 3 }
 
         private readonly StringBuilder _csv = new StringBuilder(1 << 20);
@@ -45,6 +47,9 @@ namespace IsoGolf.Measurement
         private bool _wasPutt;
         private float _releasePull;
         private float _restSince;
+        private bool _puttOnly;
+        private ProfilerRecorder _draws, _batches, _setPass, _tris, _butterflyPose, _birdRefresh;
+        private readonly System.Collections.Generic.List<float>[] _dt = { new System.Collections.Generic.List<float>(), new System.Collections.Generic.List<float>(), new System.Collections.Generic.List<float>(), new System.Collections.Generic.List<float>() };
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         private static void Create()
@@ -57,6 +62,7 @@ namespace IsoGolf.Measurement
             }
 
             string[] parts = File.ReadAllText(flag).Split(new[] { ' ', '\n', '\r' }, System.StringSplitOptions.RemoveEmptyEntries);
+            _puttOnlyFlag = parts.Length >= 3 && parts[2] == "putt";
             if (parts.Length >= 2)
             {
                 DebugCourseOverride.Set(int.Parse(parts[1], CultureInfo.InvariantCulture), int.Parse(parts[0], CultureInfo.InvariantCulture));
@@ -70,9 +76,16 @@ namespace IsoGolf.Measurement
         private void Start()
         {
             _predict = ProfilerRecorder.StartNew(ProfilerCategory.Scripts, "AimPreview.Predict", 4);
+            _puttOnly = _puttOnlyFlag;
+            _draws = ProfilerRecorder.StartNew(ProfilerCategory.Render, "Draw Calls Count");
+            _batches = ProfilerRecorder.StartNew(ProfilerCategory.Render, "Batches Count");
+            _setPass = ProfilerRecorder.StartNew(ProfilerCategory.Render, "SetPass Calls Count");
+            _tris = ProfilerRecorder.StartNew(ProfilerCategory.Render, "Triangles Count");
+            _butterflyPose = ProfilerRecorder.StartNew(ProfilerCategory.Scripts, "ButterflyView.Pose", 4);
+            _birdRefresh = ProfilerRecorder.StartNew(ProfilerCategory.Scripts, "BirdsView.Refresh", 4);
             _csv.AppendLine("# device=" + SystemInfo.deviceModel + " gpu=" + SystemInfo.graphicsDeviceName + " api=" + SystemInfo.graphicsDeviceType
                 + " res=" + Screen.width + "x" + Screen.height + " target=" + Application.targetFrameRate + " dev=" + Debug.isDebugBuild);
-            _csv.AppendLine("scene,t,mode,putt,dtMs,cpuMainMs,cpuRenderMs,gpuMs,predictSamples,predictUs,ballState,shot");
+            _csv.AppendLine("scene,t,mode,putt,dtMs,cpuMainMs,cpuRenderMs,gpuMs,predictSamples,predictUs,ballState,shot,draws,batches,setPass,tris,butterflyUs,birdUs");
             Begin();
         }
 
@@ -103,12 +116,41 @@ namespace IsoGolf.Measurement
             Mode mode = Mode.Rest;
             bool putt = sim.IsPutt;
 
+            if (_puttOnly && t >= WarmUpSeconds && !_touching && !_touchEnd && sim.State == BallState.Resting && (_placedAtShot != _shots || !putt))
+            {
+                PlaceOnGreen();
+                sim = _ball.Simulation;
+                putt = sim.IsPutt;
+                _restSince = Time.unscaledTime;
+            }
+
             if (t >= WarmUpSeconds)
             {
                 mode = Drive(sim, putt);
             }
 
             Log(t, mode, putt, sim.State);
+        }
+
+        private int _placedAtShot = -1;
+
+        // Putt autoplay: a ball on the green 2-5 m from the hole, a different bearing each time, so only putts are played.
+        private void PlaceOnGreen()
+        {
+            Vector2 hole = _ball.Ground.Hole;
+            for (int attempt = 0; attempt < 40; attempt++)
+            {
+                float d = 5f - (attempt / 10 * 1f);
+                float a = (float)(_random.NextDouble() * System.Math.PI * 2);
+                Vector2 p = hole + (new Vector2(Mathf.Cos(a), Mathf.Sin(a)) * d);
+                if (_ball.Ground.Surface(p.x, p.y) == IsoGolf.Generation.CourseSurface.Green)
+                {
+                    _ball.PlaceForMeasure(p);
+                    break;
+                }
+            }
+
+            _placedAtShot = _shots;
         }
 
         private bool Find()
@@ -210,7 +252,31 @@ namespace IsoGolf.Measurement
                 .Append(putt ? 1 : 0).Append(',').Append((Time.unscaledDeltaTime * 1000f).ToString("F3", c)).Append(',')
                 .Append(main.ToString("F3", c)).Append(',').Append(render.ToString("F3", c)).Append(',')
                 .Append(gpu.ToString("F3", c)).Append(',').Append(fresh).Append(',').Append(us.ToString("F1", c)).Append(',')
-                .Append((int)state).Append(',').Append(_shots).AppendLine();
+                .Append((int)state).Append(",").Append(_shots).Append(",").Append(Last(_draws)).Append(",").Append(Last(_batches)).Append(",")
+                .Append(Last(_setPass)).Append(",").Append(Last(_tris)).Append(",").Append((Last(_butterflyPose) / 1000.0).ToString("F1", c)).Append(",")
+                .Append((Last(_birdRefresh) / 1000.0).ToString("F1", c)).AppendLine();
+            if (t >= 5f)
+            {
+                _dt[(int)mode].Add(Time.unscaledDeltaTime * 1000f);
+            }
+        }
+
+        private static long Last(ProfilerRecorder r) => r.Valid ? r.LastValue : 0;
+
+        private void Summarise()
+        {
+            string[] names = { "rest", "aimPutt", "aimArc", "flight" };
+            for (int m = 0; m < 4; m++)
+            {
+                var l = _dt[m];
+                if (l.Count == 0)
+                {
+                    continue;
+                }
+
+                l.Sort();
+                Debug.Log("MEASURE_SUMMARY " + names[m] + " frames " + l.Count + " dt p50 " + l[l.Count / 2].ToString("F2") + " p99 " + l[Mathf.Min(l.Count - 1, l.Count * 99 / 100)].ToString("F2") + " max " + l[l.Count - 1].ToString("F2") + " ms");
+            }
         }
 
         private void NextScene()
@@ -226,6 +292,7 @@ namespace IsoGolf.Measurement
             {
                 string path = Path.Combine(Application.persistentDataPath, "phone_checks.csv");
                 File.WriteAllText(path, _csv.ToString());
+                Summarise();
                 Debug.Log("MEASURE_DONE " + path);
                 enabled = false;
                 return;

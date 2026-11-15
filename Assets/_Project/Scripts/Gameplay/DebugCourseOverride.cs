@@ -1,4 +1,4 @@
-#if ISOGOLF_MEASURE
+#if ISOGOLF_MEASURE || ISOGOLF_RELEASE_LOG
 using UnityEngine;
 
 namespace IsoGolf.Gameplay

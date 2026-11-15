@@ -71,8 +71,11 @@ namespace IsoGolf.Generation
             }
         }
 
+        private static readonly Unity.Profiling.ProfilerMarker PoseMarker = new Unity.Profiling.ProfilerMarker("ButterflyView.Pose");
+
         private void Pose(float time)
         {
+            using var marker = PoseMarker.Auto();
             float size = settings.WingSize;
             for (int i = 0; i < _butterflies.Count; i++)
             {
