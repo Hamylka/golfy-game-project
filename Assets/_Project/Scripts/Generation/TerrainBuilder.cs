@@ -25,6 +25,7 @@ namespace IsoGolf.Generation
         /// UV1 semantics, read by AmbientMotion.hlsl (keep the two comments in step):
         /// x &gt; 0 is a swaying vertex and y is its phase (0..1, one value per tree);
         /// x == 0 and y &gt; 0 is a water facet and y is its glint hash (0..1, one value per facet);
+        /// x == 0 and y &gt; 1 is a waterfall facet, y packing its row and a hash (<see cref="FallPhase"/>);
         /// (0, 0) is static.
         /// </summary>
         public List<float> Sway { get; private set; }
@@ -58,6 +59,82 @@ namespace IsoGolf.Generation
         {
             AddCore(a, b, c, facing, color, 0f, 0f, 0f, glint, glint, glint);
         }
+
+        /// <summary>
+        /// UV1.y of a waterfall facet, for AmbientMotion.hlsl (keep the ISOGOLF_FALL_* defines there in step): above 1, where no pond's
+        /// glint hash goes, packing the facet's row down the fall (0..15) and a hash (0..1) into one value in (1.005, 2).
+        /// </summary>
+        public static float FallPhase(int row, float hash)
+        {
+            return 1.01f + (0.98f * (Mathf.Clamp(row, 0, 15) + (0.99f * Mathf.Clamp01(hash))) / 16f);
+        }
+
+        /// <summary>A waterfall facet: its tone flows down the sheet in the water shader, see <see cref="FallPhase"/>.</summary>
+        public void AddFall(Vector3 a, Vector3 b, Vector3 c, Vector3 facing, Color32 color, int row, float hash)
+        {
+            float phase = FallPhase(row, hash);
+            AddCore(a, b, c, facing, color, 0f, 0f, 0f, phase, phase, phase);
+        }
+
+        /// <summary>
+        /// Like <see cref="AddFall(Vector3,Vector3,Vector3,Vector3,Color32,int,float)"/>, lit as if it faced <paramref name="lightNormal"/>
+        /// rather than its own face: a waterfall's top rows take the pond's light, so the sheet carries on from the pond with no tone step.
+        /// </summary>
+        public void AddFall(Vector3 a, Vector3 b, Vector3 c, Vector3 facing, Color32 color, int row, float hash, Vector3 lightNormal)
+        {
+            int before = Positions.Count;
+            AddFall(a, b, c, facing, color, row, hash);
+            if (Positions.Count == before)
+            {
+                return;
+            }
+
+            if (Normals == null)
+            {
+                // Facets added before this one keep their own flat normal.
+                Normals = new List<Vector3>(Positions.Count);
+                for (int i = 0; i < before; i += 3)
+                {
+                    Vector3 flat = Vector3.Cross(Positions[i + 1] - Positions[i], Positions[i + 2] - Positions[i]).normalized;
+                    Normals.Add(flat);
+                    Normals.Add(flat);
+                    Normals.Add(flat);
+                }
+            }
+
+            Vector3 normal = lightNormal.normalized;
+            Normals.Add(normal);
+            Normals.Add(normal);
+            Normals.Add(normal);
+        }
+
+        /// <summary>
+        /// Like <see cref="AddFall(Vector3,Vector3,Vector3,Vector3,Color32,int,float,Vector3)"/>, with an alpha per corner (given in
+        /// a, b, c order) on the facet's one colour: a waterfall fades out toward its foot in the transparent water material, smoothly
+        /// across the facets while the tone stays flat per facet.
+        /// </summary>
+        public void AddFall(Vector3 a, Vector3 b, Vector3 c, Vector3 facing, Color32 color, int row, float hash, Vector3 lightNormal,
+            byte alphaA, byte alphaB, byte alphaC)
+        {
+            int before = Positions.Count;
+            AddFall(a, b, c, facing, color, row, hash, lightNormal);
+            if (Positions.Count == before)
+            {
+                return;
+            }
+
+            // AddCore swaps b and c when it turns the facet to face outward: the alphas follow their corners.
+            bool flipped = Positions[before + 1] != b;
+            Colors[before] = new Color32(color.r, color.g, color.b, alphaA);
+            Colors[before + 1] = new Color32(color.r, color.g, color.b, flipped ? alphaC : alphaB);
+            Colors[before + 2] = new Color32(color.r, color.g, color.b, flipped ? alphaB : alphaC);
+        }
+
+        /// <summary>
+        /// Lighting normals, one per vertex, or null for flat normals from the faces (every terrain, prop and tuft mesh: only a
+        /// waterfall sets them, so the other meshes are built exactly as before).
+        /// </summary>
+        public List<Vector3> Normals { get; private set; }
 
         private void AddCore(Vector3 a, Vector3 b, Vector3 c, Vector3 facing, Color32 color, float swayA, float swayB, float swayC, float phaseA, float phaseB, float phaseC)
         {
@@ -125,7 +202,15 @@ namespace IsoGolf.Generation
             }
 
             mesh.SetTriangles(indices, 0);
-            mesh.RecalculateNormals();
+            if (Normals != null)
+            {
+                mesh.SetNormals(Normals);
+            }
+            else
+            {
+                mesh.RecalculateNormals();
+            }
+
             mesh.RecalculateBounds();
             return mesh;
         }
@@ -153,12 +238,24 @@ namespace IsoGolf.Generation
     public readonly struct EdgeSegment
     {
         public EdgeSegment(Vector3 a, Vector3 b, Vector3 outward, EdgeSurface inner = EdgeSurface.Land)
+            : this(a, b, outward, inner, default)
+        {
+        }
+
+        public EdgeSegment(Vector3 a, Vector3 b, Vector3 outward, EdgeSurface inner, Color waterTone)
         {
             A = a;
             B = b;
             Outward = outward;
             Inner = inner;
+            WaterTone = waterTone;
         }
+
+        /// <summary>
+        /// On a water piece, the pond's depth colour (sRGB, before the per-facet spread) where it meets the edge, so a waterfall
+        /// starts in the tone the pond has there. Clear on land pieces.
+        /// </summary>
+        public Color WaterTone { get; }
 
         public Vector3 A { get; }
         public Vector3 B { get; }
@@ -308,7 +405,7 @@ namespace IsoGolf.Generation
                 {
                     var top = new Segment(Lower(segment.A), Lower(segment.B));
                     AddSkirt(segment, top);
-                    _result.Edge.Add(new EdgeSegment(top.A, top.B, Across(segment, _fields.Island, true), EdgeSurface.Water));
+                    _result.Edge.Add(new EdgeSegment(top.A, top.B, Across(segment, _fields.Island, true), EdgeSurface.Water, DepthColor((segment.A + segment.B) * 0.5f)));
                 }
 
                 foreach (Triangle water in inside)
@@ -372,8 +469,7 @@ namespace IsoGolf.Generation
         /// </summary>
         private Color32 WaterColor(Vector3 centre)
         {
-            float depth = Mathf.Clamp01(-_fields.Pond(centre));
-            Color color = Color.Lerp(_palette.WaterShallow, _palette.WaterDeep, depth);
+            Color color = DepthColor(centre);
 
             // A second hash (shifted position) so the tone never correlates with the glint hash.
             float hash = AmbientHash.Unit(centre.x + 1000f, centre.z - 1000f);
@@ -381,6 +477,12 @@ namespace IsoGolf.Generation
             float spread = ((level / (float)(WaterToneLevels - 1)) - 0.5f) * 2f;
             float gain = 1f + (spread * _palette.WaterToneVariation);
             return ToVertexColor(new Color(Mathf.Clamp01(color.r * gain), Mathf.Clamp01(color.g * gain), Mathf.Clamp01(color.b * gain), 1f));
+        }
+
+        /// <summary>The pond's depth colour at a point (sRGB): lighter at its rim, darker at its middle.</summary>
+        private Color DepthColor(Vector3 point)
+        {
+            return Color.Lerp(_palette.WaterShallow, _palette.WaterDeep, Mathf.Clamp01(-_fields.Pond(point)));
         }
 
         /// <summary>

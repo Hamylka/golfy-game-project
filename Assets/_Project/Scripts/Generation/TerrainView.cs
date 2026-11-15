@@ -19,6 +19,12 @@ namespace IsoGolf.Generation
         [Tooltip("Optional. The grass border along the island edge. Shares the land material too.")]
         [SerializeField] private TuftSettings tufts;
 
+        [Tooltip("Optional. The waterfall where a pond reaches the island edge: one draw call in the transparent queue, and no shadow pass.")]
+        [SerializeField] private WaterfallSettings waterfall;
+
+        [Tooltip("The waterfall's material: the water shader's transparent copy, whose vertex alpha fades the curtain out. Falls back to the water material.")]
+        [SerializeField] private Material waterfallMaterial;
+
         private readonly List<Mesh> _meshes = new List<Mesh>();
         private readonly List<PropShape> _propShapes = new List<PropShape>();
 
@@ -72,6 +78,19 @@ namespace IsoGolf.Generation
                 if (renderer != null && !tufts.CastShadows)
                 {
                     renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+                }
+            }
+
+            if (waterfall != null)
+            {
+                // A water sheet's hard shadow on the cliff would read wrong, and a shadow pass costs more than the sheet. It takes no
+                // shadow either: the island's shadow would cut a dark band across the curtain right under the pond's sunlit tone.
+                MeshRenderer water = AddMesh("Waterfall", WaterfallBuilder.Build(waterfall, palette, result.Edge),
+                    waterfallMaterial != null ? waterfallMaterial : waterMaterial);
+                if (water != null)
+                {
+                    water.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+                    water.receiveShadows = false;
                 }
             }
 

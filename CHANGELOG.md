@@ -4,6 +4,20 @@ All notable progress on Iso Golf. The format follows [Keep a Changelog](https://
 
 ## [Unreleased]
 
+### 2026-11-15: waterfall at the island edge (`feature/m4-waterfall`, M4 task 4.8)
+
+#### Added
+
+- **Waterfall** (visual only) where a pond reaches the island edge: one curtain per run of water edge, leaving the edge at the pond's own tone, rolling over a white foam brink, bulging out in broad lit columns with cheeks back to the cliff, turning pale blue and fading to transparent at its foot. The water flow bands move down it (a waterfall branch in `AmbientMotion.hlsl`, gated by UV1.y above 1, never taken by a pond). `WaterfallBuilder`, `WaterfallSettings`, `Settings/Waterfall.asset`; `TerrainView.waterfall` and `waterfallMaterial`.
+- `LowPolyWaterfallFade.shadergraph` (transparent copy of the water graph, alpha from vertex colour, ZWrite off, no shadows; JSON edit approved by the director) and `WaterfallTransparent.mat`.
+- `TerrainMeshData.AddFall` overloads: explicit lighting normals and per-corner alpha. Other meshes are unchanged (terrain hashes unchanged).
+- `WaterfallBuilderTests` (23 tests), Editor captures in `Docs/Screenshots/m4-waterfall/`.
+- `Docs/Decisions/m4-props.md`: the Waterfall bullet (v1-v4 history, final values, the shader JSON exception).
+
+#### Open
+
+- Phone check and frame time against v3: the director's build at the end of M4, and 4.9.
+
 ### 2026-11-14: look recheck with props in (`feature/m4-look-recheck`, M4 task 4.7)
 
 #### Added
