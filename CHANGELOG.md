@@ -4,6 +4,16 @@ All notable progress on Iso Golf. The format follows [Keep a Changelog](https://
 
 ## [Unreleased]
 
+### 2026-11-15: waterfall warm-up (`fix/m4-waterfall-warmup`)
+
+#### Fixed
+
+- The 82-99 ms frame at the first shot on a course with a waterfall (Honor 500 Pro, Vulkan): `WaterfallWarmup` draws the transparent waterfall material once, invisibly, at every course load. No recurrence in 3 phone runs (see `Docs/Measurements/m4/README.md`); one run showed two unexplained 34 and 46 ms frames while aiming.
+
+#### Added
+
+- `MEASURE_WATERFALL_VISIBLE` log (`ISOGOLF_MEASURE` builds only).
+
 ### 2026-11-15: end-of-M4 phone checks (`feature/m4-phone-checks`, M4 task 4.9)
 
 #### Added

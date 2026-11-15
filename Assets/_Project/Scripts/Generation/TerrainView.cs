@@ -102,8 +102,14 @@ namespace IsoGolf.Generation
                 {
                     water.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
                     water.receiveShadows = false;
+#if ISOGOLF_MEASURE
+                    water.gameObject.AddComponent<WaterfallVisibilityLog>();
+#endif
                 }
             }
+
+            // Every load, not only with a waterfall: it costs a few microseconds once the pipeline state exists, and courses will chain.
+            WaterfallWarmup.Run(waterfallMaterial);
 
             Outline = result.Outline;
             Edge = result.Edge;

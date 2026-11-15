@@ -117,12 +117,24 @@ A dry course without props was **not measured**: `Main` always places props, so 
 8. The cloud shadow crossing the course: subtle enough?
 9. Course appearance time (up to 0.5 s on a par 5): does the transition to the next hole hide it?
 
+## Waterfall warm-up (`fix/m4-waterfall-warmup`)
+
+`WaterfallWarmup` draws the waterfall material once, invisibly, at every course load (a one-triangle mesh with vertex alpha 0 just past the main camera's near plane, kept 2 frames). Dev build (`dev=True`), IL2CPP, `ISOGOLF_MEASURE`, same phone and recipe (flag `4 46`, 170 s per run, first 5 s dropped). The old hitch was one frame of 82.6-99.1 ms at t = 8.28 s in all 3 earlier runs of this course. Raw data: `par4-seed46-warmup-dev-run1.csv`, `-run2.csv`, `-run3.csv`.
+
+| Run | Frames | Frame max (ms) | Frames over 17 ms | Frame at t ≈ 8.3 s |
+|---|---|---|---|---|
+| 1 | 8,774 | 46.06 | 3 (t = 76.28 s 34.07 ms, then 23.83 and 17.54; t = 83.32 s 46.06 ms, then 25.00 and 17.50; both while aiming, shots 10 and 11) | 16.52 |
+| 2 | 8,777 | 16.52 | 0 | 16.52 |
+| 3 | 8,776 | 16.53 | 0 | 16.52 |
+
+Result: **the first-shot hitch did not recur in 3 runs (it appeared in 3 of 3 before)**, which supports the hypothesis (first draw of the transparent material on Vulkan) without proving it: the warm-up replaces that first draw, and the frame is gone. Run 1 shows two isolated frames of 34 and 46 ms in the aim phase (shots 10-11, long after the first shot); they are not the old hitch, did not appear in runs 2 and 3, and I did not investigate them (a single run each, no profiler capture). The `MEASURE_WATERFALL_VISIBLE` log (build with `ISOGOLF_MEASURE` only) reads frame 316, t = 8.194 s (run 2) and frame 315, t = 8.191 s (run 3): the renderer is first seen by a camera about 0.09 s before the old hitch time (8.28 s), consistent with the camera following the first shot onto the waterfall. Run 1's logcat kept no such line. The visibility log was not in the earlier build, so the two events were not measured in the same run. No non-development run was made after the fix.
+
 ## Limits
 
 - Dev build for CPU, GPU and Predict (upper bounds). One run of 150 s per course, a single seed each; no other par 5 beyond s33 and s5, no par 3 on the phone.
 - The autoplay putts only in the dedicated putt run, and shots are random in power and direction, so not every prop type is struck.
 - The IMGUI strip is drawn in the non-development build too.
-- The cause of the waterfall hitch is a hypothesis.
+- The cause of the waterfall hitch is a hypothesis; the warm-up section above supports it, and does not prove it.
 - Memory on the phone was not measured.
 - The seed 46 non-dev hitch (82.62 ms) and the dev hitches (99.13, 82.61 ms) are quantised to the phone's refresh (a few missed vsyncs).
 
