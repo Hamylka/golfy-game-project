@@ -451,6 +451,8 @@ MonoBehaviour:
   trees: {fileID: 0}
   propKit: {fileID: 0}
   tufts: {fileID: 11400000, guid: 43a8689f55261d446ba14ec013294c8d, type: 2}
+  waterfall: {fileID: 11400000, guid: 20e4bb9518d72f14e9a940b259435fac, type: 2}
+  waterfallMaterial: {fileID: 2100000, guid: c5d8ea7338505f541a97d5b207071f6e, type: 2}
 --- !u!4 &501904562
 Transform:
   m_ObjectHideFlags: 0
