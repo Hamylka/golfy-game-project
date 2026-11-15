@@ -54,6 +54,16 @@ namespace IsoGolf.Gameplay
             Draw();
         }
 
+#if ISOGOLF_MEASURE || ISOGOLF_RELEASE_LOG
+        /// <summary>Phone checks only: a fresh ball at a ground point, so the autoplay can putt without playing a whole hole.</summary>
+        public void PlaceForMeasure(Vector2 point)
+        {
+            Simulation = new BallSimulation(_ground, shot, point, _obstacles);
+            _lastPosition = Simulation.Position;
+            Draw();
+        }
+#endif
+
         private void Update()
         {
             if (Simulation == null)

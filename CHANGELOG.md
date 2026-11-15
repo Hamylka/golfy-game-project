@@ -4,6 +4,22 @@ All notable progress on Iso Golf. The format follows [Keep a Changelog](https://
 
 ## [Unreleased]
 
+### 2026-11-15: end-of-M4 phone checks (`feature/m4-phone-checks`, M4 task 4.9)
+
+#### Added
+
+- `Docs/Measurements/m4/README.md` and six CSVs: frame time, CPU, GPU, draw calls, putt prediction cost, bird and butterfly cost and course build time on the Honor 500 Pro, dev and non-development builds.
+- `ProfilerMarker`s in `BirdsView.Refresh` and `ButterflyView.Pose` (nothing outside a development build).
+- Measurement only, behind `ISOGOLF_MEASURE` / `ISOGOLF_RELEASE_LOG`: a putt autoplay (`measure.txt` third field `putt`, `BallView.PlaceForMeasure`), draw-call and marker columns in the CSV, a logcat `MEASURE_SUMMARY`, the props mesh time in `COURSE_TIMING` (`TerrainView.PropsBuildMs`).
+
+#### Findings
+
+- 60 fps held on par 5 seeds 33 and 5 (24 props), par 4 seeds 46 and 7; GPU p99 under 11.4 ms.
+- One 82-99 ms frame on the waterfall course (par 4 seed 46) at the first shot, in every run of that course; cause not established.
+- A putt preview costs about 1 ms (p99 about 3.5-4 ms) on the phone; birds and butterflies together about 0.07 ms.
+- Par 5 seed 5 terrain build is 321.7 ms, over the 300 ms target.
+
+
 ### 2026-11-15: waterfall at the island edge (`feature/m4-waterfall`, M4 task 4.8)
 
 #### Added

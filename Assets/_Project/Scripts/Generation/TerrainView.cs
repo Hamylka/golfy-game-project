@@ -49,6 +49,11 @@ namespace IsoGolf.Generation
             Build(shape.ToLayout());
         }
 
+#if ISOGOLF_MEASURE || ISOGOLF_RELEASE_LOG
+        /// <summary>Phone checks only: how long the props mesh of the last build took, inside the terrain build.</summary>
+        public static double PropsBuildMs { get; private set; }
+#endif
+
         /// <summary>Builds this course, a generated one say.</summary>
         /// <param name="courseKit">
         /// The kit the course's own props (<see cref="CourseLayout.Props"/>) were placed with, the generator's: the same kit and the
@@ -69,7 +74,13 @@ namespace IsoGolf.Generation
             if (courseKit != null && Layout.Props.Count > 0)
             {
                 // One mesh on the land material, like the trees: one draw call and its shadow pass.
+#if ISOGOLF_MEASURE || ISOGOLF_RELEASE_LOG
+                var propsClock = System.Diagnostics.Stopwatch.StartNew();
+#endif
                 AddMesh("Props", PropBuilder.BuildCourseProps(Layout.Props, courseKit, palette, _propShapes), landMaterial);
+#if ISOGOLF_MEASURE || ISOGOLF_RELEASE_LOG
+                PropsBuildMs = propsClock.Elapsed.TotalMilliseconds;
+#endif
             }
 
             if (tufts != null)

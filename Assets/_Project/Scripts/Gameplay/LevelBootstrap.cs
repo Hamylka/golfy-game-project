@@ -43,7 +43,7 @@ namespace IsoGolf.Gameplay
         {
             if (generator != null)
             {
-#if ISOGOLF_MEASURE
+#if ISOGOLF_MEASURE || ISOGOLF_RELEASE_LOG
                 // Phone checks: the seed and par picked on the device, and the time generation and checks take there.
                 if (DebugCourseOverride.Has)
                 {
@@ -54,14 +54,14 @@ namespace IsoGolf.Gameplay
                 var clock = System.Diagnostics.Stopwatch.StartNew();
 #endif
                 Generated = CheckedCourse.Generate(seed, par, generator, ball.Shot);
-#if ISOGOLF_MEASURE
+#if ISOGOLF_MEASURE || ISOGOLF_RELEASE_LOG
                 double generateMs = clock.Elapsed.TotalMilliseconds;
                 clock.Restart();
 #endif
                 Debug.Log($"Course seed {seed} par {par}: variant {Generated.Variant} kept after {Generated.Candidates} candidate(s), failed checks: {Generated.Failed}, {Generated.Layout.Props.Count} props ({Generated.DroppedProps} dropped by the checks).");
                 terrain.Build(Generated.Layout, generator.PropKit);
-#if ISOGOLF_MEASURE
-                Debug.Log($"COURSE_TIMING seed {seed} par {par} generate+checks {generateMs:F1} ms, terrain build {clock.Elapsed.TotalMilliseconds:F1} ms, variant {Generated.Variant}, candidates {Generated.Candidates}, failed {Generated.Failed}, props {Generated.Layout.Props.Count}, dropped {Generated.DroppedProps}");
+#if ISOGOLF_MEASURE || ISOGOLF_RELEASE_LOG
+                Debug.Log($"COURSE_TIMING seed {seed} par {par} generate+checks {generateMs:F1} ms, terrain build {clock.Elapsed.TotalMilliseconds:F1} ms (props mesh {TerrainView.PropsBuildMs:F1} ms), variant {Generated.Variant}, candidates {Generated.Candidates}, failed {Generated.Failed}, props {Generated.Layout.Props.Count}, dropped {Generated.DroppedProps}");
 #endif
             }
             else
