@@ -103,6 +103,8 @@ namespace IsoGolf.Tests
                 TerrainBuilder.ToVertexColor(_palette.FoliageMid),
                 TerrainBuilder.ToVertexColor(_palette.FoliageDark),
                 TerrainBuilder.ToVertexColor(_palette.Trunk),
+                TerrainBuilder.ToVertexColor(_palette.CypressMid),
+                TerrainBuilder.ToVertexColor(_palette.CypressDark),
             };
 
             foreach (Color32 color in mesh.Colors)

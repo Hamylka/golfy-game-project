@@ -27,6 +27,19 @@ namespace IsoGolf.Tests
         /// <summary>True when the fairway stops short of the hole (the rough apron look), false when it runs into the green.</summary>
         private static bool IsApron(CourseLayout layout) => layout.Fairway.End < Length(layout) - 1f;
 
+        private static bool InsideAShape(CourseLayout layout, float s)
+        {
+            foreach (FairwayShape shape in layout.Plan.FairwayShapes)
+            {
+                if (s >= shape.From - 0.01f && s <= shape.To + 0.01f)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
         [Test]
         public void TeeEnd_IsRoundedOnEveryCourse()
         {
@@ -79,6 +92,13 @@ namespace IsoGolf.Tests
                     float length = Length(layout);
                     for (float s = length - 8f; s <= length - 0.5f; s += 0.25f)
                     {
+                        // A fairway shape's rough (an island or a split band, F3.1+) may lie on the line by design; this test is about
+                        // the fairway's end, not the shapes, which FairwayShapeTests covers.
+                        if (InsideAShape(layout, s))
+                        {
+                            continue;
+                        }
+
                         Vector2 p = layout.Centreline.PointAt(s);
                         Assert.That(fields.Surface(Geo.At(p)), Is.Not.EqualTo(CourseSurface.Rough), $"seed {seed} par {par} at {s:0.00} m");
                     }

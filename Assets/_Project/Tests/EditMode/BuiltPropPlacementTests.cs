@@ -29,6 +29,9 @@ namespace IsoGolf.Tests
 
         private static bool IsBuilt(CourseProp prop) => prop.Cluster >= PropPlacement.BuiltBase;
 
+        /// <summary>The 4.3 clusters (1..7). Built (100+), spine (160+) and strategic (170+) props carry numbers above them and are placed after them, so only these are compared.</summary>
+        private static bool Is43Cluster(CourseProp prop) => prop.Cluster < PropPlacement.BuiltBase;
+
         [Test]
         public void BuiltProps_LeaveThe43ClustersBitIdentical()
         {
@@ -56,14 +59,22 @@ namespace IsoGolf.Tests
                             {
                                 builtSeen++;
                             }
-                            else
+
+                            if (Is43Cluster(prop))
                             {
                                 withBuilt.Add(prop);
                             }
                         }
 
-                        IReadOnlyList<CourseProp> without = CourseGenerator.Generate(seed, par, off).Props;
-                        Assert.That(without, Has.None.Matches<CourseProp>(IsBuilt), $"seed {seed} par {par}");
+                        var without = new List<CourseProp>();
+                        foreach (CourseProp prop in CourseGenerator.Generate(seed, par, off).Props)
+                        {
+                            if (Is43Cluster(prop))
+                            {
+                                without.Add(prop);
+                            }
+                        }
+
                         Assert.That(withBuilt.Count, Is.EqualTo(without.Count), $"seed {seed} par {par}");
                         for (int i = 0; i < without.Count; i++)
                         {
