@@ -4,6 +4,21 @@ All notable progress on Iso Golf. The format follows [Keep a Changelog](https://
 
 ## [Unreleased]
 
+### 2026-11-15: end-of-M4 Run All failures (`fix/m4-run-all-failures`)
+
+#### Fixed
+
+- Three stale tests from the director's Run All: `BuiltProps_LeaveThe43ClustersBitIdentical` (compares the 4.3 clusters only), `TreeUsesOnlyTreeColors(Cypress)` (cypress palette entries), `GuardBesideTheGreen_RunsIntoIt_WithNoRoughOnTheLine` (skips fairway shape ranges). No game code changed.
+
+#### Changed
+
+- Decision: rough islands have no clearance from the green (director, "A"); recorded in `m3-generation.md`.
+
+#### Findings
+
+- `CourseGeneratorTests` took 495 s in focus with nothing else running, against 655 s in the Run All; a layout cache is proposed (`m4-props.md`).
+
+
 ### 2026-11-15: waterfall warm-up (`fix/m4-waterfall-warmup`)
 
 #### Fixed
